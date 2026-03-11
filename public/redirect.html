@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Signing in to Vanadium CRM…</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #9ca3af;
+      font-size: 14px;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <p>Completing sign in…</p>
+
+  <script type="module">
+    /**
+     * Dedicated MSAL popup redirect handler.
+     * MSAL opens a popup → Microsoft redirects it HERE (not to the main app).
+     * This page processes the auth code, sends the token back to the parent
+     * window, then closes itself. The main React app is never loaded in the popup.
+     */
+    (async () => {
+      try {
+        const { PublicClientApplication } = await import(
+          'https://esm.sh/@azure/msal-browser@3'
+        )
+        const msal = new PublicClientApplication({
+          auth: {
+            clientId: '5c7e825c-e83c-4009-b26e-fd512973c9bc',
+            authority: 'https://login.microsoftonline.com/c4f24e3e-4ea6-4264-b05e-db26a61893f9',
+            redirectUri: window.location.origin + '/redirect.html',
+          },
+          cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false },
+        })
+        await msal.initialize()
+        await msal.handleRedirectPromise()
+      } catch (err) {
+        console.error('MSAL popup redirect error:', err)
+      }
+      window.close()
+    })()
+  </script>
+</body>
+</html>

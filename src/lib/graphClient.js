@@ -9,6 +9,10 @@ async function ensureInit() {
   }
 }
 
+// Dedicated redirect page for MSAL popup auth — keeps the main React app
+// out of the popup window entirely. Must be registered in Azure App Registration.
+const popupRedirectUri = () => `${window.location.origin}/redirect.html`
+
 // Get a valid access token — tries silent first, falls back to popup
 async function getToken() {
   await ensureInit()
@@ -21,7 +25,7 @@ async function getToken() {
       // Silent failed (expired/no cache) — fall through to popup
     }
   }
-  const resp = await msalInstance.acquireTokenPopup(graphScopes)
+  const resp = await msalInstance.acquireTokenPopup({ ...graphScopes, redirectUri: popupRedirectUri() })
   return resp.accessToken
 }
 
@@ -41,7 +45,7 @@ async function graphGet(path) {
 
 export async function signInMicrosoft() {
   await ensureInit()
-  const resp = await msalInstance.loginPopup(graphScopes)
+  const resp = await msalInstance.loginPopup({ ...graphScopes, redirectUri: popupRedirectUri() })
   return resp.account
 }
 
