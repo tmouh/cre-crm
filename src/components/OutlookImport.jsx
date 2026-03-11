@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
-import { X, Loader2, CheckCircle2, AlertCircle, ChevronRight, Mail, Users, RefreshCw } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { X, Loader2, CheckCircle2, AlertCircle, ChevronRight, Mail, Users, RefreshCw, Search } from 'lucide-react'
 import clsx from 'clsx'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCRM } from '../context/CRMContext'
+import { useAuth } from '../context/AuthContext'
 import { signInMicrosoft, getMicrosoftAccount, getOutlookContacts, getEmailsForContact } from '../lib/graphClient'
 
 const STEP = {
@@ -12,8 +14,11 @@ const STEP = {
   DONE:      'done',
 }
 
+const ROW_HEIGHT = 40
+
 export default function OutlookImport({ onClose }) {
   const { contacts, companies, addContact, addCompany, addActivity } = useCRM()
+  const { user } = useAuth()
 
   const [step, setStep]           = useState(STEP.CONNECT)
   const [msAccount, setMsAccount] = useState(null)
@@ -23,6 +28,9 @@ export default function OutlookImport({ onClose }) {
   const [progress, setProgress]   = useState({ current: 0, total: 0, label: '' })
   const [result, setResult]       = useState(null)
   const [error, setError]         = useState('')
+  const [previewSearch, setPreviewSearch] = useState('')
+
+  const scrollRef = useRef(null)
 
   // If already signed in (e.g. just returned from Microsoft redirect), auto-fetch
   useEffect(() => {
@@ -43,6 +51,25 @@ export default function OutlookImport({ onClose }) {
   const existingCompanyByName = Object.fromEntries(
     companies.map(c => [c.name.toLowerCase(), c.id])
   )
+
+  // Filtered contacts for preview (search)
+  const filteredContacts = useMemo(() => {
+    if (!previewSearch.trim()) return outlookContacts
+    const q = previewSearch.toLowerCase()
+    return outlookContacts.filter(c => {
+      const name = (c.displayName || `${c.givenName || ''} ${c.surname || ''}`).toLowerCase()
+      const email = (c.emailAddresses?.[0]?.address || '').toLowerCase()
+      const company = (c.companyName || '').toLowerCase()
+      return name.includes(q) || email.includes(q) || company.includes(q)
+    })
+  }, [outlookContacts, previewSearch])
+
+  const virtualizer = useVirtualizer({
+    count: filteredContacts.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 15,
+  })
 
   async function handleConnect() {
     setError('')
@@ -86,12 +113,32 @@ export default function OutlookImport({ onClose }) {
     }
   }
 
-  function toggleAll() {
-    if (selected.size === outlookContacts.length) {
-      setSelected(new Set())
-    } else {
-      setSelected(new Set(outlookContacts.map(c => c.id)))
-    }
+  function selectAllVisible() {
+    setSelected(prev => {
+      const next = new Set(prev)
+      for (const c of filteredContacts) next.add(c.id)
+      return next
+    })
+  }
+
+  function deselectAllVisible() {
+    setSelected(prev => {
+      const next = new Set(prev)
+      for (const c of filteredContacts) next.delete(c.id)
+      return next
+    })
+  }
+
+  function selectOnlyNew() {
+    const newIds = new Set(
+      outlookContacts
+        .filter(c => {
+          const email = c.emailAddresses?.[0]?.address?.toLowerCase()
+          return !email || !existingByEmail[email]
+        })
+        .map(c => c.id)
+    )
+    setSelected(newIds)
   }
 
   function toggle(id) {
@@ -154,8 +201,8 @@ export default function OutlookImport({ onClose }) {
           phone:  oc.businessPhones?.[0] || '',
           mobile: oc.mobilePhone || '',
           notes:  oc.personalNotes || '',
-          tags:     [],
-          ownerIds: [],
+          tags:   (oc.categories || []).map(c => c.trim().toLowerCase().replace(/\s+/g, '-')).filter(Boolean),
+          ownerIds: user ? [user.id] : [],
         })
         contactsCreated++
       } catch {
@@ -198,6 +245,9 @@ export default function OutlookImport({ onClose }) {
   }
 
   const pct = progress.total ? Math.round((progress.current / progress.total) * 100) : 0
+
+  // Count how many of the visible (filtered) contacts are selected
+  const visibleSelectedCount = filteredContacts.filter(c => selected.has(c.id)).length
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
@@ -275,14 +325,36 @@ export default function OutlookImport({ onClose }) {
 
           {/* PREVIEW */}
           {step === STEP.PREVIEW && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">
-                  Found <strong>{outlookContacts.length}</strong> contact{outlookContacts.length !== 1 ? 's' : ''} —{' '}
-                  <strong className="text-green-600">{selected.size} new</strong> selected
+            <div className="space-y-3">
+              {/* Summary + search */}
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1">
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={previewSearch}
+                    onChange={e => setPreviewSearch(e.target.value)}
+                    placeholder="Search by name, email, or company…"
+                    className="input pl-8 py-1.5 text-sm w-full"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">
+                  {filteredContacts.length !== outlookContacts.length
+                    ? `${filteredContacts.length} of ${outlookContacts.length}`
+                    : outlookContacts.length}{' '}
+                  contacts · <strong className="text-green-600">{selected.size}</strong> selected
                 </p>
-                <button onClick={toggleAll} className="text-xs text-brand-600 hover:underline">
-                  {selected.size === outlookContacts.length ? 'Deselect all' : 'Select all'}
+              </div>
+
+              {/* Bulk selection buttons */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button onClick={selectOnlyNew} className="text-xs px-2 py-1 rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors">
+                  Select only new
+                </button>
+                <button onClick={selectAllVisible} className="text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
+                  Select all{previewSearch ? ' visible' : ''}
+                </button>
+                <button onClick={deselectAllVisible} className="text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
+                  Deselect all{previewSearch ? ' visible' : ''}
                 </button>
               </div>
 
@@ -303,57 +375,77 @@ export default function OutlookImport({ onClose }) {
                 <Mail size={16} className="text-blue-400 flex-shrink-0" />
               </label>
 
-              {/* Contact table */}
+              {/* Virtualized contact list */}
               <div className="border border-gray-100 rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-100">
-                    <tr>
-                      <th className="px-3 py-2.5 text-left w-8">
-                        <input
-                          type="checkbox"
-                          checked={selected.size > 0 && selected.size === outlookContacts.length}
-                          onChange={toggleAll}
-                          className="rounded"
-                        />
-                      </th>
-                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Name</th>
-                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Email</th>
-                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Company</th>
-                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {outlookContacts.map(c => {
+                {/* Sticky header */}
+                <div className="grid grid-cols-[32px_1fr_1fr_1fr_60px] gap-1 bg-gray-50 border-b border-gray-100 px-3 py-2.5 text-xs font-semibold text-gray-500">
+                  <div>
+                    <input
+                      type="checkbox"
+                      checked={filteredContacts.length > 0 && visibleSelectedCount === filteredContacts.length}
+                      onChange={() => visibleSelectedCount === filteredContacts.length ? deselectAllVisible() : selectAllVisible()}
+                      className="rounded"
+                    />
+                  </div>
+                  <div>Name</div>
+                  <div>Email</div>
+                  <div>Company</div>
+                  <div>Status</div>
+                </div>
+
+                {/* Scrollable virtual body */}
+                <div ref={scrollRef} className="overflow-y-auto" style={{ maxHeight: 400 }}>
+                  <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+                    {virtualizer.getVirtualItems().map(vRow => {
+                      const c = filteredContacts[vRow.index]
                       const email = c.emailAddresses?.[0]?.address || ''
                       const exists = email && existingByEmail[email.toLowerCase()]
                       const name = c.displayName || `${c.givenName || ''} ${c.surname || ''}`.trim()
+                      const cats = c.categories || []
                       return (
-                        <tr
+                        <div
                           key={c.id}
-                          className={clsx('hover:bg-gray-50 transition-colors', !selected.has(c.id) && 'opacity-40')}
+                          className={clsx(
+                            'grid grid-cols-[32px_1fr_1fr_1fr_60px] gap-1 px-3 items-center border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer',
+                            !selected.has(c.id) && 'opacity-40'
+                          )}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: ROW_HEIGHT,
+                            transform: `translateY(${vRow.start}px)`,
+                          }}
+                          onClick={() => toggle(c.id)}
                         >
-                          <td className="px-3 py-2.5">
+                          <div onClick={e => e.stopPropagation()}>
                             <input
                               type="checkbox"
                               checked={selected.has(c.id)}
                               onChange={() => toggle(c.id)}
                               className="rounded"
                             />
-                          </td>
-                          <td className="px-3 py-2.5 font-medium text-gray-800 max-w-[140px] truncate">{name || '—'}</td>
-                          <td className="px-3 py-2.5 text-gray-500 max-w-[170px] truncate">{email || '—'}</td>
-                          <td className="px-3 py-2.5 text-gray-500 max-w-[120px] truncate">{c.companyName || '—'}</td>
-                          <td className="px-3 py-2.5">
+                          </div>
+                          <div className="text-sm font-medium text-gray-800 truncate" title={name}>
+                            {name || '—'}
+                            {cats.length > 0 && (
+                              <span className="ml-1.5 text-[10px] text-purple-500 font-normal">{cats.join(', ')}</span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-500 truncate" title={email}>{email || '—'}</div>
+                          <div className="text-sm text-gray-500 truncate" title={c.companyName}>{c.companyName || '—'}</div>
+                          <div>
                             {exists
-                              ? <span className="badge bg-gray-100 text-gray-500">Exists</span>
-                              : <span className="badge bg-green-50 text-green-600">New</span>
+                              ? <span className="badge bg-gray-100 text-gray-500 text-[10px]">Exists</span>
+                              : <span className="badge bg-green-50 text-green-600 text-[10px]">New</span>
                             }
-                          </td>
-                        </tr>
+                          </div>
+                        </div>
                       )
                     })}
-                  </tbody>
-                </table>
+                  </div>
+                </div>
               </div>
             </div>
           )}

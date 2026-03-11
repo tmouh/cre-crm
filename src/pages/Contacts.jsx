@@ -328,7 +328,7 @@ export default function Contacts() {
         </div>
         <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)} className="input w-48">
           <option value="">All companies</option>
-          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </div>
 
