@@ -4,13 +4,14 @@ import { db, seedDatabase } from '../lib/supabase'
 const CRMContext = createContext(null)
 
 export function CRMProvider({ children }) {
-  const [contacts,   setContacts]   = useState([])
-  const [companies,  setCompanies]  = useState([])
-  const [properties, setProperties] = useState([])
-  const [reminders,  setReminders]  = useState([])
-  const [activities, setActivities] = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [error,      setError]      = useState(null)
+  const [contacts,     setContacts]     = useState([])
+  const [companies,    setCompanies]    = useState([])
+  const [properties,   setProperties]   = useState([])
+  const [reminders,    setReminders]    = useState([])
+  const [activities,   setActivities]   = useState([])
+  const [teamMembers,  setTeamMembers]  = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [error,        setError]        = useState(null)
 
   // ─── Initial load + seed ───────────────────────────────────────────────────
   useEffect(() => {
@@ -23,18 +24,20 @@ export function CRMProvider({ children }) {
           await seedDatabase()
           await db.config.markSeeded()
         }
-        const [co, ct, pr, re, ac] = await Promise.all([
+        const [co, ct, pr, re, ac, tm] = await Promise.all([
           db.companies.getAll(),
           db.contacts.getAll(),
           db.properties.getAll(),
           db.reminders.getAll(),
           db.activities.getAll(),
+          db.teamMembers.getAll(),
         ])
         setCompanies(co)
         setContacts(ct)
         setProperties(pr)
         setReminders(re)
         setActivities(ac)
+        setTeamMembers(tm)
       } catch (err) {
         setError(err.message || 'Failed to load data.')
       } finally {
@@ -150,7 +153,7 @@ export function CRMProvider({ children }) {
 
   return (
     <CRMContext.Provider value={{
-      contacts, companies, properties, reminders, activities,
+      contacts, companies, properties, reminders, activities, teamMembers,
       loading, error,
       addContact, updateContact, deleteContact,
       addCompany, updateCompany, deleteCompany,

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
+import { useAuth } from '../context/AuthContext'
 import { fullName, initials, formatDate, daysDiff } from '../utils/helpers'
 import Modal from '../components/Modal'
 import TagInput from '../components/TagInput'
@@ -10,13 +11,28 @@ import ActivityFeed from '../components/ActivityFeed'
 import ReminderList from '../components/ReminderList'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
+import CompanyCombobox from '../components/CompanyCombobox'
+import ImportModal from '../components/ImportModal'
 
-const BLANK = { firstName: '', lastName: '', title: '', companyId: '', email: '', phone: '', mobile: '', linkedIn: '', notes: '', tags: [] }
+const BLANK = { firstName: '', lastName: '', title: '', companyId: '', email: '', phone: '', mobile: '', linkedIn: '', notes: '', tags: [], ownerIds: [] }
 
 function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
-  const { companies } = useCRM()
-  const [form, setForm] = useState(initial)
+  const { addCompany, teamMembers } = useCRM()
+  const { user } = useAuth()
+
+  // Default ownerIds to [current user] when creating a new contact
+  const defaultOwnerIds = initial === BLANK ? (user ? [user.id] : []) : (initial.ownerIds || [])
+  const [form, setForm] = useState({ ...BLANK, ...initial, ownerIds: defaultOwnerIds })
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
+
+  function toggleOwner(id) {
+    setForm(p => ({
+      ...p,
+      ownerIds: p.ownerIds.includes(id)
+        ? p.ownerIds.filter(o => o !== id)
+        : [...p.ownerIds, id],
+    }))
+  }
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-4">
@@ -36,10 +52,14 @@ function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       <div>
         <label className="label">Company</label>
-        <select value={form.companyId} onChange={f('companyId')} className="input">
-          <option value="">— No company —</option>
-          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+        <CompanyCombobox
+          value={form.companyId}
+          onChange={(id) => setForm(p => ({ ...p, companyId: id }))}
+          onCreateAndSelect={async (name) => {
+            const c = await addCompany({ name, type: 'other' })
+            setForm(p => ({ ...p, companyId: c.id }))
+          }}
+        />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -61,6 +81,28 @@ function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
           <input value={form.linkedIn} onChange={f('linkedIn')} className="input" placeholder="linkedin.com/in/..." />
         </div>
       </div>
+
+      {/* Owner assignment */}
+      {teamMembers.length > 0 && (
+        <div>
+          <label className="label">Owners</label>
+          <div className="border border-gray-200 rounded-lg p-2 space-y-1 max-h-28 overflow-y-auto">
+            {teamMembers.map(m => (
+              <label key={m.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+                <input
+                  type="checkbox"
+                  checked={form.ownerIds.includes(m.id)}
+                  onChange={() => toggleOwner(m.id)}
+                  className="rounded"
+                />
+                <span className="text-gray-700">{m.displayName || m.email}</span>
+                {m.id === user?.id && <span className="text-xs text-gray-400">(you)</span>}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         <label className="label">Tags</label>
         <TagInput tags={form.tags || []} onChange={(tags) => setForm(p => ({ ...p, tags }))} />
@@ -81,7 +123,7 @@ function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
 function ContactDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getContact, getCompany, updateContact, deleteContact, properties, reminders } = useCRM()
+  const { getContact, getCompany, updateContact, deleteContact, properties, reminders, teamMembers } = useCRM()
   const [editing, setEditing] = useState(false)
 
   const contact = getContact(id)
@@ -89,7 +131,9 @@ function ContactDetail() {
 
   const company = getCompany(contact.companyId)
   const relatedProps = properties.filter(p => p.contactIds?.includes(id))
-  const pendingReminders = reminders.filter(r => r.contactId === id && r.status !== 'done').length
+  const owners = (contact.ownerIds || [])
+    .map(oid => teamMembers.find(m => m.id === oid))
+    .filter(Boolean)
 
   async function handleUpdate(form) {
     await updateContact(id, form)
@@ -153,6 +197,25 @@ function ContactDetail() {
               )}
             </div>
 
+            {/* Owners */}
+            {owners.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1.5">
+                  <UserCheck size={12} /> Owners
+                </p>
+                <div className="space-y-1">
+                  {owners.map(m => (
+                    <div key={m.id} className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-bold text-brand-700">{m.email[0].toUpperCase()}</span>
+                      </div>
+                      <span className="text-xs text-gray-600">{m.displayName || m.email}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {contact.tags?.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-100">
                 {contact.tags.map(t => (
@@ -215,9 +278,10 @@ export default function Contacts() {
   const { id } = useParams()
   if (id) return <ContactDetail />
 
-  const { contacts, companies, addContact, getCompany } = useCRM()
+  const { contacts, companies, addContact, getCompany, teamMembers } = useCRM()
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [filterCompany, setFilterCompany] = useState('')
 
   const filtered = contacts.filter(c => {
@@ -237,7 +301,12 @@ export default function Contacts() {
       <PageHeader
         title="Contacts"
         subtitle={`${contacts.length} contact${contacts.length !== 1 ? 's' : ''}`}
-        actions={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Contact</button>}
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => setShowImport(true)} className="btn-secondary"><Upload size={15} /> Import CSV</button>
+            <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Contact</button>
+          </div>
+        }
       />
 
       {/* Filters */}
@@ -253,7 +322,7 @@ export default function Contacts() {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={Users} title="No contacts found" description="Add your first contact to get started." action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Contact</button>} />
+        <EmptyState icon={Search} title="No contacts found" description="Add your first contact to get started." action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Contact</button>} />
       ) : (
         <div className="card overflow-hidden">
           <table className="w-full">
@@ -263,6 +332,7 @@ export default function Contacts() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Company</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Contact</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Last touch</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Owners</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Tags</th>
               </tr>
             </thead>
@@ -270,6 +340,9 @@ export default function Contacts() {
               {filtered.map(c => {
                 const company = getCompany(c.companyId)
                 const stale = !c.lastContacted || daysDiff(c.lastContacted) > 30
+                const owners = (c.ownerIds || [])
+                  .map(oid => teamMembers.find(m => m.id === oid))
+                  .filter(Boolean)
                 return (
                   <tr key={c.id} className="hover:bg-gray-50/70 transition-colors">
                     <td className="px-5 py-3.5">
@@ -301,6 +374,16 @@ export default function Contacts() {
                       </span>
                     </td>
                     <td className="px-4 py-3.5">
+                      <div className="flex gap-1">
+                        {owners.slice(0, 3).map(m => (
+                          <div key={m.id} title={m.displayName || m.email} className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center">
+                            <span className="text-xs font-bold text-brand-700">{m.email[0].toUpperCase()}</span>
+                          </div>
+                        ))}
+                        {owners.length === 0 && <span className="text-xs text-gray-300">—</span>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5">
                       <div className="flex flex-wrap gap-1">
                         {(c.tags || []).slice(0, 3).map(t => <span key={t} className="badge bg-gray-100 text-gray-600">{t}</span>)}
                         {(c.tags || []).length > 3 && <span className="badge bg-gray-100 text-gray-500">+{c.tags.length - 3}</span>}
@@ -318,6 +401,10 @@ export default function Contacts() {
         <Modal title="Add Contact" onClose={() => setShowAdd(false)} size="lg">
           <ContactForm onSubmit={handleAdd} onCancel={() => setShowAdd(false)} />
         </Modal>
+      )}
+
+      {showImport && (
+        <ImportModal entity="contacts" onClose={() => setShowImport(false)} />
       )}
     </div>
   )

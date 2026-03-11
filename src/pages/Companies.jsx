@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink } from 'lucide-react'
+import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { COMPANY_TYPES, COMPANY_TYPE_COLORS, companyInitials, formatDate, fullName } from '../utils/helpers'
@@ -10,6 +10,7 @@ import ActivityFeed from '../components/ActivityFeed'
 import ReminderList from '../components/ReminderList'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
+import ImportModal from '../components/ImportModal'
 
 const BLANK = { name: '', type: 'owner', address: '', phone: '', email: '', website: '', notes: '', tags: [] }
 
@@ -210,6 +211,7 @@ export default function Companies() {
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [showImport, setShowImport] = useState(false)
 
   const filtered = companies.filter(c => {
     const q = search.toLowerCase()
@@ -223,7 +225,12 @@ export default function Companies() {
       <PageHeader
         title="Companies"
         subtitle={`${companies.length} compan${companies.length !== 1 ? 'ies' : 'y'}`}
-        actions={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Company</button>}
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => setShowImport(true)} className="btn-secondary"><Upload size={15} /> Import CSV</button>
+            <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Company</button>
+          </div>
+        }
       />
 
       <div className="flex gap-3 mb-6">
@@ -298,6 +305,10 @@ export default function Companies() {
         <Modal title="Add Company" onClose={() => setShowAdd(false)} size="lg">
           <CompanyForm onSubmit={async (form) => { await addCompany(form); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
         </Modal>
+      )}
+
+      {showImport && (
+        <ImportModal entity="companies" onClose={() => setShowImport(false)} />
       )}
     </div>
   )

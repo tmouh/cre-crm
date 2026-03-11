@@ -61,11 +61,12 @@ function table(name) {
 
 // ─── db API (mirrors old storage.js interface, but async) ─────────────────────
 export const db = {
-  companies:  table('companies'),
-  contacts:   table('contacts'),
-  properties: table('properties'),
-  reminders:  table('reminders'),
-  activities: table('activities'),
+  companies:   table('companies'),
+  contacts:    table('contacts'),
+  properties:  table('properties'),
+  reminders:   table('reminders'),
+  activities:  table('activities'),
+  teamMembers: table('team_members'),
   config: {
     isSeeded: async () => {
       const { data, error } = await supabase

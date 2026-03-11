@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, MapPin, Building2, Users, Trash2, Edit2, ArrowLeft } from 'lucide-react'
+import { Plus, Search, MapPin, Building2, Users, Trash2, Edit2, ArrowLeft, Upload } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { PROPERTY_TYPES, PROPERTY_STATUSES, STATUS_COLORS, fullName, formatDate } from '../utils/helpers'
@@ -10,6 +10,7 @@ import ActivityFeed from '../components/ActivityFeed'
 import ReminderList from '../components/ReminderList'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
+import ImportModal from '../components/ImportModal'
 
 const BLANK = { name: '', address: '', type: 'office', subtype: '', size: '', sizeUnit: 'SF', status: 'available', askingRent: '', rentUnit: '/SF/yr', ownerCompanyId: '', tenantCompanyId: '', contactIds: [], floor: '', notes: '', tags: [] }
 
@@ -269,6 +270,7 @@ export default function Properties() {
   const [filterType, setFilterType] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [showImport, setShowImport] = useState(false)
 
   const filtered = properties.filter(p => {
     const q = search.toLowerCase()
@@ -283,7 +285,12 @@ export default function Properties() {
       <PageHeader
         title="Properties"
         subtitle={`${properties.length} propert${properties.length !== 1 ? 'ies' : 'y'}`}
-        actions={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Property</button>}
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => setShowImport(true)} className="btn-secondary"><Upload size={15} /> Import CSV</button>
+            <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Property</button>
+          </div>
+        }
       />
 
       <div className="flex gap-3 mb-6">
@@ -339,6 +346,10 @@ export default function Properties() {
         <Modal title="Add Property" onClose={() => setShowAdd(false)} size="lg">
           <PropertyForm onSubmit={async (form) => { await addProperty(form); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
         </Modal>
+      )}
+
+      {showImport && (
+        <ImportModal entity="properties" onClose={() => setShowImport(false)} />
       )}
     </div>
   )
