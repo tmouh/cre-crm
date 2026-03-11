@@ -1,6 +1,6 @@
 # CRE Desk — Follow-up CRM
 
-A lightweight CRM built for commercial real estate outreach. Tracks contacts, companies, and properties with follow-up reminders tied to deals — not generic sales pipeline stages.
+A lightweight CRM built for commercial real estate outreach. Tracks contacts, companies, and properties with follow-up reminders tied to deals.
 
 ## Features
 
@@ -27,6 +27,6 @@ npm install
 npm run dev
 ```
 
-Then open [http://localhost:5173](http://localhost:5173).
+Vite will display the local URL in the terminal after running npm run dev. 
 
 The app loads with sample CRE data so you can see it working immediately. Clear it via browser DevTools → Application → Local Storage when ready to use for real.
