@@ -1,0 +1,421 @@
+import { useState, useEffect } from 'react'
+import { X, Loader2, CheckCircle2, AlertCircle, ChevronRight, Mail, Users, RefreshCw } from 'lucide-react'
+import clsx from 'clsx'
+import { useCRM } from '../context/CRMContext'
+import { signInMicrosoft, getMicrosoftAccount, getOutlookContacts, getEmailsForContact } from '../lib/graphClient'
+
+const STEP = {
+  CONNECT:   'connect',
+  FETCHING:  'fetching',
+  PREVIEW:   'preview',
+  IMPORTING: 'importing',
+  DONE:      'done',
+}
+
+export default function OutlookImport({ onClose }) {
+  const { contacts, companies, addContact, addCompany, addActivity } = useCRM()
+
+  const [step, setStep]           = useState(STEP.CONNECT)
+  const [msAccount, setMsAccount] = useState(null)
+  const [outlookContacts, setOutlookContacts] = useState([])
+  const [selected, setSelected]   = useState(new Set())
+  const [importEmails, setImportEmails] = useState(true)
+  const [progress, setProgress]   = useState({ current: 0, total: 0, label: '' })
+  const [result, setResult]       = useState(null)
+  const [error, setError]         = useState('')
+
+  // Check if already signed in to Microsoft on mount
+  useEffect(() => {
+    getMicrosoftAccount()
+      .then(acc => { if (acc) setMsAccount(acc) })
+      .catch(() => {})
+  }, [])
+
+  // Pre-build lookup maps from existing data
+  const existingByEmail = Object.fromEntries(
+    contacts.filter(c => c.email).map(c => [c.email.toLowerCase(), c.id])
+  )
+  const existingCompanyByName = Object.fromEntries(
+    companies.map(c => [c.name.toLowerCase(), c.id])
+  )
+
+  async function handleConnect() {
+    setError('')
+    try {
+      const acc = await signInMicrosoft()
+      setMsAccount(acc)
+      await doFetch()
+    } catch (e) {
+      setError(e.message || 'Microsoft sign-in failed. Make sure pop-ups are allowed in your browser.')
+    }
+  }
+
+  async function doFetch() {
+    setStep(STEP.FETCHING)
+    setError('')
+    try {
+      const raw = await getOutlookContacts()
+      // Only include contacts that have at least a name
+      const valid = raw.filter(c => c.displayName || c.givenName || c.surname)
+      setOutlookContacts(valid)
+      // Pre-select only contacts not already in the DB (matched by email)
+      const newIds = new Set(
+        valid
+          .filter(c => {
+            const email = c.emailAddresses?.[0]?.address?.toLowerCase()
+            return !email || !existingByEmail[email]
+          })
+          .map(c => c.id)
+      )
+      setSelected(newIds)
+      setStep(STEP.PREVIEW)
+    } catch (e) {
+      setError(e.message || 'Failed to fetch Outlook contacts.')
+      setStep(STEP.CONNECT)
+    }
+  }
+
+  function toggleAll() {
+    if (selected.size === outlookContacts.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(outlookContacts.map(c => c.id)))
+    }
+  }
+
+  function toggle(id) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  async function handleImport() {
+    setStep(STEP.IMPORTING)
+    setError('')
+
+    const toImport = outlookContacts.filter(c => selected.has(c.id))
+    let contactsCreated = 0
+    let companiesCreated = 0
+    let activitiesCreated = 0
+
+    // Local company name map that grows as we create new companies
+    const companyMap = { ...existingCompanyByName }
+
+    setProgress({ current: 0, total: toImport.length, label: 'Starting import...' })
+
+    for (let i = 0; i < toImport.length; i++) {
+      const oc = toImport[i]
+      const email = oc.emailAddresses?.[0]?.address || ''
+      const displayName = oc.displayName || `${oc.givenName || ''} ${oc.surname || ''}`.trim()
+
+      setProgress({ current: i + 1, total: toImport.length, label: `Importing ${displayName}...` })
+
+      // Resolve or create company
+      let companyId = ''
+      if (oc.companyName?.trim()) {
+        const key = oc.companyName.trim().toLowerCase()
+        if (companyMap[key]) {
+          companyId = companyMap[key]
+        } else {
+          try {
+            const newCo = await addCompany({ name: oc.companyName.trim(), type: 'other' })
+            companyMap[key] = newCo.id
+            companyId = newCo.id
+            companiesCreated++
+          } catch { /* skip on error */ }
+        }
+      }
+
+      // Skip if already exists in Vanadium CRM by email
+      if (email && existingByEmail[email.toLowerCase()]) continue
+
+      // Create the contact
+      let newContact = null
+      try {
+        newContact = await addContact({
+          firstName: oc.givenName  || displayName.split(' ')[0] || '',
+          lastName:  oc.surname    || displayName.split(' ').slice(1).join(' ') || '',
+          title:     oc.jobTitle   || '',
+          companyId,
+          email,
+          phone:  oc.businessPhones?.[0] || '',
+          mobile: oc.mobilePhone || '',
+          notes:  oc.personalNotes || '',
+          tags:     [],
+          ownerIds: [],
+        })
+        contactsCreated++
+      } catch {
+        continue // Skip this contact on failure and keep going
+      }
+
+      // Optionally import email history as activity records
+      if (importEmails && email && newContact) {
+        setProgress({
+          current: i + 1,
+          total: toImport.length,
+          label: `Fetching emails for ${displayName}...`,
+        })
+        const emails = await getEmailsForContact(email, 90)
+        for (const msg of emails) {
+          try {
+            const date = msg.receivedDateTime
+              ? new Date(msg.receivedDateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : ''
+            const desc = [
+              date && `[${date}]`,
+              msg.subject || '(no subject)',
+              msg.bodyPreview ? `— ${msg.bodyPreview}` : '',
+            ].filter(Boolean).join(' ').slice(0, 500)
+
+            await addActivity({
+              type:      'email',
+              description: desc,
+              contactId: newContact.id,
+              companyId: companyId || undefined,
+            })
+            activitiesCreated++
+          } catch { /* skip individual email on error */ }
+        }
+      }
+    }
+
+    setResult({ contactsCreated, companiesCreated, activitiesCreated })
+    setStep(STEP.DONE)
+  }
+
+  const pct = progress.total ? Math.round((progress.current / progress.total) * 100) : 0
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            {/* Microsoft-style icon */}
+            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+              <svg viewBox="0 0 21 21" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
+                <rect x="1"  y="1"  width="9" height="9" fill="#f25022"/>
+                <rect x="11" y="1"  width="9" height="9" fill="#7fba00"/>
+                <rect x="1"  y="11" width="9" height="9" fill="#00a4ef"/>
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+              </svg>
+            </div>
+            <h2 className="text-base font-semibold text-gray-900">Import from Outlook</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* ── Body ── */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+
+          {/* CONNECT */}
+          {step === STEP.CONNECT && (
+            <div className="flex flex-col items-center text-center py-8 gap-5">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
+                <Users size={30} className="text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800 mb-1">Connect your Microsoft account</p>
+                <p className="text-sm text-gray-500 max-w-sm">
+                  Sign in with your Vanadium Microsoft 365 account to pull Outlook contacts and optionally import email history as activity records.
+                </p>
+              </div>
+
+              {msAccount && (
+                <p className="text-xs text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full">
+                  Signed in as <strong>{msAccount.username}</strong>
+                </p>
+              )}
+
+              {error && (
+                <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 w-full text-left">
+                  <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                {msAccount && (
+                  <button onClick={doFetch} className="btn-secondary flex items-center gap-2">
+                    <RefreshCw size={14} /> Fetch Contacts
+                  </button>
+                )}
+                <button onClick={handleConnect} className="btn-primary flex items-center gap-2">
+                  <Mail size={14} />
+                  {msAccount ? 'Re-authenticate' : 'Sign in with Microsoft'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* FETCHING */}
+          {step === STEP.FETCHING && (
+            <div className="flex flex-col items-center py-14 gap-3 text-gray-500">
+              <Loader2 size={32} className="animate-spin text-blue-400" />
+              <p className="text-sm">Fetching your Outlook contacts…</p>
+            </div>
+          )}
+
+          {/* PREVIEW */}
+          {step === STEP.PREVIEW && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  Found <strong>{outlookContacts.length}</strong> contact{outlookContacts.length !== 1 ? 's' : ''} —{' '}
+                  <strong className="text-green-600">{selected.size} new</strong> selected
+                </p>
+                <button onClick={toggleAll} className="text-xs text-brand-600 hover:underline">
+                  {selected.size === outlookContacts.length ? 'Deselect all' : 'Select all'}
+                </button>
+              </div>
+
+              {/* Email history toggle */}
+              <label className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={importEmails}
+                  onChange={e => setImportEmails(e.target.checked)}
+                  className="rounded"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-800">Import email history (last 90 days)</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Adds recent emails as activity records on each imported contact
+                  </p>
+                </div>
+                <Mail size={16} className="text-blue-400 flex-shrink-0" />
+              </label>
+
+              {/* Contact table */}
+              <div className="border border-gray-100 rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                      <th className="px-3 py-2.5 text-left w-8">
+                        <input
+                          type="checkbox"
+                          checked={selected.size > 0 && selected.size === outlookContacts.length}
+                          onChange={toggleAll}
+                          className="rounded"
+                        />
+                      </th>
+                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Name</th>
+                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Email</th>
+                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Company</th>
+                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {outlookContacts.map(c => {
+                      const email = c.emailAddresses?.[0]?.address || ''
+                      const exists = email && existingByEmail[email.toLowerCase()]
+                      const name = c.displayName || `${c.givenName || ''} ${c.surname || ''}`.trim()
+                      return (
+                        <tr
+                          key={c.id}
+                          className={clsx('hover:bg-gray-50 transition-colors', !selected.has(c.id) && 'opacity-40')}
+                        >
+                          <td className="px-3 py-2.5">
+                            <input
+                              type="checkbox"
+                              checked={selected.has(c.id)}
+                              onChange={() => toggle(c.id)}
+                              className="rounded"
+                            />
+                          </td>
+                          <td className="px-3 py-2.5 font-medium text-gray-800 max-w-[140px] truncate">{name || '—'}</td>
+                          <td className="px-3 py-2.5 text-gray-500 max-w-[170px] truncate">{email || '—'}</td>
+                          <td className="px-3 py-2.5 text-gray-500 max-w-[120px] truncate">{c.companyName || '—'}</td>
+                          <td className="px-3 py-2.5">
+                            {exists
+                              ? <span className="badge bg-gray-100 text-gray-500">Exists</span>
+                              : <span className="badge bg-green-50 text-green-600">New</span>
+                            }
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* IMPORTING */}
+          {step === STEP.IMPORTING && (
+            <div className="flex flex-col items-center py-10 gap-5">
+              <Loader2 size={32} className="animate-spin text-blue-400" />
+              <div className="w-full max-w-sm space-y-2">
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span className="truncate pr-2">{progress.label}</span>
+                  <span className="flex-shrink-0">{pct}%</span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-400 rounded-full transition-all duration-300"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-400 text-center">
+                  {progress.current} / {progress.total} contacts
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* DONE */}
+          {step === STEP.DONE && result && (
+            <div className="flex flex-col items-center py-8 gap-5 text-center">
+              <CheckCircle2 size={44} className="text-green-500" />
+              <div>
+                <p className="text-base font-semibold text-gray-900 mb-4">Import complete</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-green-50 rounded-xl p-4">
+                    <p className="text-3xl font-bold text-green-600">{result.contactsCreated}</p>
+                    <p className="text-xs text-gray-500 mt-1">Contacts added</p>
+                  </div>
+                  <div className="bg-blue-50 rounded-xl p-4">
+                    <p className="text-3xl font-bold text-blue-600">{result.companiesCreated}</p>
+                    <p className="text-xs text-gray-500 mt-1">Companies added</p>
+                  </div>
+                  <div className="bg-purple-50 rounded-xl p-4">
+                    <p className="text-3xl font-bold text-purple-600">{result.activitiesCreated}</p>
+                    <p className="text-xs text-gray-500 mt-1">Emails logged</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Footer ── */}
+        {(step === STEP.PREVIEW || step === STEP.DONE) && (
+          <div className="px-6 py-4 border-t border-gray-100 flex gap-2 flex-shrink-0">
+            {step === STEP.PREVIEW && (
+              <>
+                <button
+                  onClick={handleImport}
+                  disabled={selected.size === 0}
+                  className="btn-primary flex-1 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  Import {selected.size} contact{selected.size !== 1 ? 's' : ''}
+                  <ChevronRight size={15} />
+                </button>
+                <button onClick={onClose} className="btn-secondary">Cancel</button>
+              </>
+            )}
+            {step === STEP.DONE && (
+              <button onClick={onClose} className="btn-primary flex-1">Done</button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

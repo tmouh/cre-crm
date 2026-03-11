@@ -13,6 +13,7 @@ import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import CompanyCombobox from '../components/CompanyCombobox'
 import ImportModal from '../components/ImportModal'
+import OutlookImport from '../components/OutlookImport'
 
 const BLANK = { firstName: '', lastName: '', title: '', companyId: '', email: '', phone: '', mobile: '', linkedIn: '', notes: '', tags: [], ownerIds: [] }
 
@@ -282,6 +283,7 @@ export default function Contacts() {
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [showOutlookImport, setShowOutlookImport] = useState(false)
   const [filterCompany, setFilterCompany] = useState('')
 
   const filtered = contacts.filter(c => {
@@ -304,6 +306,15 @@ export default function Contacts() {
         actions={
           <div className="flex gap-2">
             <button onClick={() => setShowImport(true)} className="btn-secondary"><Upload size={15} /> Import CSV</button>
+            <button onClick={() => setShowOutlookImport(true)} className="btn-secondary flex items-center gap-1.5">
+              <svg viewBox="0 0 21 21" className="w-3.5 h-3.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+                <rect x="1"  y="1"  width="9" height="9" fill="#f25022"/>
+                <rect x="11" y="1"  width="9" height="9" fill="#7fba00"/>
+                <rect x="1"  y="11" width="9" height="9" fill="#00a4ef"/>
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+              </svg>
+              Import from Outlook
+            </button>
             <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Contact</button>
           </div>
         }
@@ -405,6 +416,10 @@ export default function Contacts() {
 
       {showImport && (
         <ImportModal entity="contacts" onClose={() => setShowImport(false)} />
+      )}
+
+      {showOutlookImport && (
+        <OutlookImport onClose={() => setShowOutlookImport(false)} />
       )}
     </div>
   )
