@@ -23,11 +23,9 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-gray-100">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-            <Building2 size={16} className="text-white" />
-          </div>
+          <img src="/967007_Vanadium_logo.jpg" alt="Vanadium" className="w-8 h-8 rounded-lg object-contain" />
           <div>
-            <p className="text-sm font-bold text-gray-900 leading-tight">CRE Desk</p>
+            <p className="text-sm font-bold text-gray-900 leading-tight">Vanadium CRM</p>
             <p className="text-xs text-gray-400">Follow-up CRM</p>
           </div>
         </div>

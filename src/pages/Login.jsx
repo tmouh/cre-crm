@@ -32,10 +32,8 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center mb-4 shadow-lg">
-            <Building2 size={22} className="text-white" />
-          </div>
-          <h1 className="text-xl font-bold text-gray-900">CRE Desk</h1>
+          <img src="/967007_Vanadium_logo.jpg" alt="Vanadium" className="w-16 h-16 rounded-2xl object-contain mb-4 shadow-lg" />
+          <h1 className="text-xl font-bold text-gray-900">Vanadium CRM</h1>
           <p className="text-sm text-gray-500 mt-1">Sign in to your workspace</p>
         </div>
 
