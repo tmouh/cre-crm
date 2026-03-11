@@ -140,9 +140,9 @@ function PropertyDetail() {
   const tenant  = getCompany(property.tenantCompanyId)
   const keyContacts = (property.contactIds || []).map(getContact).filter(Boolean)
 
-  function handleUpdate(form) { updateProperty(id, form); setEditing(false) }
-  function handleDelete() {
-    if (confirm(`Delete ${property.name}?`)) { deleteProperty(id); navigate('/properties') }
+  async function handleUpdate(form) { await updateProperty(id, form); setEditing(false) }
+  async function handleDelete() {
+    if (confirm(`Delete ${property.name}?`)) { await deleteProperty(id); navigate('/properties') }
   }
 
   return (
@@ -337,7 +337,7 @@ export default function Properties() {
 
       {showAdd && (
         <Modal title="Add Property" onClose={() => setShowAdd(false)} size="lg">
-          <PropertyForm onSubmit={(form) => { addProperty(form); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
+          <PropertyForm onSubmit={async (form) => { await addProperty(form); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
         </Modal>
       )}
     </div>

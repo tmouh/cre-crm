@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Building2, MapPin, Bell, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, Users, Building2, MapPin, Bell, LogOut } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
+import { useAuth } from '../context/AuthContext'
 import { isOverdue, isDueToday } from '../utils/helpers'
 
 const NAV = [
@@ -14,6 +15,7 @@ const NAV = [
 
 export default function Sidebar() {
   const { reminders } = useCRM()
+  const { user, signOut } = useAuth()
   const urgent = reminders.filter(r => r.status !== 'done' && (isOverdue(r.dueDate) || isDueToday(r.dueDate))).length
 
   return (
@@ -60,8 +62,17 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="px-5 py-4 border-t border-gray-100">
-        <p className="text-xs text-gray-400">v1.0 · Local storage</p>
+      {/* User + sign out */}
+      <div className="px-4 py-4 border-t border-gray-100 space-y-2">
+        {user?.email && (
+          <p className="text-xs text-gray-400 truncate px-1" title={user.email}>{user.email}</p>
+        )}
+        <button
+          onClick={signOut}
+          className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-gray-500 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+        >
+          <LogOut size={13} /> Sign out
+        </button>
       </div>
     </aside>
   )

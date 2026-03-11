@@ -45,10 +45,10 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
     return false
   }).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault()
     if (!form.title.trim() || !form.dueDate) return
-    addReminder({ ...form, contactId, companyId, propertyId })
+    await addReminder({ ...form, contactId, companyId, propertyId })
     setForm({ title: '', type: 'call', dueDate: '', priority: 'medium', notes: '' })
     setShowForm(false)
   }

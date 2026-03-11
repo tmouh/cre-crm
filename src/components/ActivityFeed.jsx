@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { Phone, Mail, Users, FileText, Building2, Map, MessageSquare, Plus, Trash2 } from 'lucide-react'
-import { formatDateTime } from '../utils/helpers'
-import { ACTIVITY_TYPES, TYPE_COLORS } from '../utils/helpers'
+import { formatDateTime, ACTIVITY_TYPES, TYPE_COLORS } from '../utils/helpers'
 import { useCRM } from '../context/CRMContext'
-import { uid } from '../utils/helpers'
 
 const TYPE_ICONS = {
   call:     Phone,
@@ -46,10 +44,10 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
   const id    = contactId || companyId || propertyId
   const items = activitiesFor(field, id)
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault()
     if (!text.trim()) return
-    addActivity({ type, description: text.trim(), contactId, companyId, propertyId })
+    await addActivity({ type, description: text.trim(), contactId, companyId, propertyId })
     setText('')
     setShowForm(false)
   }

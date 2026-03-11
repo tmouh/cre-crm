@@ -77,9 +77,9 @@ function CompanyDetail() {
   const ownedProperties  = properties.filter(p => p.ownerCompanyId === id)
   const tenantProperties = properties.filter(p => p.tenantCompanyId === id)
 
-  function handleUpdate(form) { updateCompany(id, form); setEditing(false) }
-  function handleDelete() {
-    if (confirm(`Delete ${company.name}?`)) { deleteCompany(id); navigate('/companies') }
+  async function handleUpdate(form) { await updateCompany(id, form); setEditing(false) }
+  async function handleDelete() {
+    if (confirm(`Delete ${company.name}?`)) { await deleteCompany(id); navigate('/companies') }
   }
 
   return (
@@ -296,7 +296,7 @@ export default function Companies() {
 
       {showAdd && (
         <Modal title="Add Company" onClose={() => setShowAdd(false)} size="lg">
-          <CompanyForm onSubmit={(form) => { addCompany(form); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
+          <CompanyForm onSubmit={async (form) => { await addCompany(form); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
         </Modal>
       )}
     </div>

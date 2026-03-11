@@ -1,143 +1,144 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { storage } from '../utils/storage'
-import { uid } from '../utils/helpers'
-import {
-  SEED_COMPANIES, SEED_CONTACTS, SEED_PROPERTIES, SEED_REMINDERS, SEED_ACTIVITIES
-} from '../utils/seed'
+import { db, seedDatabase } from '../lib/supabase'
 
 const CRMContext = createContext(null)
 
 export function CRMProvider({ children }) {
-  const [contacts,   setContactsState]   = useState([])
-  const [companies,  setCompaniesState]  = useState([])
-  const [properties, setPropertiesState] = useState([])
-  const [reminders,  setRemindersState]  = useState([])
-  const [activities, setActivitiesState] = useState([])
+  const [contacts,   setContacts]   = useState([])
+  const [companies,  setCompanies]  = useState([])
+  const [properties, setProperties] = useState([])
+  const [reminders,  setReminders]  = useState([])
+  const [activities, setActivities] = useState([])
+  const [loading,    setLoading]    = useState(true)
+  const [error,      setError]      = useState(null)
 
-  // load from storage on mount, seed if first run
+  // ─── Initial load + seed ───────────────────────────────────────────────────
   useEffect(() => {
-    if (!storage.isSeeded()) {
-      storage.setCompanies(SEED_COMPANIES)
-      storage.setContacts(SEED_CONTACTS)
-      storage.setProperties(SEED_PROPERTIES)
-      storage.setReminders(SEED_REMINDERS)
-      storage.setActivities(SEED_ACTIVITIES)
-      storage.markSeeded()
+    async function init() {
+      setLoading(true)
+      setError(null)
+      try {
+        const seeded = await db.config.isSeeded()
+        if (!seeded) {
+          await seedDatabase()
+          await db.config.markSeeded()
+        }
+        const [co, ct, pr, re, ac] = await Promise.all([
+          db.companies.getAll(),
+          db.contacts.getAll(),
+          db.properties.getAll(),
+          db.reminders.getAll(),
+          db.activities.getAll(),
+        ])
+        setCompanies(co)
+        setContacts(ct)
+        setProperties(pr)
+        setReminders(re)
+        setActivities(ac)
+      } catch (err) {
+        setError(err.message || 'Failed to load data.')
+      } finally {
+        setLoading(false)
+      }
     }
-    setContactsState(storage.getContacts())
-    setCompaniesState(storage.getCompanies())
-    setPropertiesState(storage.getProperties())
-    setRemindersState(storage.getReminders())
-    setActivitiesState(storage.getActivities())
+    init()
   }, [])
 
-  // ---- helpers ----
-  function persist(setter, storeFn, data) {
-    setter(data)
-    storeFn(data)
-  }
-
-  // ---- CONTACTS ----
-  const addContact = useCallback((contact) => {
-    const rec = { ...contact, id: uid(), createdAt: new Date().toISOString(), lastContacted: null }
-    const next = [...storage.getContacts(), rec]
-    persist(setContactsState, storage.setContacts, next)
+  // ─── CONTACTS ─────────────────────────────────────────────────────────────
+  const addContact = useCallback(async (contact) => {
+    const rec = await db.contacts.insert(contact)
+    setContacts(prev => [...prev, rec])
     return rec
   }, [])
 
-  const updateContact = useCallback((id, patch) => {
-    const next = storage.getContacts().map(c => c.id === id ? { ...c, ...patch } : c)
-    persist(setContactsState, storage.setContacts, next)
+  const updateContact = useCallback(async (id, patch) => {
+    const rec = await db.contacts.update(id, patch)
+    setContacts(prev => prev.map(c => c.id === id ? rec : c))
   }, [])
 
-  const deleteContact = useCallback((id) => {
-    const next = storage.getContacts().filter(c => c.id !== id)
-    persist(setContactsState, storage.setContacts, next)
+  const deleteContact = useCallback(async (id) => {
+    await db.contacts.delete(id)
+    setContacts(prev => prev.filter(c => c.id !== id))
   }, [])
 
-  // ---- COMPANIES ----
-  const addCompany = useCallback((company) => {
-    const rec = { ...company, id: uid(), createdAt: new Date().toISOString() }
-    const next = [...storage.getCompanies(), rec]
-    persist(setCompaniesState, storage.setCompanies, next)
+  // ─── COMPANIES ────────────────────────────────────────────────────────────
+  const addCompany = useCallback(async (company) => {
+    const rec = await db.companies.insert(company)
+    setCompanies(prev => [...prev, rec])
     return rec
   }, [])
 
-  const updateCompany = useCallback((id, patch) => {
-    const next = storage.getCompanies().map(c => c.id === id ? { ...c, ...patch } : c)
-    persist(setCompaniesState, storage.setCompanies, next)
+  const updateCompany = useCallback(async (id, patch) => {
+    const rec = await db.companies.update(id, patch)
+    setCompanies(prev => prev.map(c => c.id === id ? rec : c))
   }, [])
 
-  const deleteCompany = useCallback((id) => {
-    const next = storage.getCompanies().filter(c => c.id !== id)
-    persist(setCompaniesState, storage.setCompanies, next)
+  const deleteCompany = useCallback(async (id) => {
+    await db.companies.delete(id)
+    setCompanies(prev => prev.filter(c => c.id !== id))
   }, [])
 
-  // ---- PROPERTIES ----
-  const addProperty = useCallback((property) => {
-    const rec = { ...property, id: uid(), createdAt: new Date().toISOString() }
-    const next = [...storage.getProperties(), rec]
-    persist(setPropertiesState, storage.setProperties, next)
+  // ─── PROPERTIES ───────────────────────────────────────────────────────────
+  const addProperty = useCallback(async (property) => {
+    const rec = await db.properties.insert(property)
+    setProperties(prev => [...prev, rec])
     return rec
   }, [])
 
-  const updateProperty = useCallback((id, patch) => {
-    const next = storage.getProperties().map(p => p.id === id ? { ...p, ...patch } : p)
-    persist(setPropertiesState, storage.setProperties, next)
+  const updateProperty = useCallback(async (id, patch) => {
+    const rec = await db.properties.update(id, patch)
+    setProperties(prev => prev.map(p => p.id === id ? rec : p))
   }, [])
 
-  const deleteProperty = useCallback((id) => {
-    const next = storage.getProperties().filter(p => p.id !== id)
-    persist(setPropertiesState, storage.setProperties, next)
+  const deleteProperty = useCallback(async (id) => {
+    await db.properties.delete(id)
+    setProperties(prev => prev.filter(p => p.id !== id))
   }, [])
 
-  // ---- REMINDERS ----
-  const addReminder = useCallback((reminder) => {
-    const rec = { ...reminder, id: uid(), createdAt: new Date().toISOString(), status: reminder.status || 'pending' }
-    const next = [...storage.getReminders(), rec]
-    persist(setRemindersState, storage.setReminders, next)
+  // ─── REMINDERS ────────────────────────────────────────────────────────────
+  const addReminder = useCallback(async (reminder) => {
+    const rec = await db.reminders.insert({ ...reminder, status: reminder.status || 'pending' })
+    setReminders(prev => [...prev, rec])
     return rec
   }, [])
 
-  const updateReminder = useCallback((id, patch) => {
-    const next = storage.getReminders().map(r => r.id === id ? { ...r, ...patch } : r)
-    persist(setRemindersState, storage.setReminders, next)
+  const updateReminder = useCallback(async (id, patch) => {
+    const rec = await db.reminders.update(id, patch)
+    setReminders(prev => prev.map(r => r.id === id ? rec : r))
   }, [])
 
-  const completeReminder = useCallback((id) => {
-    const next = storage.getReminders().map(r => r.id === id ? { ...r, status: 'done', completedAt: new Date().toISOString() } : r)
-    persist(setRemindersState, storage.setReminders, next)
+  const completeReminder = useCallback(async (id) => {
+    const rec = await db.reminders.update(id, { status: 'done', completedAt: new Date().toISOString() })
+    setReminders(prev => prev.map(r => r.id === id ? rec : r))
   }, [])
 
-  const deleteReminder = useCallback((id) => {
-    const next = storage.getReminders().filter(r => r.id !== id)
-    persist(setRemindersState, storage.setReminders, next)
+  const deleteReminder = useCallback(async (id) => {
+    await db.reminders.delete(id)
+    setReminders(prev => prev.filter(r => r.id !== id))
   }, [])
 
-  // ---- ACTIVITIES ----
-  const addActivity = useCallback((activity) => {
-    const rec = { ...activity, id: uid(), createdAt: new Date().toISOString() }
-    const next = [...storage.getActivities(), rec]
-    persist(setActivitiesState, storage.setActivities, next)
-    // update lastContacted on contact
+  // ─── ACTIVITIES ───────────────────────────────────────────────────────────
+  const addActivity = useCallback(async (activity) => {
+    const rec = await db.activities.insert(activity)
+    setActivities(prev => [...prev, rec])
     if (activity.contactId) {
-      const updatedContacts = storage.getContacts().map(c =>
+      await db.contacts.update(activity.contactId, { lastContacted: rec.createdAt })
+      setContacts(prev => prev.map(c =>
         c.id === activity.contactId ? { ...c, lastContacted: rec.createdAt } : c
-      )
-      persist(setContactsState, storage.setContacts, updatedContacts)
+      ))
     }
     return rec
   }, [])
 
-  const deleteActivity = useCallback((id) => {
-    const next = storage.getActivities().filter(a => a.id !== id)
-    persist(setActivitiesState, storage.setActivities, next)
+  const deleteActivity = useCallback(async (id) => {
+    await db.activities.delete(id)
+    setActivities(prev => prev.filter(a => a.id !== id))
   }, [])
 
-  // ---- lookups ----
-  const getContact    = useCallback((id) => contacts.find(c => c.id === id),    [contacts])
-  const getCompany    = useCallback((id) => companies.find(c => c.id === id),   [companies])
-  const getProperty   = useCallback((id) => properties.find(p => p.id === id),  [properties])
+  // ─── Lookups (synchronous — read from in-memory state) ────────────────────
+  const getContact  = useCallback((id) => contacts.find(c => c.id === id),   [contacts])
+  const getCompany  = useCallback((id) => companies.find(c => c.id === id),  [companies])
+  const getProperty = useCallback((id) => properties.find(p => p.id === id), [properties])
 
   const activitiesFor = useCallback((field, id) =>
     activities.filter(a => a[field] === id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
@@ -150,6 +151,7 @@ export function CRMProvider({ children }) {
   return (
     <CRMContext.Provider value={{
       contacts, companies, properties, reminders, activities,
+      loading, error,
       addContact, updateContact, deleteContact,
       addCompany, updateCompany, deleteCompany,
       addProperty, updateProperty, deleteProperty,

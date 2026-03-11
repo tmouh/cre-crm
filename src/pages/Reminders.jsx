@@ -134,7 +134,7 @@ export default function Reminders() {
 
   const pending = reminders.filter(r => r.status !== 'done')
 
-  function handleAdd(form) { addReminder(form); setShowAdd(false) }
+  async function handleAdd(form) { await addReminder(form); setShowAdd(false) }
 
   function Section({ title, items, className }) {
     if (items.length === 0) return null

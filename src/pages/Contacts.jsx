@@ -91,14 +91,14 @@ function ContactDetail() {
   const relatedProps = properties.filter(p => p.contactIds?.includes(id))
   const pendingReminders = reminders.filter(r => r.contactId === id && r.status !== 'done').length
 
-  function handleUpdate(form) {
-    updateContact(id, form)
+  async function handleUpdate(form) {
+    await updateContact(id, form)
     setEditing(false)
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (confirm(`Delete ${fullName(contact)}? This cannot be undone.`)) {
-      deleteContact(id)
+      await deleteContact(id)
       navigate('/contacts')
     }
   }
@@ -227,8 +227,8 @@ export default function Contacts() {
     return matches && comp
   }).sort((a, b) => fullName(a).localeCompare(fullName(b)))
 
-  function handleAdd(form) {
-    addContact(form)
+  async function handleAdd(form) {
+    await addContact(form)
     setShowAdd(false)
   }
 
