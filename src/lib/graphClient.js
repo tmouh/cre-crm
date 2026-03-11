@@ -9,7 +9,7 @@ async function ensureInit() {
   }
 }
 
-// Get a valid access token — tries silent first, falls back to popup
+// Get a valid access token — tries silent first, asks user to re-auth if expired
 async function getToken() {
   await ensureInit()
   const accounts = msalInstance.getAllAccounts()
@@ -18,11 +18,10 @@ async function getToken() {
       const resp = await msalInstance.acquireTokenSilent({ ...graphScopes, account: accounts[0] })
       return resp.accessToken
     } catch {
-      // Silent failed (expired/no cache) — fall through to popup
+      // Silent failed — need to re-authenticate
     }
   }
-  const resp = await msalInstance.acquireTokenPopup(graphScopes)
-  return resp.accessToken
+  throw new Error('Microsoft session expired. Please sign in again.')
 }
 
 async function graphGet(path) {
@@ -41,8 +40,10 @@ async function graphGet(path) {
 
 export async function signInMicrosoft() {
   await ensureInit()
-  const resp = await msalInstance.loginPopup(graphScopes)
-  return resp.account
+  // Redirect the entire page to Microsoft — no popups needed.
+  // After auth, Microsoft redirects back and handleRedirectPromise() in
+  // main.jsx processes the token. The user then re-opens the import modal.
+  await msalInstance.loginRedirect(graphScopes)
 }
 
 export async function getMicrosoftAccount() {

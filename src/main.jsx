@@ -5,13 +5,6 @@ import './index.css'
 import { msalInstance } from './lib/msalConfig'
 
 async function bootstrap() {
-  // If we're inside an MSAL popup, do nothing — the parent window's
-  // loginPopup() will read the auth code from our URL hash directly.
-  // Running MSAL here would clear the hash before the parent can read it.
-  if (window.opener && window.opener !== window) {
-    return
-  }
-
   await msalInstance.initialize()
   await msalInstance.handleRedirectPromise()
 

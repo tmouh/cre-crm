@@ -24,12 +24,17 @@ export default function OutlookImport({ onClose }) {
   const [result, setResult]       = useState(null)
   const [error, setError]         = useState('')
 
-  // Check if already signed in to Microsoft on mount
+  // If already signed in (e.g. just returned from Microsoft redirect), auto-fetch
   useEffect(() => {
     getMicrosoftAccount()
-      .then(acc => { if (acc) setMsAccount(acc) })
+      .then(acc => {
+        if (acc) {
+          setMsAccount(acc)
+          doFetch()
+        }
+      })
       .catch(() => {})
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pre-build lookup maps from existing data
   const existingByEmail = Object.fromEntries(
@@ -42,11 +47,17 @@ export default function OutlookImport({ onClose }) {
   async function handleConnect() {
     setError('')
     try {
-      const acc = await signInMicrosoft()
-      setMsAccount(acc)
-      await doFetch()
+      // If already signed in, just fetch contacts directly
+      const acc = await getMicrosoftAccount()
+      if (acc) {
+        setMsAccount(acc)
+        await doFetch()
+        return
+      }
+      // Not signed in — redirect to Microsoft (page navigates away)
+      await signInMicrosoft()
     } catch (e) {
-      setError(e.message || 'Microsoft sign-in failed. Make sure pop-ups are allowed in your browser.')
+      setError(e.message || 'Microsoft sign-in failed.')
     }
   }
 
