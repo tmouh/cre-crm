@@ -5,15 +5,15 @@ import './index.css'
 import { msalInstance } from './lib/msalConfig'
 
 async function bootstrap() {
-  await msalInstance.initialize()
-  await msalInstance.handleRedirectPromise()
-
-  // If we're inside an MSAL popup, the auth response has been handled above.
-  // Close the popup instead of rendering the full app.
+  // If we're inside an MSAL popup, do nothing — the parent window's
+  // loginPopup() will read the auth code from our URL hash directly.
+  // Running MSAL here would clear the hash before the parent can read it.
   if (window.opener && window.opener !== window) {
-    window.close()
     return
   }
+
+  await msalInstance.initialize()
+  await msalInstance.handleRedirectPromise()
 
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
