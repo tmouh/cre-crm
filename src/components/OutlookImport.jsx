@@ -196,7 +196,7 @@ export default function OutlookImport({ onClose }) {
           firstName: oc.givenName  || displayName.split(' ')[0] || '',
           lastName:  oc.surname    || displayName.split(' ').slice(1).join(' ') || '',
           title:     oc.jobTitle   || '',
-          companyId,
+          companyId: companyId || undefined,
           email,
           phone:  oc.businessPhones?.[0] || '',
           mobile: oc.mobilePhone || '',
