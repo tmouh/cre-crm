@@ -1,0 +1,215 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Plus, CheckCircle2, Trash2, Bell, Filter, Calendar } from 'lucide-react'
+import clsx from 'clsx'
+import { useCRM } from '../context/CRMContext'
+import { formatDate, isOverdue, isDueToday, PRIORITY_COLORS, TYPE_COLORS, REMINDER_TYPES, PRIORITIES, fullName } from '../utils/helpers'
+import Modal from '../components/Modal'
+import PageHeader from '../components/PageHeader'
+import EmptyState from '../components/EmptyState'
+
+const BLANK = { title: '', type: 'call', dueDate: '', priority: 'medium', contactId: '', companyId: '', propertyId: '', notes: '' }
+
+function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
+  const { contacts, companies, properties } = useCRM()
+  const [form, setForm] = useState({ ...BLANK, ...initial, dueDate: initial.dueDate ? initial.dueDate.slice(0, 10) : '' })
+  const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ ...form, dueDate: form.dueDate ? new Date(form.dueDate + 'T09:00:00').toISOString() : '' }) }} className="space-y-4">
+      <div>
+        <label className="label">Task *</label>
+        <input value={form.title} onChange={f('title')} className="input" required placeholder="e.g. Follow up on LOI status" />
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="label">Type</label>
+          <select value={form.type} onChange={f('type')} className="input">
+            {REMINDER_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Priority</label>
+          <select value={form.priority} onChange={f('priority')} className="input">
+            {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Due date *</label>
+          <input type="date" value={form.dueDate} onChange={f('dueDate')} className="input" required />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="label">Contact</label>
+          <select value={form.contactId} onChange={f('contactId')} className="input">
+            <option value="">— None —</option>
+            {contacts.map(c => <option key={c.id} value={c.id}>{fullName(c)}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Company</label>
+          <select value={form.companyId} onChange={f('companyId')} className="input">
+            <option value="">— None —</option>
+            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Property</label>
+          <select value={form.propertyId} onChange={f('propertyId')} className="input">
+            <option value="">— None —</option>
+            {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className="label">Notes</label>
+        <textarea value={form.notes} onChange={f('notes')} rows={2} className="input resize-none" placeholder="Context or instructions..." />
+      </div>
+      <div className="flex gap-2 pt-2">
+        <button type="submit" className="btn-primary flex-1">Save Follow-up</button>
+        <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
+      </div>
+    </form>
+  )
+}
+
+function ReminderRow({ reminder, onComplete, onDelete, contact, company, property }) {
+  const overdue = isOverdue(reminder.dueDate)
+  const today   = isDueToday(reminder.dueDate)
+
+  return (
+    <div className={clsx(
+      'flex items-start gap-3 p-4 rounded-xl border transition-colors group',
+      reminder.status === 'done' ? 'border-gray-100 bg-gray-50 opacity-60' :
+      overdue ? 'border-red-200 bg-red-50' :
+      today   ? 'border-orange-100 bg-orange-50' :
+                'border-gray-200 bg-white hover:border-gray-300'
+    )}>
+      <button onClick={() => onComplete(reminder.id)} className={clsx('mt-0.5 flex-shrink-0 transition-colors', reminder.status === 'done' ? 'text-green-500' : 'text-gray-300 hover:text-green-500')}>
+        <CheckCircle2 size={18} />
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className={clsx('text-sm font-medium', reminder.status === 'done' ? 'line-through text-gray-400' : 'text-gray-900')}>{reminder.title}</p>
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+          {contact && <Link to={`/contacts/${contact.id}`} className="text-xs text-brand-600 hover:underline">{fullName(contact)}</Link>}
+          {company && <><span className="text-gray-300">·</span><Link to={`/companies/${company.id}`} className="text-xs text-gray-500 hover:underline">{company.name}</Link></>}
+          {property && <><span className="text-gray-300">·</span><Link to={`/properties/${property.id}`} className="text-xs text-gray-500 hover:underline">{property.name}</Link></>}
+        </div>
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          <span className={clsx('badge', overdue && reminder.status !== 'done' ? 'bg-red-100 text-red-700' : today ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500')}>
+            <Calendar size={10} className="inline mr-1" />{formatDate(reminder.dueDate)}
+          </span>
+          <span className={clsx('badge', TYPE_COLORS[reminder.type] || 'bg-gray-100 text-gray-600')}>{reminder.type}</span>
+          <span className={clsx('badge', PRIORITY_COLORS[reminder.priority])}>{reminder.priority}</span>
+        </div>
+        {reminder.notes && <p className="text-xs text-gray-400 mt-1.5">{reminder.notes}</p>}
+      </div>
+      <button onClick={() => onDelete(reminder.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-300 hover:text-red-500 transition-all flex-shrink-0">
+        <Trash2 size={13} />
+      </button>
+    </div>
+  )
+}
+
+export default function Reminders() {
+  const { reminders, addReminder, updateReminder, completeReminder, deleteReminder, getContact, getCompany, getProperty } = useCRM()
+  const [showAdd, setShowAdd] = useState(false)
+  const [filterStatus, setFilterStatus] = useState('pending')
+  const [filterType, setFilterType]     = useState('')
+  const [filterPriority, setFilterPriority] = useState('')
+  const [showDone, setShowDone] = useState(false)
+
+  const all = reminders.filter(r => {
+    const status   = filterStatus === 'pending' ? r.status !== 'done' : r.status === 'done'
+    const type     = !filterType     || r.type === filterType
+    const priority = !filterPriority || r.priority === filterPriority
+    return status && type && priority
+  }).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+
+  const overdue = all.filter(r => r.status !== 'done' && isOverdue(r.dueDate))
+  const today   = all.filter(r => r.status !== 'done' && isDueToday(r.dueDate))
+  const upcoming = all.filter(r => r.status !== 'done' && !isOverdue(r.dueDate) && !isDueToday(r.dueDate))
+  const done    = reminders.filter(r => r.status === 'done').sort((a, b) => (b.completedAt || b.dueDate).localeCompare(a.completedAt || a.dueDate))
+
+  const pending = reminders.filter(r => r.status !== 'done')
+
+  function handleAdd(form) { addReminder(form); setShowAdd(false) }
+
+  function Section({ title, items, className }) {
+    if (items.length === 0) return null
+    return (
+      <div className="mb-6">
+        <h2 className={clsx('text-xs font-semibold uppercase tracking-wider mb-3 px-1', className)}>{title} <span className="font-normal normal-case tracking-normal opacity-60">({items.length})</span></h2>
+        <div className="space-y-2">
+          {items.map(r => (
+            <ReminderRow key={r.id} reminder={r}
+              contact={getContact(r.contactId)} company={getCompany(r.companyId)} property={getProperty(r.propertyId)}
+              onComplete={completeReminder} onDelete={deleteReminder}
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="px-8 py-8 max-w-3xl">
+      <PageHeader
+        title="Follow-ups"
+        subtitle={`${pending.length} pending · ${reminders.filter(r => r.status === 'done').length} completed`}
+        actions={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Follow-up</button>}
+      />
+
+      {/* Filters */}
+      <div className="flex gap-3 mb-6 flex-wrap">
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+          {['pending', 'done'].map(s => (
+            <button key={s} onClick={() => setFilterStatus(s)} className={clsx('px-4 py-2 text-sm font-medium transition-colors', filterStatus === s ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50')}>
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </button>
+          ))}
+        </div>
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-36">
+          <option value="">All types</option>
+          {REMINDER_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+        </select>
+        <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="input w-36">
+          <option value="">All priorities</option>
+          {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+        </select>
+      </div>
+
+      {filterStatus === 'pending' ? (
+        all.length === 0 ? (
+          <EmptyState icon={Bell} title="No pending follow-ups" description="You're all caught up." action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Follow-up</button>} />
+        ) : (
+          <>
+            <Section title="Overdue"  items={overdue}  className="text-red-600" />
+            <Section title="Today"    items={today}    className="text-orange-600" />
+            <Section title="Upcoming" items={upcoming} className="text-gray-500" />
+          </>
+        )
+      ) : (
+        done.length === 0 ? (
+          <EmptyState icon={CheckCircle2} title="No completed follow-ups yet" />
+        ) : (
+          <div className="space-y-2">
+            {done.map(r => (
+              <ReminderRow key={r.id} reminder={r}
+                contact={getContact(r.contactId)} company={getCompany(r.companyId)} property={getProperty(r.propertyId)}
+                onComplete={completeReminder} onDelete={deleteReminder}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {showAdd && (
+        <Modal title="Add Follow-up" onClose={() => setShowAdd(false)} size="lg">
+          <ReminderForm onSubmit={handleAdd} onCancel={() => setShowAdd(false)} />
+        </Modal>
+      )}
+    </div>
+  )
+}
