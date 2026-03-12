@@ -14,7 +14,7 @@ export const msalConfig = {
 
 // Scopes needed: read Outlook contacts + read mail for email history
 export const graphScopes = {
-  scopes: ['Contacts.Read', 'Mail.Read', 'User.Read'],
+  scopes: ['Contacts.Read', 'Mail.Read', 'People.Read', 'User.Read'],
 }
 
 export const msalInstance = new PublicClientApplication(msalConfig)

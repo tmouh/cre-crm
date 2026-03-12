@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
-import { signInMicrosoft, getMicrosoftAccount, getOutlookContacts, getEmailsForContact } from '../lib/graphClient'
+import { signInMicrosoft, getMicrosoftAccount, getOutlookContacts, getEmailsForContact, getLinkedInMap } from '../lib/graphClient'
 
 const STEP = {
   CONNECT:   'connect',
@@ -161,7 +161,8 @@ export default function OutlookImport({ onClose }) {
     // Local company name map that grows as we create new companies
     const companyMap = { ...existingCompanyByName }
 
-    setProgress({ current: 0, total: toImport.length, label: 'Starting import...' })
+    setProgress({ current: 0, total: toImport.length, label: 'Looking up LinkedIn profiles...' })
+    const linkedInMap = await getLinkedInMap()
 
     for (let i = 0; i < toImport.length; i++) {
       const oc = toImport[i]
@@ -189,11 +190,10 @@ export default function OutlookImport({ onClose }) {
       // Skip if already exists in Vanadium CRM by email
       if (email && existingByEmail[email.toLowerCase()]) continue
 
-      // Extract LinkedIn URL from Outlook websites
-      const linkedIn = (oc.websites || [])
-        .map(w => w.address || '')
-        .find(url => url.toLowerCase().includes('linkedin.com'))
-        ?.replace(/^https?:\/\/(www\.)?/, '') || ''
+      // Look up LinkedIn URL from People API
+      const linkedIn = email
+        ? (linkedInMap.get(email.toLowerCase()) || '').replace(/^https?:\/\/(www\.)?/, '')
+        : ''
 
       // Create the contact
       let newContact = null

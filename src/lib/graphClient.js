@@ -58,7 +58,7 @@ export async function getMicrosoftAccount() {
 export async function getOutlookContacts() {
   let all = []
   let path =
-    '/me/contacts?$top=100&$select=id,displayName,givenName,surname,emailAddresses,businessPhones,mobilePhone,jobTitle,companyName,personalNotes,categories,websites'
+    '/me/contacts?$top=100&$select=id,displayName,givenName,surname,emailAddresses,businessPhones,mobilePhone,jobTitle,companyName,personalNotes,categories'
 
   while (path) {
     const data = await graphGet(path)
@@ -69,6 +69,33 @@ export async function getOutlookContacts() {
       : null
   }
   return all
+}
+
+// Returns a Map of email → LinkedIn URL from the People API
+export async function getLinkedInMap() {
+  const map = new Map()
+  try {
+    let path = '/me/people?$top=100&$select=scoredEmailAddresses,websites'
+    while (path) {
+      const data = await graphGet(path)
+      for (const person of data.value || []) {
+        const linkedInUrl = (person.websites || [])
+          .map(w => w.address || '')
+          .find(url => url.toLowerCase().includes('linkedin.com'))
+        if (linkedInUrl) {
+          for (const e of person.scoredEmailAddresses || []) {
+            if (e.address) map.set(e.address.toLowerCase(), linkedInUrl)
+          }
+        }
+      }
+      path = data['@odata.nextLink']
+        ? data['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0', '')
+        : null
+    }
+  } catch {
+    // People API is best-effort — return whatever we gathered
+  }
+  return map
 }
 
 // Returns up to 50 recent emails involving a given email address (last daysBack days)
