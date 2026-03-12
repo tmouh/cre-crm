@@ -75,7 +75,7 @@ export async function getOutlookContacts() {
 export async function getLinkedInMap() {
   const map = new Map()
   try {
-    let path = '/me/people?$top=100&$select=scoredEmailAddresses,websites'
+    let path = '/me/people?$top=100'
     while (path) {
       const data = await graphGet(path)
       for (const person of data.value || []) {
