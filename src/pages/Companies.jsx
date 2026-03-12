@@ -302,7 +302,7 @@ function CompanyDetail() {
       </div>
 
       {editing && (
-        <Modal title="Edit Company" onClose={() => setEditing(false)} size="lg">
+        <Modal title="Edit Company" onClose={() => setEditing(false)} size="lg" disableBackdropClose>
           <CompanyForm initial={company} onSubmit={handleUpdate} onCancel={() => setEditing(false)} />
         </Modal>
       )}
@@ -342,7 +342,7 @@ function BulkEditModal({ selected, onClose, onSave }) {
 
   if (status === 'done') {
     return (
-      <Modal title="Bulk Edit" onClose={onClose} size="md">
+      <Modal title="Bulk Edit" onClose={onClose} size="md" disableBackdropClose>
         <div className="flex flex-col items-center justify-center py-8 space-y-3">
           <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
             <svg className="w-7 h-7 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -358,7 +358,7 @@ function BulkEditModal({ selected, onClose, onSave }) {
   }
 
   return (
-    <Modal title={`Bulk Edit — ${selected.size} compan${selected.size !== 1 ? 'ies' : 'y'}`} onClose={onClose} size="md">
+    <Modal title={`Bulk Edit — ${selected.size} compan${selected.size !== 1 ? 'ies' : 'y'}`} onClose={onClose} size="md" disableBackdropClose>
       <div className="space-y-4">
         <div>
           <label className="label">Field to edit</label>
@@ -667,7 +667,7 @@ export default function Companies() {
       )}
 
       {showAdd && (
-        <Modal title="Add Company" onClose={() => setShowAdd(false)} size="lg">
+        <Modal title="Add Company" onClose={() => setShowAdd(false)} size="lg" disableBackdropClose>
           <CompanyForm onSubmit={async (form) => {
             const dup = companies.find(c => c.name.toLowerCase() === form.name.toLowerCase())
             if (dup) {

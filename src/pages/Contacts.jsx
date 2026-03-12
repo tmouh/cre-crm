@@ -267,7 +267,7 @@ function ContactDetail() {
       </div>
 
       {editing && (
-        <Modal title={`Edit ${fullName(contact)}`} onClose={() => setEditing(false)} size="lg">
+        <Modal title={`Edit ${fullName(contact)}`} onClose={() => setEditing(false)} size="lg" disableBackdropClose>
           <ContactForm initial={contact} onSubmit={handleUpdate} onCancel={() => setEditing(false)} />
         </Modal>
       )}
@@ -449,7 +449,7 @@ export default function Contacts() {
       )}
 
       {showAdd && (
-        <Modal title="Add Contact" onClose={() => setShowAdd(false)} size="lg">
+        <Modal title="Add Contact" onClose={() => setShowAdd(false)} size="lg" disableBackdropClose>
           <ContactForm onSubmit={handleAdd} onCancel={() => setShowAdd(false)} />
         </Modal>
       )}
