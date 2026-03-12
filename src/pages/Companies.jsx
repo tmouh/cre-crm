@@ -209,6 +209,7 @@ function BulkEditModal({ selected, onClose, onSave }) {
   const [tagsVal, setTagsVal] = useState([])
   const [tagMode, setTagMode] = useState('add') // 'add' | 'replace'
   const [textVal, setTextVal] = useState('')
+  const [status, setStatus] = useState('idle') // 'idle' | 'saving' | 'done'
 
   const EDITABLE_FIELDS = [
     { key: 'type', label: 'Type' },
@@ -220,13 +221,32 @@ function BulkEditModal({ selected, onClose, onSave }) {
     { key: 'notes', label: 'Notes' },
   ]
 
-  function handleApply() {
+  async function handleApply() {
     let patch = {}
     if (field === 'type') patch = { type: typeVal }
     else if (field === 'tags') patch = { tags: tagsVal, _tagMode: tagMode }
     else if (field === 'notes') patch = { notes: textVal }
     else if (field) patch = { [field]: textVal }
-    onSave(patch)
+    setStatus('saving')
+    await onSave(patch)
+    setStatus('done')
+  }
+
+  if (status === 'done') {
+    return (
+      <Modal title="Bulk Edit" onClose={onClose} size="md">
+        <div className="flex flex-col items-center justify-center py-8 space-y-3">
+          <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
+            <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <p className="text-lg font-semibold text-gray-900">Completed!</p>
+          <p className="text-sm text-gray-500">{selected.size} compan{selected.size !== 1 ? 'ies were' : 'y was'} updated successfully.</p>
+          <button onClick={onClose} className="btn-primary mt-2 px-6">Done</button>
+        </div>
+      </Modal>
+    )
   }
 
   return (
@@ -234,7 +254,7 @@ function BulkEditModal({ selected, onClose, onSave }) {
       <div className="space-y-4">
         <div>
           <label className="label">Field to edit</label>
-          <select value={field} onChange={e => setField(e.target.value)} className="input">
+          <select value={field} onChange={e => setField(e.target.value)} className="input" disabled={status === 'saving'}>
             <option value="">Select a field…</option>
             {EDITABLE_FIELDS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
           </select>
@@ -243,7 +263,7 @@ function BulkEditModal({ selected, onClose, onSave }) {
         {field === 'type' && (
           <div>
             <label className="label">New type</label>
-            <select value={typeVal} onChange={e => setTypeVal(e.target.value)} className="input">
+            <select value={typeVal} onChange={e => setTypeVal(e.target.value)} className="input" disabled={status === 'saving'}>
               {COMPANY_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
             </select>
           </div>
@@ -255,11 +275,11 @@ function BulkEditModal({ selected, onClose, onSave }) {
               <label className="label">Tag mode</label>
               <div className="flex gap-3">
                 <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
-                  <input type="radio" name="tagMode" checked={tagMode === 'add'} onChange={() => setTagMode('add')} className="accent-brand-600" />
+                  <input type="radio" name="tagMode" checked={tagMode === 'add'} onChange={() => setTagMode('add')} className="accent-brand-600" disabled={status === 'saving'} />
                   Add to existing
                 </label>
                 <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
-                  <input type="radio" name="tagMode" checked={tagMode === 'replace'} onChange={() => setTagMode('replace')} className="accent-brand-600" />
+                  <input type="radio" name="tagMode" checked={tagMode === 'replace'} onChange={() => setTagMode('replace')} className="accent-brand-600" disabled={status === 'saving'} />
                   Replace all
                 </label>
               </div>
@@ -275,18 +295,18 @@ function BulkEditModal({ selected, onClose, onSave }) {
           <div>
             <label className="label">New value</label>
             {field === 'notes' ? (
-              <textarea value={textVal} onChange={e => setTextVal(e.target.value)} rows={3} className="input resize-none" placeholder="Enter new value…" />
+              <textarea value={textVal} onChange={e => setTextVal(e.target.value)} rows={3} className="input resize-none" placeholder="Enter new value…" disabled={status === 'saving'} />
             ) : (
-              <input value={textVal} onChange={e => setTextVal(e.target.value)} className="input" placeholder="Enter new value…" />
+              <input value={textVal} onChange={e => setTextVal(e.target.value)} className="input" placeholder="Enter new value…" disabled={status === 'saving'} />
             )}
           </div>
         )}
 
         <div className="flex gap-2 pt-2">
-          <button onClick={handleApply} disabled={!field} className="btn-primary flex-1 disabled:opacity-40 disabled:cursor-not-allowed">
-            Apply to {selected.size} compan{selected.size !== 1 ? 'ies' : 'y'}
+          <button onClick={handleApply} disabled={!field || status === 'saving'} className="btn-primary flex-1 disabled:opacity-40 disabled:cursor-not-allowed">
+            {status === 'saving' ? 'Applying…' : `Apply to ${selected.size} compan${selected.size !== 1 ? 'ies' : 'y'}`}
           </button>
-          <button onClick={onClose} className="btn-secondary">Cancel</button>
+          <button onClick={onClose} className="btn-secondary" disabled={status === 'saving'}>Cancel</button>
         </div>
       </div>
     </Modal>
@@ -355,6 +375,10 @@ export default function Companies() {
       }
       await updateCompany(cid, finalPatch)
     }
+    // Don't close modal here — BulkEditModal will show "Completed!" state
+  }
+
+  function handleBulkEditClose() {
     setShowBulkEdit(false)
     clearSelection()
   }
@@ -495,7 +519,7 @@ export default function Companies() {
       )}
 
       {showBulkEdit && (
-        <BulkEditModal selected={selected} onClose={() => setShowBulkEdit(false)} onSave={handleBulkEdit} />
+        <BulkEditModal selected={selected} onClose={handleBulkEditClose} onSave={handleBulkEdit} />
       )}
     </div>
   )
