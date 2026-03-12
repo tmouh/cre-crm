@@ -535,9 +535,10 @@ export default function Companies() {
         </select>
       </div>
 
-      {/* Bulk action bar — sticky */}
+      {/* Bulk action bar — floating */}
       {selected.size > 0 && (
-        <div className="sticky top-0 z-20 mb-4 flex items-center gap-3 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 px-5 py-3 shadow-sm">
+        <div className="fixed top-4 left-[220px] right-0 z-50 px-8 pointer-events-none">
+        <div className="flex items-center gap-3 rounded-xl bg-white dark:bg-gray-800 border border-brand-200 dark:border-brand-700 px-5 py-3 shadow-lg pointer-events-auto">
           <CheckSquare size={16} className="text-brand-600 dark:text-brand-400" />
           <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{selected.size} selected</span>
           <div className="flex-1" />
@@ -550,6 +551,7 @@ export default function Companies() {
           <button onClick={clearSelection} className="btn-ghost p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
             <X size={15} />
           </button>
+        </div>
         </div>
       )}
 
