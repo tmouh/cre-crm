@@ -100,3 +100,25 @@ export function companyInitials(company) {
   if (!company) return '?'
   return company.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
 }
+
+export const SNOOZE_OPTIONS = [
+  { label: 'Tomorrow', days: 1 },
+  { label: 'In 3 days', days: 3 },
+  { label: 'Next week', days: 7 },
+  { label: 'In 2 weeks', days: 14 },
+]
+
+export function priorityWeight(p) {
+  return p === 'high' ? 3 : p === 'medium' ? 2 : 1
+}
+
+export function relativeTimeLabel(iso) {
+  if (!iso) return ''
+  const d = typeof iso === 'string' ? parseISO(iso) : iso
+  const diff = differenceInDays(d, new Date())
+  if (diff < -1) return `Overdue by ${Math.abs(diff)} days`
+  if (diff === -1) return 'Overdue by 1 day'
+  if (diff === 0) return 'Due today'
+  if (diff === 1) return 'Due tomorrow'
+  return `Due in ${diff} days`
+}

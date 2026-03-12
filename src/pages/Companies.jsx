@@ -124,6 +124,29 @@ function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
   )
 }
 
+// ---- Detail helpers ----
+function DetailRow({ icon: Icon, label, value, href, external }) {
+  const empty = !value
+  const text = value || '—'
+  const content = href && !empty ? (
+    <a href={href} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      className="text-sm text-gray-700 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors flex items-center gap-1">
+      {text} {external && <ExternalLink size={10} className="text-gray-400 dark:text-gray-500" />}
+    </a>
+  ) : (
+    <span className={empty ? 'text-sm text-gray-300 dark:text-gray-600 italic' : 'text-sm text-gray-700 dark:text-gray-300'}>{text}</span>
+  )
+  return (
+    <div className="flex items-center gap-3 py-2.5">
+      <Icon size={14} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">{label}</p>
+        {content}
+      </div>
+    </div>
+  )
+}
+
 // ---- Detail ----
 function CompanyDetail() {
   const { id } = useParams()
@@ -145,69 +168,78 @@ function CompanyDetail() {
 
   return (
     <div className="px-8 py-8">
-      <Link to="/companies" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
+      {/* Page header */}
+      <Link to="/companies" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-5">
         <ArrowLeft size={15} /> Companies
       </Link>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-1 space-y-4">
-          <div className="card p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-14 h-14 rounded-2xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
-                <span className="text-sm font-bold text-brand-700 dark:text-brand-300">{companyInitials(company)}</span>
-              </div>
-              <div className="flex gap-1">
-                <button onClick={() => setEditing(true)} className="btn-ghost p-2"><Edit2 size={14} /></button>
-                <button onClick={handleDelete} className="btn-ghost p-2 hover:text-red-500"><Trash2 size={14} /></button>
-              </div>
-            </div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{company.name}</h2>
-            <span className={clsx('badge mt-1', COMPANY_TYPE_COLORS[company.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
-              {company.type}
-            </span>
-
-            {company.address && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-3 flex items-start gap-1.5">
-                <MapPin size={13} className="text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />{company.address}
-              </p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
+            <span className="text-sm font-bold text-brand-700 dark:text-brand-300">{companyInitials(company)}</span>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{company.name}</h2>
+            {company.type && (
+              <span className={clsx('badge mt-0.5', COMPANY_TYPE_COLORS[company.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+                {company.type}
+              </span>
             )}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setEditing(true)} className="btn-secondary"><Edit2 size={14} /> Edit</button>
+          <button onClick={handleDelete} className="btn-secondary hover:text-red-500 hover:border-red-200 dark:hover:border-red-800"><Trash2 size={14} /> Delete</button>
+        </div>
+      </div>
 
-            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2.5">
-              {company.email && <a href={`mailto:${company.email}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400"><Mail size={14} className="text-gray-400 dark:text-gray-500" />{company.email}</a>}
-              {company.phone && <a href={`tel:${company.phone}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400"><Phone size={14} className="text-gray-400 dark:text-gray-500" />{company.phone}</a>}
-              {company.website && (
-                <a href={`https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">
-                  <Globe size={14} className="text-gray-400 dark:text-gray-500" />{company.website} <ExternalLink size={11} className="text-gray-400 dark:text-gray-500" />
-                </a>
+      <div className="grid grid-cols-3 gap-5">
+        <div className="col-span-1 space-y-5">
+          {/* Company info — always-visible fields */}
+          <div className="card p-5">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Details</p>
+            <div className="divide-y divide-gray-50 dark:divide-gray-700/40">
+              <DetailRow icon={MapPin} label="Address" value={company.address} />
+              <DetailRow icon={Mail} label="Email" value={company.email} href={company.email ? `mailto:${company.email}` : null} />
+              <DetailRow icon={Phone} label="Phone" value={company.phone} href={company.phone ? `tel:${company.phone}` : null} />
+              <DetailRow icon={Globe} label="Website" value={company.website} href={company.website ? `https://${company.website}` : null} external />
+            </div>
+
+            {/* Tags — always visible */}
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Tags</p>
+              {company.tags?.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {company.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-300 dark:text-gray-600 italic">No tags</p>
               )}
             </div>
 
-            {company.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                {company.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
-              </div>
-            )}
-
-            {company.notes && (
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Notes</p>
+            {/* Notes — always visible */}
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Notes</p>
+              {company.notes ? (
                 <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{company.notes}</p>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-gray-300 dark:text-gray-600 italic">No notes</p>
+              )}
+            </div>
           </div>
 
-          {/* Contacts */}
+          {/* Contacts — always visible */}
           <div className="card p-4">
             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Contacts ({relatedContacts.length})</p>
             {relatedContacts.length > 0 ? (
               <div className="space-y-2.5">
                 {relatedContacts.map(c => {
                   const owners = (c.ownerIds || []).map(oid => teamMembers.find(m => m.id === oid)).filter(Boolean)
-                  const initials = `${(c.firstName || '')[0] || ''}${(c.lastName || '')[0] || ''}`
+                  const ini = `${(c.firstName || '')[0] || ''}${(c.lastName || '')[0] || ''}`
                   return (
                     <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 group">
                       <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{initials}</span>
+                        <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{ini}</span>
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-gray-800 dark:text-gray-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">{fullName(c)}</p>
@@ -230,40 +262,42 @@ function CompanyDetail() {
             )}
           </div>
 
-          {/* Properties */}
-          {(ownedProperties.length > 0 || tenantProperties.length > 0) && (
-            <div className="card p-4">
-              {ownedProperties.length > 0 && (
-                <>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Owns ({ownedProperties.length})</p>
-                  <div className="space-y-1.5 mb-3">
-                    {ownedProperties.map(p => (
-                      <Link key={p.id} to={`/properties/${p.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400">
-                        <MapPin size={12} className="text-gray-400 dark:text-gray-500" /><span className="truncate">{p.name}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </>
-              )}
-              {tenantProperties.length > 0 && (
-                <>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Tenancy ({tenantProperties.length})</p>
-                  <div className="space-y-1.5">
-                    {tenantProperties.map(p => (
-                      <Link key={p.id} to={`/properties/${p.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400">
-                        <MapPin size={12} className="text-gray-400 dark:text-gray-500" /><span className="truncate">{p.name}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+          {/* Properties — always visible */}
+          <div className="card p-4">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Properties ({ownedProperties.length + tenantProperties.length})</p>
+            {ownedProperties.length > 0 && (
+              <>
+                <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">Owns ({ownedProperties.length})</p>
+                <div className="space-y-1.5 mb-3">
+                  {ownedProperties.map(p => (
+                    <Link key={p.id} to={`/properties/${p.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400">
+                      <MapPin size={12} className="text-gray-400 dark:text-gray-500" /><span className="truncate">{p.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+            {tenantProperties.length > 0 && (
+              <>
+                <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">Tenancy ({tenantProperties.length})</p>
+                <div className="space-y-1.5">
+                  {tenantProperties.map(p => (
+                    <Link key={p.id} to={`/properties/${p.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400">
+                      <MapPin size={12} className="text-gray-400 dark:text-gray-500" /><span className="truncate">{p.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+            {ownedProperties.length === 0 && tenantProperties.length === 0 && (
+              <p className="text-sm text-gray-400 dark:text-gray-500">No properties linked.</p>
+            )}
+          </div>
         </div>
 
-        <div className="col-span-2 space-y-4">
-          <div className="card p-5"><ReminderList companyId={id} /></div>
-          <div className="card p-5"><ActivityFeed companyId={id} /></div>
+        <div className="col-span-2 space-y-5">
+          <ReminderList companyId={id} />
+          <ActivityFeed companyId={id} />
         </div>
       </div>
 
@@ -399,6 +433,16 @@ export default function Companies() {
   const [showBulkEdit, setShowBulkEdit] = useState(false)
   const [dupCheck, setDupCheck] = useState(null) // { newData, existing }
 
+  // Restore scroll position when returning from detail view
+  useEffect(() => {
+    const saved = sessionStorage.getItem('companies-scroll')
+    if (saved) {
+      const main = document.querySelector('main')
+      if (main) requestAnimationFrame(() => { main.scrollTop = parseInt(saved, 10) })
+      sessionStorage.removeItem('companies-scroll')
+    }
+  }, [])
+
   const filtered = useMemo(() => companies.filter(c => {
     const q = search.toLowerCase()
     const matches = !q || c.name.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q)
@@ -491,9 +535,9 @@ export default function Companies() {
         </select>
       </div>
 
-      {/* Bulk action bar */}
+      {/* Bulk action bar — sticky */}
       {selected.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 px-5 py-3 animate-in fade-in slide-in-from-top-2">
+        <div className="sticky top-0 z-20 mb-4 flex items-center gap-3 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 px-5 py-3 shadow-sm">
           <CheckSquare size={16} className="text-brand-600 dark:text-brand-400" />
           <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{selected.size} selected</span>
           <div className="flex-1" />
@@ -547,7 +591,7 @@ export default function Companies() {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <Link to={`/companies/${c.id}`} className="flex items-center gap-3 min-w-0">
+                        <Link to={`/companies/${c.id}`} onClick={() => { const m = document.querySelector('main'); if (m) sessionStorage.setItem('companies-scroll', m.scrollTop) }} className="flex items-center gap-3 min-w-0">
                           <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
                             <span className="text-xs font-bold text-brand-700 dark:text-brand-300">{companyInitials(c)}</span>
                           </div>

@@ -133,6 +133,11 @@ export function CRMProvider({ children }) {
     return rec
   }, [])
 
+  const updateActivity = useCallback(async (id, patch) => {
+    const rec = await db.activities.update(id, patch)
+    setActivities(prev => prev.map(a => a.id === id ? rec : a))
+  }, [])
+
   const deleteActivity = useCallback(async (id) => {
     await db.activities.delete(id)
     setActivities(prev => prev.filter(a => a.id !== id))
@@ -159,7 +164,7 @@ export function CRMProvider({ children }) {
       addCompany, updateCompany, deleteCompany,
       addProperty, updateProperty, deleteProperty,
       addReminder, updateReminder, completeReminder, deleteReminder,
-      addActivity, deleteActivity,
+      addActivity, updateActivity, deleteActivity,
       getContact, getCompany, getProperty,
       activitiesFor, remindersFor,
     }}>
