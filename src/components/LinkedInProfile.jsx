@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Linkedin, RefreshCw, Download, Loader2, AlertCircle } from 'lucide-react'
+// Linkedin icon still used in the empty-state header
 import { useCRM } from '../context/CRMContext'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -127,7 +128,6 @@ export default function LinkedInProfile({ contact }) {
     languages            = [],
     skills               = [],
     interests            = [],
-    follower_count,
     enriched_at,
   } = data
 
@@ -163,11 +163,6 @@ export default function LinkedInProfile({ contact }) {
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
           {location_name && <span className="text-[11px] text-gray-500 dark:text-gray-400">{location_name}</span>}
           {industry && <span className="text-[11px] text-gray-400 dark:text-gray-500">· {industry}</span>}
-          {follower_count != null && (
-            <span className="text-[11px] text-[#0A66C2] font-medium">
-              · {follower_count.toLocaleString()} followers
-            </span>
-          )}
         </div>
       </div>
 
@@ -317,18 +312,16 @@ export default function LinkedInProfile({ contact }) {
       )}
 
       {/* ── Footer ── */}
-      <Divider />
-      <div className="px-5 py-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500">
-          <Linkedin size={11} className="text-[#0A66C2]" />
-          via People Data Labs
-        </div>
-        {enriched_at && (
-          <span className="text-[10px] text-gray-400 dark:text-gray-500">
-            Enriched {new Date(enriched_at).toLocaleDateString()}
-          </span>
-        )}
-      </div>
+      {enriched_at && (
+        <>
+          <Divider />
+          <div className="px-5 py-2 flex items-center justify-end">
+            <span className="text-[10px] text-gray-400 dark:text-gray-500">
+              Enriched {new Date(enriched_at).toLocaleDateString()}
+            </span>
+          </div>
+        </>
+      )}
     </div>
   )
 }
