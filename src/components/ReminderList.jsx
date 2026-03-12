@@ -224,7 +224,7 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
               <input type="date" value={(form.dueDate || '').slice(0, 10)} onChange={e => setForm(f => ({ ...f, dueDate: new Date(e.target.value + 'T09:00:00').toISOString() }))} className="input text-xs py-1.5" required />
             </div>
           </div>
-          <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes (optional)" rows={2} className="input text-sm resize-none" />
+          <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes (optional)" rows={2} className="input text-sm resize-y" />
           <div className="flex gap-2 pt-1">
             <button type="submit" className="btn-primary text-xs py-1.5">Save</button>
             <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-xs py-1.5">Cancel</button>
@@ -266,7 +266,7 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
                     <input type="date" value={(editForm.dueDate || '').slice(0, 10)} onChange={e => setEditForm(f => ({ ...f, dueDate: new Date(e.target.value + 'T09:00:00').toISOString() }))} className="input text-xs py-1.5" required />
                   </div>
                 </div>
-                <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes" rows={2} className="input text-sm resize-none" />
+                <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes" rows={2} className="input text-sm resize-y" />
                 <div className="flex gap-2 pt-1">
                   <button type="submit" className="btn-primary text-xs py-1.5">Save</button>
                   <button type="button" onClick={() => setEditingId(null)} className="btn-secondary text-xs py-1.5">Cancel</button>

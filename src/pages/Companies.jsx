@@ -114,7 +114,7 @@ function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       <div>
         <label className="label">Notes</label>
-        <textarea value={form.notes} onChange={f('notes')} rows={3} className="input resize-none" placeholder="Background, relationship notes..." />
+        <textarea value={form.notes} onChange={f('notes')} rows={3} className="input resize-y" placeholder="Background, relationship notes..." />
       </div>
       <div className="flex gap-2 pt-2">
         <button type="submit" className="btn-primary flex-1">Save Company</button>
@@ -401,7 +401,7 @@ function BulkEditModal({ selected, onClose, onSave }) {
           <div>
             <label className="label">New value</label>
             {field === 'notes' ? (
-              <textarea value={textVal} onChange={e => setTextVal(e.target.value)} rows={3} className="input resize-none" placeholder="Enter new value…" disabled={status === 'saving'} />
+              <textarea value={textVal} onChange={e => setTextVal(e.target.value)} rows={3} className="input resize-y" placeholder="Enter new value…" disabled={status === 'saving'} />
             ) : (
               <input value={textVal} onChange={e => setTextVal(e.target.value)} className="input" placeholder="Enter new value…" disabled={status === 'saving'} />
             )}

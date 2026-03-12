@@ -91,7 +91,7 @@ function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       <div>
         <label className="label">Notes</label>
-        <textarea value={form.notes} onChange={f('notes')} rows={2} className="input resize-none" placeholder="Context or instructions..." />
+        <textarea value={form.notes} onChange={f('notes')} rows={2} className="input resize-y" placeholder="Context or instructions..." />
       </div>
       <div className="flex gap-2 pt-2">
         <button type="submit" className="btn-primary flex-1">Save Follow-up</button>

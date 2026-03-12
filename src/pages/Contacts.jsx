@@ -113,7 +113,7 @@ function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       <div>
         <label className="label">Notes</label>
-        <textarea value={form.notes} onChange={f('notes')} rows={3} className="input resize-none" placeholder="Background, preferences, how you met..." />
+        <textarea value={form.notes} onChange={f('notes')} rows={3} className="input resize-y" placeholder="Background, preferences, how you met..." />
       </div>
       <div className="flex gap-2 pt-2">
         <button type="submit" className="btn-primary flex-1">Save Contact</button>

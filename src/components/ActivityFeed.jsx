@@ -86,7 +86,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
             })}
           </div>
           <textarea autoFocus value={text} onChange={e => setText(e.target.value)}
-            placeholder="What happened?" rows={3} className="input text-sm resize-none" />
+            placeholder="What happened?" rows={3} className="input text-sm resize-y" />
           <div className="flex gap-2 mt-2">
             <button type="submit" className="btn-primary text-xs py-1.5">Save</button>
             <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-xs py-1.5">Cancel</button>
@@ -127,7 +127,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
                         {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
                       </select>
                       <textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
-                        className="input text-sm resize-none" rows={2} />
+                        className="input text-sm resize-y" rows={2} />
                       <div className="flex gap-2">
                         <button type="submit" className="btn-primary text-xs py-1.5">Save</button>
                         <button type="button" onClick={() => setEditingId(null)} className="btn-secondary text-xs py-1.5">Cancel</button>
