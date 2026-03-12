@@ -23,7 +23,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-2.5">
-          <img src="/Vtransparent.png" alt="Vanadium" className="w-8 h-8 rounded-lg object-contain" />
+          <img src="/Vtransparent.png" alt="Vanadium" className="w-8 h-8 object-contain" />
           <div>
             <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">Vanadium CRM</p>
             <p className="text-xs text-gray-400 dark:text-gray-500">Follow-up CRM</p>
