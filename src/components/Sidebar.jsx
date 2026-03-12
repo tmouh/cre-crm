@@ -81,8 +81,8 @@ export default function Sidebar() {
         </NavLink>
       </div>
       <div className="px-4 py-3.5 border-t border-gray-100 dark:border-gray-800 space-y-2">
-        {user?.email && (
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate px-1" title={user.email}>{user.email}</p>
+        {user && (
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate px-1" title={user.email}>{user.user_metadata?.full_name || user.email}</p>
         )}
         <button
           onClick={signOut}

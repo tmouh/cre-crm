@@ -6,9 +6,10 @@ const AuthContext = createContext(null)
 // Upsert the logged-in user into team_members so others can see them as owners
 async function syncTeamMember(user) {
   if (!user) return
+  const name = user.user_metadata?.full_name || user.user_metadata?.name || ''
   await supabase
     .from('team_members')
-    .upsert({ id: user.id, email: user.email }, { onConflict: 'id' })
+    .upsert({ id: user.id, email: user.email, display_name: name || null }, { onConflict: 'id' })
 }
 
 export function AuthProvider({ children }) {
