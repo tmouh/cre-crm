@@ -62,7 +62,7 @@ function ReminderCard({ reminder, contact, company, property, onComplete }) {
 export default function Dashboard() {
   const { contacts, companies, properties, reminders, completeReminder, getContact, getCompany, getProperty } = useCRM()
   const { user } = useAuth()
-  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'
+  const displayName = (user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there').split(' ')[0]
 
   const pending = reminders.filter(r => r.status !== 'done')
   const overdue = pending.filter(r => isOverdue(r.dueDate)).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
