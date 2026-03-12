@@ -378,7 +378,7 @@ export default function Contacts() {
         <div className="card overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60 sticky top-0 z-10">
+              <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Name</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Company</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Contact</th>

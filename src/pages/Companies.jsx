@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, X, CheckSquare, ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
@@ -432,6 +432,20 @@ export default function Companies() {
   const [selected, setSelected] = useState(new Set())
   const [showBulkEdit, setShowBulkEdit] = useState(false)
   const [dupCheck, setDupCheck] = useState(null) // { newData, existing }
+  const [barStuck, setBarStuck] = useState(false)
+  const observerRef = useRef(null)
+  const barSentinelRef = useCallback(node => {
+    if (observerRef.current) { observerRef.current.disconnect(); observerRef.current = null }
+    if (node) {
+      observerRef.current = new IntersectionObserver(
+        ([entry]) => setBarStuck(!entry.isIntersecting),
+        { threshold: 0 }
+      )
+      observerRef.current.observe(node)
+    } else {
+      setBarStuck(false)
+    }
+  }, [])
 
   // Restore scroll position when returning from detail view
   useEffect(() => {
@@ -535,9 +549,9 @@ export default function Companies() {
         </select>
       </div>
 
-      {/* Bulk action bar — sticky */}
+      {/* Bulk action bar — inline, with fixed clone when scrolled past */}
       {selected.size > 0 && (
-        <div className="sticky top-0 z-20 mb-4 flex items-center gap-3 rounded-xl bg-white dark:bg-gray-800 border border-brand-200 dark:border-brand-700 px-5 py-3 shadow-lg">
+        <div ref={barSentinelRef} className="mb-4 flex items-center gap-3 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 px-5 py-3 shadow-sm">
           <CheckSquare size={16} className="text-brand-600 dark:text-brand-400" />
           <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{selected.size} selected</span>
           <div className="flex-1" />
@@ -552,6 +566,24 @@ export default function Companies() {
           </button>
         </div>
       )}
+      {selected.size > 0 && barStuck && (
+        <div className="fixed top-4 left-[220px] right-0 z-50 px-8 pointer-events-none">
+          <div className="flex items-center gap-3 rounded-xl bg-white dark:bg-gray-800 border border-brand-200 dark:border-brand-700 px-5 py-3 shadow-lg pointer-events-auto">
+            <CheckSquare size={16} className="text-brand-600 dark:text-brand-400" />
+            <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{selected.size} selected</span>
+            <div className="flex-1" />
+            <button onClick={() => setShowBulkEdit(true)} className="btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5">
+              <Edit2 size={13} /> Edit
+            </button>
+            <button onClick={handleBulkDelete} className="btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5 text-red-600 hover:bg-red-50 hover:border-red-200 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:border-red-800">
+              <Trash2 size={13} /> Delete
+            </button>
+            <button onClick={clearSelection} className="btn-ghost p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+              <X size={15} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <EmptyState icon={Building2} title="No companies found" action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Company</button>} />
@@ -559,7 +591,7 @@ export default function Companies() {
         <div className="card overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className={clsx('border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60 sticky z-10', selected.size > 0 ? 'top-[52px]' : 'top-0')}>
+              <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60">
                 <th className="px-3 py-3 w-10">
                   <input
                     type="checkbox"
