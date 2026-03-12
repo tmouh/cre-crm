@@ -58,6 +58,7 @@ export default function SearchableSelect({ value, onChange, options, placeholder
           value={inputText}
           onChange={e => { setInputText(e.target.value); setOpen(true); if (!e.target.value) handleClear() }}
           onFocus={() => setOpen(true)}
+          onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); e.target.blur() } }}
           className="input pr-8"
           placeholder={placeholder}
         />

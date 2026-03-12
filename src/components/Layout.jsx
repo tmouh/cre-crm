@@ -1,10 +1,38 @@
 import { Outlet } from 'react-router-dom'
-import { Loader2, AlertCircle } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { Loader2, AlertCircle, RotateCcw, X } from 'lucide-react'
 import Sidebar from './Sidebar'
 import { useCRM } from '../context/CRMContext'
 
 export default function Layout() {
-  const { loading, error } = useCRM()
+  const { loading, error, undoStack, undoLastDelete, dismissUndo } = useCRM()
+  const toastTimerRef = useRef(null)
+  const toast = undoStack[0] ?? null
+
+  // Auto-dismiss toast after 5 seconds
+  useEffect(() => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    if (toast) {
+      toastTimerRef.current = setTimeout(() => dismissUndo(), 5000)
+    }
+    return () => clearTimeout(toastTimerRef.current)
+  }, [toast?.type, toast?.id, toast?.label]) // eslint-disable-line
+
+  // Global Ctrl+Z listener
+  useEffect(() => {
+    function onKeyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        const active = document.activeElement
+        const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
+        if (!isInput && undoStack.length > 0) {
+          e.preventDefault()
+          undoLastDelete()
+        }
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [undoStack, undoLastDelete])
 
   if (loading) {
     return (
@@ -38,6 +66,29 @@ export default function Layout() {
       <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
         <Outlet />
       </main>
+
+      {/* Undo toast */}
+      {toast && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg bg-gray-800 dark:bg-gray-700 text-white text-sm animate-fade-in">
+          <span className="text-gray-300">
+            <span className="font-medium text-white capitalize">{toast.label}</span> deleted
+          </span>
+          <button
+            onClick={() => { clearTimeout(toastTimerRef.current); undoLastDelete() }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 transition-colors font-medium text-white"
+          >
+            <RotateCcw size={13} />
+            Undo
+            <kbd className="text-[10px] text-gray-400 ml-0.5">Ctrl+Z</kbd>
+          </button>
+          <button
+            onClick={() => { clearTimeout(toastTimerRef.current); dismissUndo() }}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

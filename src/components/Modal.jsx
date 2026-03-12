@@ -3,7 +3,15 @@ import { X } from 'lucide-react'
 
 export default function Modal({ title, onClose, children, size = 'md', disableBackdropClose = false }) {
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose() }
+    const handler = (e) => {
+      if (e.key !== 'Escape') return
+      const active = document.activeElement
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)) {
+        active.blur()
+      } else {
+        onClose()
+      }
+    }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [onClose, disableBackdropClose])

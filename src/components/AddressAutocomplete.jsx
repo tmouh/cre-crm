@@ -97,8 +97,10 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
       e.preventDefault()
       handleSelect(suggestions[activeIdx])
     } else if (e.key === 'Escape') {
+      e.stopPropagation()
       setOpen(false)
       setActiveIdx(-1)
+      e.target.blur()
     }
   }
 

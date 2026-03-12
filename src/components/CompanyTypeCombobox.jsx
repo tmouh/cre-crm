@@ -102,6 +102,15 @@ export default function CompanyTypeCombobox({ value, onChange, disabled }) {
               setIsEditing(false)
             }, 200)
           }}
+          onKeyDown={e => {
+            if (e.key === 'Escape') {
+              e.stopPropagation()
+              setOpen(false)
+              setIsEditing(false)
+              setInputText(value || '')
+              e.target.blur()
+            }
+          }}
           className="input pr-8"
           placeholder="Search or create type..."
           disabled={disabled}

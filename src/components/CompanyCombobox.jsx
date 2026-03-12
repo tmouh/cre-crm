@@ -64,6 +64,7 @@ export default function CompanyCombobox({ value, onChange, onCreateAndSelect }) 
           value={inputText}
           onChange={e => { setInputText(e.target.value); setOpen(true); if (!e.target.value) handleClear() }}
           onFocus={() => setOpen(true)}
+          onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); e.target.blur() } }}
           className="input pr-8"
           placeholder="Search or create company..."
         />

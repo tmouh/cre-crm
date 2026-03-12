@@ -27,6 +27,9 @@ export function CRMProvider({ children }) {
   const [deletedProperties, setDeletedProperties] = useState([])
   const [deletedReminders,  setDeletedReminders]  = useState([])
 
+  // ─── Undo stack ────────────────────────────────────────────────────────────
+  const [undoStack, setUndoStack] = useState([])
+
   // ─── Initial load + seed ───────────────────────────────────────────────────
   useEffect(() => {
     async function init() {
@@ -82,10 +85,12 @@ export function CRMProvider({ children }) {
   }, [])
 
   const deleteContact = useCallback(async (id) => {
+    const item = contacts.find(c => c.id === id)
     const rec = await db.contacts.softDelete(id)
     setContacts(prev => prev.filter(c => c.id !== id))
     setDeletedContacts(prev => [rec, ...prev])
-  }, [])
+    setUndoStack(prev => [{ type: 'contact', id, label: item?.name || 'Contact' }, ...prev.slice(0, 9)])
+  }, [contacts])
 
   const restoreContact = useCallback(async (id) => {
     const rec = await db.contacts.restore(id)
@@ -111,10 +116,12 @@ export function CRMProvider({ children }) {
   }, [])
 
   const deleteCompany = useCallback(async (id) => {
+    const item = companies.find(c => c.id === id)
     const rec = await db.companies.softDelete(id)
     setCompanies(prev => prev.filter(c => c.id !== id))
     setDeletedCompanies(prev => [rec, ...prev])
-  }, [])
+    setUndoStack(prev => [{ type: 'company', id, label: item?.name || 'Company' }, ...prev.slice(0, 9)])
+  }, [companies])
 
   const restoreCompany = useCallback(async (id) => {
     const rec = await db.companies.restore(id)
@@ -140,10 +147,12 @@ export function CRMProvider({ children }) {
   }, [])
 
   const deleteProperty = useCallback(async (id) => {
+    const item = properties.find(p => p.id === id)
     const rec = await db.properties.softDelete(id)
     setProperties(prev => prev.filter(p => p.id !== id))
     setDeletedProperties(prev => [rec, ...prev])
-  }, [])
+    setUndoStack(prev => [{ type: 'property', id, label: item?.name || item?.address || 'Deal' }, ...prev.slice(0, 9)])
+  }, [properties])
 
   const restoreProperty = useCallback(async (id) => {
     const rec = await db.properties.restore(id)
@@ -198,10 +207,12 @@ export function CRMProvider({ children }) {
   }, [reminders, activities])
 
   const deleteReminder = useCallback(async (id) => {
+    const item = reminders.find(r => r.id === id)
     const rec = await db.reminders.softDelete(id)
     setReminders(prev => prev.filter(r => r.id !== id))
     setDeletedReminders(prev => [rec, ...prev])
-  }, [])
+    setUndoStack(prev => [{ type: 'reminder', id, label: item?.title || item?.type || 'Reminder' }, ...prev.slice(0, 9)])
+  }, [reminders])
 
   const restoreReminder = useCallback(async (id) => {
     const rec = await db.reminders.restore(id)
@@ -252,7 +263,64 @@ export function CRMProvider({ children }) {
       await db.contacts.update(old.contactId, { lastContacted: maxDate })
       setContacts(prev => prev.map(c => c.id === old.contactId ? { ...c, lastContacted: maxDate } : c))
     }
+    if (old) {
+      const { id: _id, createdAt: _ca, ...activityData } = old
+      setUndoStack(prev => [{ type: 'activity', data: activityData, label: old.type ? `${old.type} log` : 'Activity' }, ...prev.slice(0, 9)])
+    }
   }, [activities, reminders])
+
+  // ─── Undo last delete ──────────────────────────────────────────────────────
+  const undoLastDelete = useCallback(async () => {
+    const last = undoStack[0]
+    if (!last) return
+    setUndoStack(prev => prev.slice(1))
+    try {
+      switch (last.type) {
+        case 'contact': {
+          const rec = await db.contacts.restore(last.id)
+          setDeletedContacts(prev => prev.filter(c => c.id !== last.id))
+          setContacts(prev => [...prev, rec])
+          break
+        }
+        case 'company': {
+          const rec = await db.companies.restore(last.id)
+          setDeletedCompanies(prev => prev.filter(c => c.id !== last.id))
+          setCompanies(prev => [...prev, rec])
+          break
+        }
+        case 'property': {
+          const rec = await db.properties.restore(last.id)
+          setDeletedProperties(prev => prev.filter(p => p.id !== last.id))
+          setProperties(prev => [...prev, rec])
+          break
+        }
+        case 'reminder': {
+          const rec = await db.reminders.restore(last.id)
+          setDeletedReminders(prev => prev.filter(r => r.id !== last.id))
+          setReminders(prev => [...prev, rec])
+          break
+        }
+        case 'activity': {
+          const rec = await db.activities.insert(last.data)
+          const newActivities = [...activities, rec]
+          setActivities(newActivities)
+          if (last.data.contactId) {
+            const maxDate = calcLastContacted(last.data.contactId, newActivities, reminders)
+            await db.contacts.update(last.data.contactId, { lastContacted: maxDate })
+            setContacts(prev => prev.map(c => c.id === last.data.contactId ? { ...c, lastContacted: maxDate } : c))
+          }
+          break
+        }
+        default: break
+      }
+    } catch (err) {
+      console.error('Undo failed:', err)
+    }
+  }, [undoStack, activities, reminders])
+
+  const dismissUndo = useCallback(() => {
+    setUndoStack(prev => prev.slice(1))
+  }, [])
 
   // ─── Lookups (synchronous — read from in-memory state) ────────────────────
   const getContact  = useCallback((id) => contacts.find(c => c.id === id),   [contacts])
@@ -277,6 +345,7 @@ export function CRMProvider({ children }) {
       addProperty, updateProperty, deleteProperty, restoreProperty, purgeProperty,
       addReminder, updateReminder, completeReminder, uncompleteReminder, deleteReminder, restoreReminder, purgeReminder,
       addActivity, updateActivity, deleteActivity,
+      undoStack, undoLastDelete, dismissUndo,
       getContact, getCompany, getProperty,
       activitiesFor, remindersFor,
     }}>
