@@ -415,7 +415,7 @@ export default function Contacts() {
                     <td className="px-4 py-3.5">
                       <div className="flex gap-2">
                         {c.email && <a href={`mailto:${c.email}`} className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Mail size={14} /></a>}
-                        {c.phone && <a href={`tel:${c.phone}`} className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Phone size={14} /></a>}
+                        {(c.phone || c.mobile) && <a href={`tel:${c.phone || c.mobile}`} className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Phone size={14} /></a>}
                         {c.linkedIn && <a href={`https://${c.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Linkedin size={14} /></a>}
                       </div>
                     </td>
