@@ -60,7 +60,7 @@ function ReminderCard({ reminder, contact, company, property, onComplete }) {
 }
 
 export default function Dashboard() {
-  const { contacts, companies, properties, reminders, completeReminder, getContact, getCompany, getProperty } = useCRM()
+  const { contacts, companies, properties, reminders, activities, completeReminder, getContact, getCompany, getProperty } = useCRM()
   const { user } = useAuth()
   const displayName = (user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there').split(' ')[0]
 
@@ -178,6 +178,12 @@ export default function Dashboard() {
                     const lastReminder = reminders
                       .filter(r => r.contactId === c.id && r.status === 'done')
                       .sort((a, b) => (b.completedAt || b.dueDate).localeCompare(a.completedAt || a.dueDate))[0]
+                    const lastActivity = activities
+                      .filter(a => a.contactId === c.id)
+                      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0]
+                    const reminderDate = lastReminder ? (lastReminder.completedAt || lastReminder.dueDate || '') : ''
+                    const activityDate = lastActivity ? (lastActivity.createdAt || '') : ''
+                    const lastTouch = reminderDate >= activityDate ? lastReminder : lastActivity
                     return (
                       <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-3 group">
                         <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
@@ -192,9 +198,9 @@ export default function Dashboard() {
                           </p>
                         </div>
                         <div className="w-16 text-right flex-shrink-0">
-                          {lastReminder ? (
-                            <span className={clsx('badge text-[10px] py-0', TYPE_COLORS[lastReminder.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
-                              {lastReminder.type}
+                          {lastTouch ? (
+                            <span className={clsx('badge text-[10px] py-0', TYPE_COLORS[lastTouch.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+                              {lastTouch.type}
                             </span>
                           ) : (
                             <span className="text-[10px] text-gray-400 dark:text-gray-500">None</span>
