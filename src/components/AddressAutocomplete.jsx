@@ -69,7 +69,7 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
     clearTimeout(debounceRef.current)
     if (text.length >= 3) {
       setOpen(true)
-      debounceRef.current = setTimeout(() => fetchSuggestions(text), 350)
+      debounceRef.current = setTimeout(() => fetchSuggestions(text), 150)
     } else {
       setSuggestions([])
       setOpen(false)
@@ -77,7 +77,7 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
   }
 
   function handleSelect(item) {
-    const addr = item.display_name
+    const addr = formatAddress(item)
     setInputText(addr)
     onChange(addr)
     setSuggestions([])
@@ -103,11 +103,35 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
     }
   }
 
+  function stateAbbr(state) {
+    const map = {
+      'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA','Colorado':'CO',
+      'Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA','Hawaii':'HI','Idaho':'ID',
+      'Illinois':'IL','Indiana':'IN','Iowa':'IA','Kansas':'KS','Kentucky':'KY','Louisiana':'LA',
+      'Maine':'ME','Maryland':'MD','Massachusetts':'MA','Michigan':'MI','Minnesota':'MN','Mississippi':'MS',
+      'Missouri':'MO','Montana':'MT','Nebraska':'NE','Nevada':'NV','New Hampshire':'NH','New Jersey':'NJ',
+      'New Mexico':'NM','New York':'NY','North Carolina':'NC','North Dakota':'ND','Ohio':'OH','Oklahoma':'OK',
+      'Oregon':'OR','Pennsylvania':'PA','Rhode Island':'RI','South Carolina':'SC','South Dakota':'SD',
+      'Tennessee':'TN','Texas':'TX','Utah':'UT','Vermont':'VT','Virginia':'VA','Washington':'WA',
+      'West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY','District of Columbia':'DC',
+    }
+    return map[state] || state || ''
+  }
+
+  function formatAddress(item) {
+    const a = item.address || {}
+    const street = [a.house_number, a.road].filter(Boolean).join(' ')
+    const city = a.city || a.town || a.village || ''
+    const state = stateAbbr(a.state)
+    const zip = a.postcode || ''
+    return [street, city, state, zip].filter(Boolean).join(', ')
+  }
+
   function formatSuggestion(item) {
     const a = item.address || {}
     const street = [a.house_number, a.road].filter(Boolean).join(' ')
     const city = a.city || a.town || a.village || ''
-    const state = a.state || ''
+    const state = stateAbbr(a.state)
     return { main: street || item.display_name.split(',')[0], secondary: [city, state].filter(Boolean).join(', ') }
   }
 
