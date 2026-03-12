@@ -535,10 +535,9 @@ export default function Companies() {
         </select>
       </div>
 
-      {/* Bulk action bar — floating */}
+      {/* Bulk action bar — sticky */}
       {selected.size > 0 && (
-        <div className="fixed top-4 left-[220px] right-0 z-50 px-8 pointer-events-none">
-        <div className="flex items-center gap-3 rounded-xl bg-white dark:bg-gray-800 border border-brand-200 dark:border-brand-700 px-5 py-3 shadow-lg pointer-events-auto">
+        <div className="sticky top-0 z-20 mb-4 flex items-center gap-3 rounded-xl bg-white dark:bg-gray-800 border border-brand-200 dark:border-brand-700 px-5 py-3 shadow-lg">
           <CheckSquare size={16} className="text-brand-600 dark:text-brand-400" />
           <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{selected.size} selected</span>
           <div className="flex-1" />
@@ -552,7 +551,6 @@ export default function Companies() {
             <X size={15} />
           </button>
         </div>
-        </div>
       )}
 
       {filtered.length === 0 ? (
@@ -561,7 +559,7 @@ export default function Companies() {
         <div className="card overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60">
+              <tr className={clsx('border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60 sticky z-10', selected.size > 0 ? 'top-[52px]' : 'top-0')}>
                 <th className="px-3 py-3 w-10">
                   <input
                     type="checkbox"
