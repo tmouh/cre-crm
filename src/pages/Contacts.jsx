@@ -257,12 +257,8 @@ function ContactDetail() {
 
         {/* Right panel */}
         <div className="col-span-2 space-y-4">
-          <div className="card p-5">
-            <ReminderList contactId={id} />
-          </div>
-          <div className="card p-5">
-            <ActivityFeed contactId={id} />
-          </div>
+          <ReminderList contactId={id} />
+          <ActivityFeed contactId={id} />
         </div>
       </div>
 
@@ -348,7 +344,7 @@ export default function Contacts() {
         <div className="card overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/60">
+              <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Name</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Company</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Contact</th>

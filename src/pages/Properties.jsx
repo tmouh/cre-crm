@@ -247,8 +247,8 @@ function PropertyDetail() {
         </div>
 
         <div className="col-span-2 space-y-4">
-          <div className="card p-5"><ReminderList propertyId={id} /></div>
-          <div className="card p-5"><ActivityFeed propertyId={id} /></div>
+          <ReminderList propertyId={id} />
+          <ActivityFeed propertyId={id} />
         </div>
       </div>
 

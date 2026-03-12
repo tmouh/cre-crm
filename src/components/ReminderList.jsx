@@ -205,13 +205,22 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
         <form onSubmit={submit} className="px-5 py-4 bg-gray-50/60 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-700 space-y-2">
           <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="What needs to happen?" className="input text-sm" required />
           <div className="grid grid-cols-3 gap-2">
-            <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="input text-xs py-1.5">
-              {REMINDER_TYPES.map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
-            </select>
-            <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="input text-xs py-1.5">
-              {PRIORITIES.map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
-            </select>
-            <input type="date" value={(form.dueDate || '').slice(0, 10)} onChange={e => setForm(f => ({ ...f, dueDate: new Date(e.target.value + 'T09:00:00').toISOString() }))} className="input text-xs py-1.5" required />
+            <div>
+              <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Type</label>
+              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="input text-xs py-1.5">
+                {REMINDER_TYPES.map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Priority</label>
+              <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="input text-xs py-1.5">
+                {PRIORITIES.map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Due date</label>
+              <input type="date" value={(form.dueDate || '').slice(0, 10)} onChange={e => setForm(f => ({ ...f, dueDate: new Date(e.target.value + 'T09:00:00').toISOString() }))} className="input text-xs py-1.5" required />
+            </div>
           </div>
           <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes (optional)" rows={2} className="input text-sm resize-none" />
           <div className="flex gap-2 pt-1">
@@ -237,13 +246,22 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
               <form key={r.id} onSubmit={saveEdit} className="px-5 py-3.5 bg-brand-50/30 dark:bg-brand-900/10 space-y-2">
                 <input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} className="input text-sm" required />
                 <div className="grid grid-cols-3 gap-2">
-                  <select value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className="input text-xs py-1.5">
-                    {REMINDER_TYPES.map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
-                  </select>
-                  <select value={editForm.priority} onChange={e => setEditForm(f => ({ ...f, priority: e.target.value }))} className="input text-xs py-1.5">
-                    {PRIORITIES.map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
-                  </select>
-                  <input type="date" value={(editForm.dueDate || '').slice(0, 10)} onChange={e => setEditForm(f => ({ ...f, dueDate: new Date(e.target.value + 'T09:00:00').toISOString() }))} className="input text-xs py-1.5" required />
+                  <div>
+                    <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Type</label>
+                    <select value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className="input text-xs py-1.5">
+                      {REMINDER_TYPES.map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Priority</label>
+                    <select value={editForm.priority} onChange={e => setEditForm(f => ({ ...f, priority: e.target.value }))} className="input text-xs py-1.5">
+                      {PRIORITIES.map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Due date</label>
+                    <input type="date" value={(editForm.dueDate || '').slice(0, 10)} onChange={e => setEditForm(f => ({ ...f, dueDate: new Date(e.target.value + 'T09:00:00').toISOString() }))} className="input text-xs py-1.5" required />
+                  </div>
                 </div>
                 <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes" rows={2} className="input text-sm resize-none" />
                 <div className="flex gap-2 pt-1">
