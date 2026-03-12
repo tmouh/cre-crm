@@ -16,7 +16,7 @@ import PageHeader from '../components/PageHeader'
 import ImportModal from '../components/ImportModal'
 import DuplicateCheckModal from '../components/DuplicateCheckModal'
 
-const BLANK = { name: '', address: '', dealType: '', status: '', size: '', sizeUnit: 'SF', dealValue: '', ownerCompanyId: '', tenantCompanyId: '', contactIds: [], notes: '', tags: [] }
+const BLANK = { name: '', address: '', dealType: '', status: '', size: '', sizeUnit: 'SF', dealValue: '', ownerCompanyId: '', tenantCompanyId: '', lenderCompanyId: '', contactIds: [], notes: '', tags: [] }
 
 function ContactSearch({ contacts, selected, onToggle }) {
   const [query, setQuery] = useState('')
@@ -143,8 +143,8 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
           </select>
         </div>
         <div>
-          <label className="label">Status</label>
-          <select value={form.status} onChange={f('status')} className="input">
+          <label className="label">Status *</label>
+          <select value={form.status} onChange={f('status')} required className="input">
             <option value="">— Select —</option>
             {[...DEAL_STATUSES].sort((a, b) => formatDealStatus(a).localeCompare(formatDealStatus(b))).map(s => <option key={s} value={s}>{formatDealStatus(s)}</option>)}
           </select>
@@ -191,7 +191,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
           />
         </div>
         <div>
-          <label className="label">Seller / Lender</label>
+          <label className="label">Seller</label>
           <SearchableSelect
             value={form.tenantCompanyId}
             onChange={setField('tenantCompanyId')}
@@ -204,6 +204,20 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             }}
           />
         </div>
+      </div>
+      <div>
+        <label className="label">Lender</label>
+        <SearchableSelect
+          value={form.lenderCompanyId}
+          onChange={setField('lenderCompanyId')}
+          options={[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ id: c.id, label: c.name }))}
+          placeholder="Search or create company..."
+          createLabel="Create"
+          onCreate={async (name) => {
+            const created = await addCompany({ name })
+            setField('lenderCompanyId')(created.id)
+          }}
+        />
       </div>
       <ContactSearch
         contacts={contacts}
@@ -243,6 +257,7 @@ function DealDetail() {
 
   const owner   = getCompany(deal.ownerCompanyId)
   const tenant  = getCompany(deal.tenantCompanyId)
+  const lender  = getCompany(deal.lenderCompanyId)
   const keyContacts = (deal.contactIds || []).map(getContact).filter(Boolean)
 
   async function handleUpdate(form) { await updateProperty(id, form); setEditing(false) }
@@ -299,7 +314,7 @@ function DealDetail() {
               )}
             </div>
 
-            {(owner || tenant) && (
+            {(owner || tenant || lender) && (
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
                 {owner && (
                   <div>
@@ -311,9 +326,17 @@ function DealDetail() {
                 )}
                 {tenant && (
                   <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Seller / Lender</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Seller</p>
                     <Link to={`/companies/${tenant.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400 flex items-center gap-1.5">
                       <Building2 size={13} /> {tenant.name}
+                    </Link>
+                  </div>
+                )}
+                {lender && (
+                  <div>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Lender</p>
+                    <Link to={`/companies/${lender.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400 flex items-center gap-1.5">
+                      <Building2 size={13} /> {lender.name}
                     </Link>
                   </div>
                 )}
