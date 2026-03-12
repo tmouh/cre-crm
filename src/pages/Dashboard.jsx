@@ -74,7 +74,7 @@ export default function Dashboard() {
 
   const stale = contacts.filter(c => {
     if (!c.lastContacted) return false
-    return daysDiff(c.lastContacted) > 90
+    return daysDiff(c.lastContacted) >= 90
   }).slice(0, 5)
 
   return (
