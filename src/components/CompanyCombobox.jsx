@@ -24,7 +24,8 @@ export default function CompanyCombobox({ value, onChange, onCreateAndSelect }) 
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const filtered = companies
+  const filtered = [...companies]
+    .sort((a, b) => a.name.localeCompare(b.name))
     .filter(c => c.name.toLowerCase().includes(inputText.toLowerCase()))
     .slice(0, 8)
 
