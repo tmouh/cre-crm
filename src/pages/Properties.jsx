@@ -339,7 +339,7 @@ function DealDetail() {
       </div>
 
       {editing && (
-        <Modal title="Edit Deal" onClose={() => setEditing(false)} size="lg">
+        <Modal title="Edit Deal" onClose={() => setEditing(false)} size="lg" disableBackdropClose>
           <DealForm initial={deal} onSubmit={handleUpdate} onCancel={() => setEditing(false)} />
         </Modal>
       )}
@@ -488,7 +488,7 @@ export default function Properties() {
       )}
 
       {showAdd && (
-        <Modal title="Add Deal" onClose={() => setShowAdd(false)} size="lg">
+        <Modal title="Add Deal" onClose={() => setShowAdd(false)} size="lg" disableBackdropClose>
           <DealForm onSubmit={async (form) => {
             const dup = properties.find(p =>
               (form.name && p.name && p.name.toLowerCase() === form.name.toLowerCase()) ||
