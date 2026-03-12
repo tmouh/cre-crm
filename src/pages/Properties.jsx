@@ -133,7 +133,14 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="label">Size</label>
-          <input type="number" value={form.size} onChange={f('size')} className="input" placeholder="0" />
+          <input
+            type="text"
+            inputMode="numeric"
+            value={form.size ? Number(form.size).toLocaleString() : ''}
+            onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); setForm(p => ({ ...p, size: raw })) }}
+            className="input"
+            placeholder="0"
+          />
         </div>
         <div>
           <label className="label">Unit</label>
@@ -143,7 +150,14 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
         </div>
         <div>
           <label className="label">Deal value ($)</label>
-          <input type="number" step="0.01" value={form.dealValue} onChange={f('dealValue')} className="input" placeholder="0.00" />
+          <input
+            type="text"
+            inputMode="decimal"
+            value={form.dealValue ? Number(form.dealValue).toLocaleString(undefined, { minimumFractionDigits: form.dealValue.includes?.('.') ? 2 : 0, maximumFractionDigits: 2 }) : ''}
+            onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); setForm(p => ({ ...p, dealValue: raw })) }}
+            className="input"
+            placeholder="0.00"
+          />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">

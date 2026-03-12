@@ -24,9 +24,10 @@ function toCamel(obj) {
   return Object.fromEntries(Object.entries(obj).map(([k, v]) => [toCamelKey(k), v]))
 }
 
-// Strip undefined fields before sending to Supabase
+// Strip undefined and empty-string fields before sending to Supabase
+// (empty strings break UUID and numeric columns)
 function clean(obj) {
-  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined))
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== ''))
 }
 
 function row(data)  { return toCamel(data) }
