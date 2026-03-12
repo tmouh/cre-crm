@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Bell, CheckCircle2, Trash2, Plus, Edit3, Clock, Filter, ChevronRight, ChevronDown } from 'lucide-react'
+import { Bell, CheckCircle2, Trash2, Plus, Edit3, Clock, Filter, ChevronRight, ChevronDown, RotateCcw } from 'lucide-react'
 import clsx from 'clsx'
 import { addDays } from 'date-fns'
 import { useCRM } from '../context/CRMContext'
@@ -16,7 +16,7 @@ const PRIORITY_DOTS = {
 
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
 
-function ReminderRow({ reminder, onComplete, onDelete, onEdit, onSnooze }) {
+function ReminderRow({ reminder, onComplete, onUncomplete, onDelete, onEdit, onSnooze }) {
   const [showSnooze, setShowSnooze] = useState(false)
   const snoozeRef = useRef(null)
   const overdue = isOverdue(reminder.dueDate)
@@ -88,16 +88,21 @@ function ReminderRow({ reminder, onComplete, onDelete, onEdit, onSnooze }) {
         </div>
       )}
       {done && (
-        <button onClick={() => onDelete(reminder.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-all flex-shrink-0">
-          <Trash2 size={13} />
-        </button>
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <button onClick={() => onUncomplete(reminder.id)} className="p-1.5 text-gray-300 hover:text-brand-500 dark:text-gray-600 dark:hover:text-brand-400 transition-colors" title="Mark as pending">
+            <RotateCcw size={13} />
+          </button>
+          <button onClick={() => onDelete(reminder.id)} className="p-1.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-colors" title="Delete">
+            <Trash2 size={13} />
+          </button>
+        </div>
       )}
     </div>
   )
 }
 
 export default function ReminderList({ contactId, companyId, propertyId }) {
-  const { reminders, addReminder, updateReminder, completeReminder, deleteReminder } = useCRM()
+  const { reminders, addReminder, updateReminder, completeReminder, uncompleteReminder, deleteReminder } = useCRM()
   const [showForm, setShowForm] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showCompleted, setShowCompleted] = useState(false)
@@ -273,7 +278,7 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
                 </div>
               </form>
             ) : (
-              <ReminderRow key={r.id} reminder={r} onComplete={completeReminder} onDelete={deleteReminder} onEdit={startEdit} onSnooze={handleSnooze} />
+              <ReminderRow key={r.id} reminder={r} onComplete={completeReminder} onUncomplete={uncompleteReminder} onDelete={deleteReminder} onEdit={startEdit} onSnooze={handleSnooze} />
             )
           ))}
         </div>
@@ -290,7 +295,7 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
           </div>
           {showCompleted && (
             <div className="divide-y divide-gray-50 dark:divide-gray-700/30">
-              {done.map(r => <ReminderRow key={r.id} reminder={r} onComplete={completeReminder} onDelete={deleteReminder} onEdit={startEdit} onSnooze={handleSnooze} />)}
+              {done.map(r => <ReminderRow key={r.id} reminder={r} onComplete={completeReminder} onUncomplete={uncompleteReminder} onDelete={deleteReminder} onEdit={startEdit} onSnooze={handleSnooze} />)}
             </div>
           )}
         </>

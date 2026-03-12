@@ -184,6 +184,19 @@ export function CRMProvider({ children }) {
     }
   }, [contacts])
 
+  const uncompleteReminder = useCallback(async (id) => {
+    const rec = await db.reminders.update(id, { status: 'pending', completedAt: null })
+    const newReminders = reminders.map(r => r.id === id ? rec : r)
+    setReminders(newReminders)
+    if (rec.contactId) {
+      const maxDate = calcLastContacted(rec.contactId, activities, newReminders)
+      await db.contacts.update(rec.contactId, { lastContacted: maxDate })
+      setContacts(prev => prev.map(c =>
+        c.id === rec.contactId ? { ...c, lastContacted: maxDate } : c
+      ))
+    }
+  }, [reminders, activities])
+
   const deleteReminder = useCallback(async (id) => {
     const rec = await db.reminders.softDelete(id)
     setReminders(prev => prev.filter(r => r.id !== id))
@@ -262,7 +275,7 @@ export function CRMProvider({ children }) {
       addContact, updateContact, deleteContact, restoreContact, purgeContact,
       addCompany, updateCompany, deleteCompany, restoreCompany, purgeCompany,
       addProperty, updateProperty, deleteProperty, restoreProperty, purgeProperty,
-      addReminder, updateReminder, completeReminder, deleteReminder, restoreReminder, purgeReminder,
+      addReminder, updateReminder, completeReminder, uncompleteReminder, deleteReminder, restoreReminder, purgeReminder,
       addActivity, updateActivity, deleteActivity,
       getContact, getCompany, getProperty,
       activitiesFor, remindersFor,
