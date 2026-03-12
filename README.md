@@ -1,6 +1,6 @@
 # Vanadium OS — CRE Deal Tracker
 
-A cloud-backed CRM purpose-built for commercial real estate advisors and brokers. Tracks contacts, companies, deals, reminders, and activity across the full lifecycle of a transaction — from prospect to close.
+A cloud-backed CRM purpose-built for commercial real estate advisors and brokers. Tracks contacts, companies, deals, reminders, and activity across the full lifecycle of a transaction.
 
 ## Features
 
