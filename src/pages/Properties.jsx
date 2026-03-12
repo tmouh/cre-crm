@@ -94,6 +94,8 @@ function ContactSearch({ contacts, selected, onToggle }) {
 function DealForm({ initial = BLANK, onSubmit, onCancel }) {
   const { companies, contacts, addCompany } = useCRM()
   const [form, setForm] = useState({ ...BLANK, ...initial })
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
   const setField = (k) => (v) => setForm(p => ({ ...p, [k]: v }))
 
@@ -106,8 +108,20 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
     }))
   }
 
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await onSubmit(form)
+    } catch (err) {
+      setSaveError(err?.message || 'Failed to save deal. Please try again.')
+      setSaving(false)
+    }
+  }
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="label">Address *</label>
         <AddressAutocomplete
@@ -204,9 +218,14 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
         <label className="label">Notes</label>
         <textarea value={form.notes} onChange={f('notes')} rows={3} className="input resize-y" placeholder="Key details, deal notes..." />
       </div>
+      {saveError && (
+        <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">{saveError}</p>
+      )}
       <div className="flex gap-2 pt-2">
-        <button type="submit" className="btn-primary flex-1">Save Deal</button>
-        <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
+        <button type="submit" disabled={saving} className="btn-primary flex-1 disabled:opacity-60 disabled:cursor-not-allowed">
+          {saving ? 'Saving…' : 'Save Deal'}
+        </button>
+        <button type="button" onClick={onCancel} disabled={saving} className="btn-secondary disabled:opacity-60">Cancel</button>
       </div>
     </form>
   )
