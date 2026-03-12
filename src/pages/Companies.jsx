@@ -68,7 +68,7 @@ function TypeCombobox({ value, onChange, disabled, allTypes }) {
   )
 }
 
-const BLANK = { name: '', type: 'owner', address: '', phone: '', email: '', website: '', notes: '', tags: [] }
+const BLANK = { name: '', type: '', address: '', phone: '', email: '', website: '', notes: '', tags: [] }
 
 function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
   const { companies } = useCRM()
