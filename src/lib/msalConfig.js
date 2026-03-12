@@ -7,7 +7,7 @@ export const msalConfig = {
     redirectUri: window.location.origin,
   },
   cache: {
-    cacheLocation: 'sessionStorage',
+    cacheLocation: 'localStorage',
     storeAuthStateInCookie: false,
   },
 }

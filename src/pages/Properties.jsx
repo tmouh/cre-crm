@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, MapPin, Building2, Users, Trash2, Edit2, ArrowLeft, Upload } from 'lucide-react'
+import { Plus, Search, Building2, Users, Trash2, Edit2, ArrowLeft, Upload, MapPin, Briefcase, Calendar } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
-import { PROPERTY_TYPES, PROPERTY_STATUSES, STATUS_COLORS, fullName, formatDate } from '../utils/helpers'
+import { DEAL_TYPES, DEAL_STATUSES, DEAL_STATUS_COLORS, DEAL_TYPE_COLORS, formatDealType, formatDealStatus, fullName, formatDate, isOverdue, isDueToday } from '../utils/helpers'
 import Modal from '../components/Modal'
 import TagInput from '../components/TagInput'
 import ActivityFeed from '../components/ActivityFeed'
@@ -13,9 +13,82 @@ import PageHeader from '../components/PageHeader'
 import ImportModal from '../components/ImportModal'
 import DuplicateCheckModal from '../components/DuplicateCheckModal'
 
-const BLANK = { name: '', address: '', type: 'office', subtype: '', size: '', sizeUnit: 'SF', status: 'available', askingRent: '', rentUnit: '/SF/yr', ownerCompanyId: '', tenantCompanyId: '', contactIds: [], floor: '', notes: '', tags: [] }
+const BLANK = { name: '', address: '', dealType: '', status: '', size: '', sizeUnit: 'SF', dealValue: '', ownerCompanyId: '', tenantCompanyId: '', contactIds: [], notes: '', tags: [] }
 
-function PropertyForm({ initial = BLANK, onSubmit, onCancel }) {
+function ContactSearch({ contacts, selected, onToggle }) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const selectedContacts = selected.map(id => contacts.find(c => c.id === id)).filter(Boolean)
+  const matches = contacts.filter(c =>
+    !selected.includes(c.id) &&
+    (fullName(c).toLowerCase().includes(query.toLowerCase()) ||
+     (c.title && c.title.toLowerCase().includes(query.toLowerCase())))
+  )
+
+  return (
+    <div>
+      <label className="label">Key contacts</label>
+      {selectedContacts.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {selectedContacts.map(c => (
+            <span key={c.id} className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 text-xs font-medium">
+              {fullName(c)}
+              <button type="button" onClick={() => onToggle(c.id)} className="hover:bg-brand-200 dark:hover:bg-brand-800 rounded-full p-0.5 transition-colors">
+                <span className="text-[10px] leading-none">✕</span>
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="relative" ref={ref}>
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          value={query}
+          onChange={e => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+          placeholder="Search contacts..."
+          className="input pl-9"
+        />
+        {open && query && (
+          <div className="absolute z-20 top-full mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            {matches.length === 0 ? (
+              <p className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">No contacts found</p>
+            ) : (
+              matches.slice(0, 8).map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => { onToggle(c.id); setQuery(''); setOpen(false) }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                >
+                  <div className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[10px] font-semibold text-brand-700 dark:text-brand-300">{c.firstName[0]}{c.lastName[0]}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-gray-700 dark:text-gray-300">{fullName(c)}</span>
+                    {c.title && <span className="text-gray-400 dark:text-gray-500 text-xs ml-1.5">· {c.title}</span>}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function DealForm({ initial = BLANK, onSubmit, onCancel }) {
   const { companies, contacts } = useCRM()
   const [form, setForm] = useState({ ...BLANK, ...initial })
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
@@ -32,23 +105,27 @@ function PropertyForm({ initial = BLANK, onSubmit, onCancel }) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-4">
       <div>
-        <label className="label">Property name *</label>
-        <input value={form.name} onChange={f('name')} className="input" required placeholder="e.g. 1440 Broadway" />
+        <label className="label">Deal name *</label>
+        <input value={form.name} onChange={f('name')} className="input" required placeholder="e.g. 1440 Broadway Acquisition" />
       </div>
       <div>
         <label className="label">Address</label>
-        <input value={form.address} onChange={f('address')} className="input" placeholder="Full address" />
+        <input value={form.address} onChange={f('address')} className="input" placeholder="Property address" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="label">Type</label>
-          <select value={form.type} onChange={f('type')} className="input">
-            {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+          <label className="label">Deal type</label>
+          <select value={form.dealType} onChange={f('dealType')} className="input">
+            <option value="">— Select —</option>
+            {[...DEAL_TYPES].sort((a, b) => formatDealType(a).localeCompare(formatDealType(b))).map(t => <option key={t} value={t}>{formatDealType(t)}</option>)}
           </select>
         </div>
         <div>
-          <label className="label">Subtype</label>
-          <input value={form.subtype} onChange={f('subtype')} className="input" placeholder="e.g. Class A, Distribution" />
+          <label className="label">Status</label>
+          <select value={form.status} onChange={f('status')} className="input">
+            <option value="">— Select —</option>
+            {[...DEAL_STATUSES].sort((a, b) => formatDealStatus(a).localeCompare(formatDealStatus(b))).map(s => <option key={s} value={s}>{formatDealStatus(s)}</option>)}
+          </select>
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3">
@@ -59,59 +136,35 @@ function PropertyForm({ initial = BLANK, onSubmit, onCancel }) {
         <div>
           <label className="label">Unit</label>
           <select value={form.sizeUnit} onChange={f('sizeUnit')} className="input">
-            {['SF', 'AC', 'units', 'keys'].map(u => <option key={u}>{u}</option>)}
+            {['AC', 'keys', 'SF', 'units'].map(u => <option key={u}>{u}</option>)}
           </select>
         </div>
         <div>
-          <label className="label">Status</label>
-          <select value={form.status} onChange={f('status')} className="input">
-            {PROPERTY_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-          </select>
+          <label className="label">Deal value ($)</label>
+          <input type="number" step="0.01" value={form.dealValue} onChange={f('dealValue')} className="input" placeholder="0.00" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="label">Asking rent</label>
-          <input type="number" step="0.01" value={form.askingRent} onChange={f('askingRent')} className="input" placeholder="0.00" />
-        </div>
-        <div>
-          <label className="label">Rent unit</label>
-          <select value={form.rentUnit} onChange={f('rentUnit')} className="input">
-            {['/SF/yr', '/SF/mo', '/unit/mo', '/key/night', 'lump sum'].map(u => <option key={u}>{u}</option>)}
-          </select>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="label">Owner / Landlord</label>
+          <label className="label">Owner / Sponsor</label>
           <select value={form.ownerCompanyId} onChange={f('ownerCompanyId')} className="input">
             <option value="">— None —</option>
-            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         <div>
-          <label className="label">Tenant</label>
+          <label className="label">Borrower / Tenant</label>
           <select value={form.tenantCompanyId} onChange={f('tenantCompanyId')} className="input">
             <option value="">— None —</option>
-            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
       </div>
-      <div>
-        <label className="label">Key contacts</label>
-        <div className="max-h-32 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg p-2 space-y-1">
-          {contacts.map(c => (
-            <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 rounded">
-              <input type="checkbox" checked={form.contactIds.includes(c.id)} onChange={() => toggleContact(c.id)} className="rounded" />
-              <span className="text-gray-700 dark:text-gray-300">{fullName(c)}</span> {c.title && <span className="text-gray-400 dark:text-gray-500 text-xs">· {c.title}</span>}
-            </label>
-          ))}
-        </div>
-      </div>
-      <div>
-        <label className="label">Floor / Suite</label>
-        <input value={form.floor} onChange={f('floor')} className="input" placeholder="e.g. 14-22, Suite 400" />
-      </div>
+      <ContactSearch
+        contacts={contacts}
+        selected={form.contactIds}
+        onToggle={toggleContact}
+      />
       <div>
         <label className="label">Tags</label>
         <TagInput tags={form.tags || []} onChange={(tags) => setForm(p => ({ ...p, tags }))} />
@@ -121,7 +174,7 @@ function PropertyForm({ initial = BLANK, onSubmit, onCancel }) {
         <textarea value={form.notes} onChange={f('notes')} rows={3} className="input resize-none" placeholder="Key details, deal notes..." />
       </div>
       <div className="flex gap-2 pt-2">
-        <button type="submit" className="btn-primary flex-1">Save Property</button>
+        <button type="submit" className="btn-primary flex-1">Save Deal</button>
         <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
       </div>
     </form>
@@ -129,67 +182,69 @@ function PropertyForm({ initial = BLANK, onSubmit, onCancel }) {
 }
 
 // ---- Detail ----
-function PropertyDetail() {
+function DealDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { getProperty, getCompany, getContact, updateProperty, deleteProperty } = useCRM()
   const [editing, setEditing] = useState(false)
 
-  const property = getProperty(id)
-  if (!property) return <div className="p-8 text-gray-400 dark:text-gray-500">Property not found.</div>
+  const deal = getProperty(id)
+  if (!deal) return <div className="p-8 text-gray-400 dark:text-gray-500">Deal not found.</div>
 
-  const owner   = getCompany(property.ownerCompanyId)
-  const tenant  = getCompany(property.tenantCompanyId)
-  const keyContacts = (property.contactIds || []).map(getContact).filter(Boolean)
+  const owner   = getCompany(deal.ownerCompanyId)
+  const tenant  = getCompany(deal.tenantCompanyId)
+  const keyContacts = (deal.contactIds || []).map(getContact).filter(Boolean)
 
   async function handleUpdate(form) { await updateProperty(id, form); setEditing(false) }
   async function handleDelete() {
-    if (confirm(`Delete ${property.name}?`)) { await deleteProperty(id); navigate('/properties') }
+    if (confirm(`Delete ${deal.name || deal.address}?`)) { await deleteProperty(id); navigate('/properties') }
   }
 
   return (
     <div className="px-8 py-8">
       <Link to="/properties" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
-        <ArrowLeft size={15} /> Properties
+        <ArrowLeft size={15} /> Deals
       </Link>
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-1 space-y-4">
           <div className="card p-6">
             <div className="flex items-start justify-between mb-4">
-              <div className={clsx('badge text-sm px-3 py-1', STATUS_COLORS[property.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
-                {property.status}
+              <div className="flex items-center gap-2">
+                {deal.status && (
+                  <span className={clsx('badge text-sm px-3 py-1', DEAL_STATUS_COLORS[deal.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+                    {formatDealStatus(deal.status)}
+                  </span>
+                )}
               </div>
               <div className="flex gap-1">
                 <button onClick={() => setEditing(true)} className="btn-ghost p-2"><Edit2 size={14} /></button>
                 <button onClick={handleDelete} className="btn-ghost p-2 hover:text-red-500"><Trash2 size={14} /></button>
               </div>
             </div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{property.name}</h2>
-            {property.subtype && <p className="text-sm text-gray-500 dark:text-gray-400">{property.type} · {property.subtype}</p>}
-            {property.address && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-start gap-1.5">
-                <MapPin size={13} className="text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" /> {property.address}
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{deal.name || deal.address}</h2>
+            {deal.dealType && (
+              <span className={clsx('badge mt-1', DEAL_TYPE_COLORS[deal.dealType] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+                {formatDealType(deal.dealType)}
+              </span>
+            )}
+            {deal.name && deal.address && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 flex items-start gap-1.5">
+                <MapPin size={13} className="text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" /> {deal.address}
               </p>
             )}
 
             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
-              {property.size && (
+              {deal.dealValue && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400">Deal value</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">${Number(deal.dealValue).toLocaleString()}</span>
+                </div>
+              )}
+              {deal.size && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Size</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{Number(property.size).toLocaleString()} {property.sizeUnit}</span>
-                </div>
-              )}
-              {property.askingRent && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Asking rent</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">${property.askingRent}{property.rentUnit}</span>
-                </div>
-              )}
-              {property.floor && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Floor/Suite</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{property.floor}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{Number(deal.size).toLocaleString()} {deal.sizeUnit}</span>
                 </div>
               )}
             </div>
@@ -198,7 +253,7 @@ function PropertyDetail() {
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
                 {owner && (
                   <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Owner</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Owner / Sponsor</p>
                     <Link to={`/companies/${owner.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400 flex items-center gap-1.5">
                       <Building2 size={13} /> {owner.name}
                     </Link>
@@ -206,7 +261,7 @@ function PropertyDetail() {
                 )}
                 {tenant && (
                   <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Tenant</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Borrower / Tenant</p>
                     <Link to={`/companies/${tenant.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400 flex items-center gap-1.5">
                       <Building2 size={13} /> {tenant.name}
                     </Link>
@@ -231,16 +286,16 @@ function PropertyDetail() {
               </div>
             )}
 
-            {property.tags?.length > 0 && (
+            {deal.tags?.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                {property.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
+                {deal.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
               </div>
             )}
 
-            {property.notes && (
+            {deal.notes && (
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Notes</p>
-                <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{property.notes}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{deal.notes}</p>
               </div>
             )}
           </div>
@@ -253,10 +308,28 @@ function PropertyDetail() {
       </div>
 
       {editing && (
-        <Modal title="Edit Property" onClose={() => setEditing(false)} size="lg">
-          <PropertyForm initial={property} onSubmit={handleUpdate} onCancel={() => setEditing(false)} />
+        <Modal title="Edit Deal" onClose={() => setEditing(false)} size="lg">
+          <DealForm initial={deal} onSubmit={handleUpdate} onCancel={() => setEditing(false)} />
         </Modal>
       )}
+    </div>
+  )
+}
+
+// ---- Next Step helper ----
+function NextStepCell({ dealId }) {
+  const { remindersFor } = useCRM()
+  const pending = remindersFor('propertyId', dealId).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+  if (pending.length === 0) return <span className="text-gray-300 dark:text-gray-600">—</span>
+  const next = pending[0]
+  const overdue = isOverdue(next.dueDate)
+  const today = isDueToday(next.dueDate)
+  return (
+    <div className="min-w-0">
+      <p className="text-sm text-gray-700 dark:text-gray-300 truncate">{next.title}</p>
+      <p className={clsx('text-[11px] flex items-center gap-1', overdue ? 'text-red-500' : today ? 'text-orange-500' : 'text-gray-400 dark:text-gray-500')}>
+        <Calendar size={10} /> {formatDate(next.dueDate)}
+      </p>
     </div>
   )
 }
@@ -264,9 +337,9 @@ function PropertyDetail() {
 // ---- List ----
 export default function Properties() {
   const { id } = useParams()
-  if (id) return <PropertyDetail />
+  if (id) return <DealDetail />
 
-  const { properties, addProperty, updateProperty, getCompany } = useCRM()
+  const { properties, addProperty, updateProperty, getCompany, getContact } = useCRM()
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -277,20 +350,20 @@ export default function Properties() {
   const filtered = properties.filter(p => {
     const q = search.toLowerCase()
     const matches = !q || p.name.toLowerCase().includes(q) || p.address?.toLowerCase().includes(q)
-    const type   = !filterType   || p.type   === filterType
-    const status = !filterStatus || p.status === filterStatus
+    const type   = !filterType   || p.dealType === filterType
+    const status = !filterStatus || p.status   === filterStatus
     return matches && type && status
   }).sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <div className="px-8 py-8">
       <PageHeader
-        title="Properties"
-        subtitle={`${properties.length} propert${properties.length !== 1 ? 'ies' : 'y'}`}
+        title="Deals"
+        subtitle={`${properties.length} deal${properties.length !== 1 ? 's' : ''}`}
         actions={
           <div className="flex gap-2">
             <button onClick={() => setShowImport(true)} className="btn-secondary"><Upload size={15} /> Import CSV</button>
-            <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Property</button>
+            <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Deal</button>
           </div>
         }
       />
@@ -298,55 +371,94 @@ export default function Properties() {
       <div className="flex gap-3 mb-6">
         <div className="relative flex-1 max-w-sm">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search properties..." className="input pl-9" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search deals..." className="input pl-9" />
         </div>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-36">
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-44">
           <option value="">All types</option>
-          {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+          {[...DEAL_TYPES].sort((a, b) => formatDealType(a).localeCompare(formatDealType(b))).map(t => <option key={t} value={t}>{formatDealType(t)}</option>)}
         </select>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input w-40">
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input w-44">
           <option value="">All statuses</option>
-          {PROPERTY_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+          {[...DEAL_STATUSES].sort((a, b) => formatDealStatus(a).localeCompare(formatDealStatus(b))).map(s => <option key={s} value={s}>{formatDealStatus(s)}</option>)}
         </select>
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={MapPin} title="No properties found" action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Property</button>} />
+        <EmptyState icon={Briefcase} title="No deals found" action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Deal</button>} />
       ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {filtered.map(p => {
-            const owner = getCompany(p.ownerCompanyId)
-            return (
-              <Link key={p.id} to={`/properties/${p.id}`} className="card p-5 hover:shadow-md transition-shadow block">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{p.name}</p>
-                    {p.address && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1"><MapPin size={11} />{p.address}</p>}
-                  </div>
-                  <span className={clsx('badge', STATUS_COLORS[p.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{p.status}</span>
-                </div>
-                <div className="flex items-center gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400">
-                  <span className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{p.type}</span>
-                  {p.size && <span>{Number(p.size).toLocaleString()} {p.sizeUnit}</span>}
-                  {p.askingRent && <span>${p.askingRent}{p.rentUnit}</span>}
-                </div>
-                {owner && (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-1"><Building2 size={11} />{owner.name}</p>
-                )}
-                {p.tags?.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-3">
-                    {p.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
-                  </div>
-                )}
-              </Link>
-            )
-          })}
+        <div className="card overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Deal</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Company</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Key Contact</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Next Step</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tags</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+              {filtered.map(p => {
+                const owner = getCompany(p.ownerCompanyId)
+                const firstContact = (p.contactIds || []).length > 0 ? getContact(p.contactIds[0]) : null
+                return (
+                  <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td className="px-4 py-3">
+                      <Link to={`/properties/${p.id}`} className="block min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-brand-600 dark:hover:text-brand-400 truncate">{p.name || p.address}</p>
+                        {p.name && p.address && <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate mt-0.5">{p.address}</p>}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      {p.dealType ? (
+                        <span className={clsx('badge text-[11px]', DEAL_TYPE_COLORS[p.dealType] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{formatDealType(p.dealType)}</span>
+                      ) : (
+                        <span className="text-gray-300 dark:text-gray-600">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={clsx('badge text-[11px]', DEAL_STATUS_COLORS[p.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{formatDealStatus(p.status)}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {owner ? (
+                        <Link to={`/companies/${owner.id}`} className="text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 truncate block">{owner.name}</Link>
+                      ) : (
+                        <span className="text-gray-300 dark:text-gray-600">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {firstContact ? (
+                        <Link to={`/contacts/${firstContact.id}`} className="text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 truncate block">{fullName(firstContact)}</Link>
+                      ) : (
+                        <span className="text-gray-300 dark:text-gray-600">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <NextStepCell dealId={p.id} />
+                    </td>
+                    <td className="px-4 py-3">
+                      {p.tags?.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {p.tags.slice(0, 3).map(t => <span key={t} className="badge text-[11px] bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
+                          {p.tags.length > 3 && <span className="text-[11px] text-gray-400 dark:text-gray-500">+{p.tags.length - 3}</span>}
+                        </div>
+                      ) : (
+                        <span className="text-gray-300 dark:text-gray-600">—</span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
       {showAdd && (
-        <Modal title="Add Property" onClose={() => setShowAdd(false)} size="lg">
-          <PropertyForm onSubmit={async (form) => {
+        <Modal title="Add Deal" onClose={() => setShowAdd(false)} size="lg">
+          <DealForm onSubmit={async (form) => {
             const dup = properties.find(p =>
               p.name.toLowerCase() === form.name.toLowerCase() ||
               (form.address && p.address && p.address.toLowerCase() === form.address.toLowerCase())
@@ -363,14 +475,14 @@ export default function Properties() {
 
       {dupCheck && (
         <DuplicateCheckModal
-          entityType="property"
+          entityType="deal"
           matchFields={[
             { label: 'Name', existingVal: dupCheck.existing.name, newVal: dupCheck.newData.name },
             { label: 'Address', existingVal: dupCheck.existing.address, newVal: dupCheck.newData.address },
-            { label: 'Type', existingVal: dupCheck.existing.type, newVal: dupCheck.newData.type },
-            { label: 'Status', existingVal: dupCheck.existing.status, newVal: dupCheck.newData.status },
+            { label: 'Deal Type', existingVal: formatDealType(dupCheck.existing.dealType), newVal: formatDealType(dupCheck.newData.dealType) },
+            { label: 'Status', existingVal: formatDealStatus(dupCheck.existing.status), newVal: formatDealStatus(dupCheck.newData.status) },
             { label: 'Size', existingVal: dupCheck.existing.size ? `${dupCheck.existing.size} ${dupCheck.existing.sizeUnit}` : '', newVal: dupCheck.newData.size ? `${dupCheck.newData.size} ${dupCheck.newData.sizeUnit}` : '' },
-            { label: 'Owner', existingVal: getCompany(dupCheck.existing.ownerCompanyId)?.name, newVal: getCompany(dupCheck.newData.ownerCompanyId)?.name },
+            { label: 'Company', existingVal: getCompany(dupCheck.existing.ownerCompanyId)?.name, newVal: getCompany(dupCheck.newData.ownerCompanyId)?.name },
           ]}
           onAdd={async () => {
             await addProperty(dupCheck.newData)

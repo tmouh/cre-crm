@@ -117,12 +117,12 @@ export async function seedDatabase() {
   const priya  = contacts.find(c => c.last_name === 'Nair').id
   const greg   = contacts.find(c => c.last_name === 'Holt').id
 
-  // 3. Properties
+  // 3. Properties (Deals)
   const { data: props, error: pe } = await supabase.from('properties').insert([
-    { name: '1440 Broadway', address: '1440 Broadway, New York, NY 10018', type: 'office', subtype: 'Class A', size: 185000, size_unit: 'SF', status: 'available', asking_rent: 72, rent_unit: '/SF/yr', owner_company_id: meridian, contact_ids: [james], floor: '14-22', notes: 'Full floors available. LEED Gold certified.', tags: ['nyc','class-a','leed'], created_at: iso(subDays(now, 80)) },
-    { name: 'Greenfield Logistics Center — Edison', address: '100 Industrial Blvd, Edison, NJ 08817', type: 'industrial', subtype: 'Distribution', size: 320000, size_unit: 'SF', status: 'available', asking_rent: 14.5, rent_unit: '/SF/yr', owner_company_id: greenfield, contact_ids: [sarah], floor: '1', notes: "36' clear height. 80 dock doors.", tags: ['nj','industrial','logistics'], created_at: iso(subDays(now, 55)) },
-    { name: 'Apex Retail — Hoboken', address: '234 Washington St, Hoboken, NJ 07030', type: 'retail', subtype: 'End-cap', size: 4200, size_unit: 'SF', status: 'leased', asking_rent: 85, rent_unit: '/SF/yr', tenant_company_id: apex, contact_ids: [marcus], floor: '1', notes: 'Signed 10-yr lease.', tags: ['nj','retail','signed'], created_at: iso(subDays(now, 40)) },
-    { name: 'Seaport Land Site', address: '22 Channel St, Boston, MA 02210', type: 'land', subtype: 'Infill', size: 1.8, size_unit: 'AC', status: 'under-contract', tenant_company_id: harbor, contact_ids: [priya, greg], notes: 'LOI signed. Zoned for 200-unit multifamily.', tags: ['boston','land','multifamily'], created_at: iso(subDays(now, 25)) },
+    { name: '1440 Broadway Acquisition', address: '1440 Broadway, New York, NY 10018', deal_type: 'acquisition', size: 185000, size_unit: 'SF', status: 'under-loi', deal_value: 125000000, owner_company_id: meridian, contact_ids: [james], notes: 'Full floors available. LEED Gold certified. LOI submitted for floors 14-16.', tags: ['nyc','class-a','leed'], created_at: iso(subDays(now, 80)) },
+    { name: 'Edison Logistics Refi', address: '100 Industrial Blvd, Edison, NJ 08817', deal_type: 'senior-debt', size: 320000, size_unit: 'SF', status: 'engaged', deal_value: 28000000, owner_company_id: greenfield, contact_ids: [sarah], notes: "36' clear height. 80 dock doors. Refinancing existing CMBS loan.", tags: ['nj','industrial','logistics'], created_at: iso(subDays(now, 55)) },
+    { name: 'Apex Hoboken Sale', address: '234 Washington St, Hoboken, NJ 07030', deal_type: 'sale', size: 4200, size_unit: 'SF', status: 'prospect', deal_value: 3200000, tenant_company_id: apex, contact_ids: [marcus], notes: 'Exploring sale of leased asset. 10-yr NNN lease in place.', tags: ['nj','retail','nnn'], created_at: iso(subDays(now, 40)) },
+    { name: 'Seaport Multifamily Dev', address: '22 Channel St, Boston, MA 02210', deal_type: 'construction-financing', size: 1.8, size_unit: 'AC', status: 'under-contract', deal_value: 65000000, tenant_company_id: harbor, contact_ids: [priya, greg], notes: 'LOI signed. Zoned for 200-unit multifamily. Seeking construction loan.', tags: ['boston','multifamily','development'], created_at: iso(subDays(now, 25)) },
   ]).select()
   if (pe) throw pe
 

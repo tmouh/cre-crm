@@ -60,18 +60,15 @@ const COMPANY_ALIASES = {
 }
 
 const PROPERTY_ALIASES = {
-  name:           ['name','propertyname'],
+  name:           ['name','propertyname','dealname'],
   address:        ['address','addr'],
-  type:           ['type','propertytype'],
-  subtype:        ['subtype','class'],
+  dealType:       ['dealtype','type','propertytype'],
   size:           ['size','sf','sqft','squarefeet'],
   sizeUnit:       ['sizeunit','unit','units'],
-  status:         ['status'],
-  askingRent:     ['askingrent','rent','askingprice'],
-  rentUnit:       ['rentunit','rentperiod'],
-  ownerCompany:   ['ownercompany','owner','landlord'],
-  tenantCompany:  ['tenantcompany','tenant'],
-  floor:          ['floor','suite','floorsuite'],
+  status:         ['status','dealstatus'],
+  dealValue:      ['dealvalue','value','price','amount'],
+  ownerCompany:   ['ownercompany','owner','landlord','sponsor'],
+  tenantCompany:  ['tenantcompany','tenant','borrower'],
   tags:           ['tags','tag'],
   notes:          ['notes','note','comments'],
 }
@@ -133,17 +130,14 @@ function rowToProperty(row, map, companies) {
   return {
     name:            v('name'),
     address:         v('address'),
-    type:            v('type') || 'office',
-    subtype:         v('subtype'),
+    dealType:        v('dealType') || '',
     size:            v('size') ? Number(v('size')) : undefined,
     sizeUnit:        v('sizeUnit') || 'SF',
-    status:          v('status') || 'available',
-    askingRent:      v('askingRent') ? Number(v('askingRent')) : undefined,
-    rentUnit:        v('rentUnit') || '/SF/yr',
+    status:          v('status') || 'prospect',
+    dealValue:       v('dealValue') ? Number(v('dealValue')) : undefined,
     ownerCompanyId:  ownerName  ? (companies.find(c => c.name.toLowerCase() === ownerName.toLowerCase())?.id  || '') : '',
     tenantCompanyId: tenantName ? (companies.find(c => c.name.toLowerCase() === tenantName.toLowerCase())?.id || '') : '',
     contactIds:      [],
-    floor:           v('floor'),
     tags:            v('tags') ? v('tags').split(';').map(t => t.trim()).filter(Boolean) : [],
     notes:           v('notes'),
   }
@@ -255,7 +249,7 @@ export default function ImportModal({ entity, onClose }) {
               )}
               {entity === 'properties' && (
                 <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
-                  Recognised columns: <span className="font-mono">name, address, type, subtype, size, sizeUnit, status, askingRent, rentUnit, ownerCompany, tenantCompany, floor, tags, notes</span>
+                  Recognised columns: <span className="font-mono">name, address, dealType, size, sizeUnit, status, dealValue, ownerCompany, tenantCompany, tags, notes</span>
                   <br />For <span className="font-mono">ownerCompany / tenantCompany</span>, use exact company names. Tags separated by semicolons.
                 </p>
               )}

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { parseISO, isToday, addDays, isBefore, isAfter } from 'date-fns'
-import { Bell, Users, Building2, MapPin, CheckCircle2, ArrowRight, AlertCircle } from 'lucide-react'
+import { Bell, Users, Building2, Briefcase, CheckCircle2, ArrowRight, AlertCircle } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { formatDate, isOverdue, isDueToday, PRIORITY_COLORS, TYPE_COLORS, fullName, daysDiff } from '../utils/helpers'
@@ -75,7 +75,7 @@ export default function Dashboard() {
   }).slice(0, 5)
 
   return (
-    <div className="px-8 py-8 max-w-7xl">
+    <div className="px-8 py-8">
       <div className="mb-8">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Dashboard</h1>
         <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">Your CRE outreach at a glance</p>
@@ -86,7 +86,7 @@ export default function Dashboard() {
         <StatCard icon={Bell}      label="Pending follow-ups" value={pending.length}    to="/reminders"  color="bg-brand-500" />
         <StatCard icon={Users}     label="Contacts"           value={contacts.length}   to="/contacts"   color="bg-blue-500" />
         <StatCard icon={Building2} label="Companies"          value={companies.length}  to="/companies"  color="bg-violet-500" />
-        <StatCard icon={MapPin}    label="Properties"         value={properties.length} to="/properties" color="bg-teal-500" />
+        <StatCard icon={Briefcase}  label="Active deals"        value={properties.length} to="/properties" color="bg-teal-500" />
       </div>
 
       <div className="grid grid-cols-3 gap-6">
@@ -164,21 +164,49 @@ export default function Dashboard() {
               <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">All contacts are fresh</p>
             ) : (
               <div className="space-y-3">
-                {stale.map(c => (
-                  <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-3 group">
-                    <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                      <span className="text-[11px] font-semibold text-brand-700 dark:text-brand-300">
-                        {c.firstName[0]}{c.lastName[0]}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 truncate transition-colors">{fullName(c)}</p>
-                      <p className="text-[11px] text-gray-400 dark:text-gray-500">
-                        {c.lastContacted ? `${daysDiff(c.lastContacted)}d ago` : 'Never contacted'}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
+                {stale.map(c => {
+                  const lastReminder = reminders
+                    .filter(r => r.contactId === c.id && r.status === 'done')
+                    .sort((a, b) => (b.completedAt || b.dueDate).localeCompare(a.completedAt || a.dueDate))[0]
+                  return (
+                    <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-3 group">
+                      <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
+                        <span className="text-[11px] font-semibold text-brand-700 dark:text-brand-300">
+                          {c.firstName[0]}{c.lastName[0]}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 truncate transition-colors">{fullName(c)}</p>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                          {c.lastContacted ? `${daysDiff(c.lastContacted)}d ago` : 'Never contacted'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0 mr-4">
+                        <div className="w-16 text-right">
+                          {lastReminder ? (
+                            <span className={clsx('badge text-[10px] py-0', TYPE_COLORS[lastReminder.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+                              {lastReminder.type}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500">None</span>
+                          )}
+                        </div>
+                        <div className="w-24 flex gap-1 flex-wrap justify-end">
+                          {c.tags?.length > 0 ? (
+                            <>
+                              {c.tags.slice(0, 2).map(t => (
+                                <span key={t} className="badge text-[10px] py-0 bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">{t}</span>
+                              ))}
+                              {c.tags.length > 2 && <span className="text-[10px] text-gray-400 dark:text-gray-500">+{c.tags.length - 2}</span>}
+                            </>
+                          ) : (
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500">—</span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             )}
             <Link to="/contacts" className="flex items-center gap-1 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors">

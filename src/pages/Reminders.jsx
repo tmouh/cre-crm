@@ -25,13 +25,13 @@ function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
         <div>
           <label className="label">Type</label>
           <select value={form.type} onChange={f('type')} className="input">
-            {REMINDER_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+            {[...REMINDER_TYPES].sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
           </select>
         </div>
         <div>
           <label className="label">Priority</label>
           <select value={form.priority} onChange={f('priority')} className="input">
-            {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+            {[...PRIORITIES].sort((a, b) => a.localeCompare(b)).map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
           </select>
         </div>
         <div>
@@ -44,21 +44,21 @@ function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
           <label className="label">Contact</label>
           <select value={form.contactId} onChange={f('contactId')} className="input">
             <option value="">-- None --</option>
-            {contacts.map(c => <option key={c.id} value={c.id}>{fullName(c)}</option>)}
+            {[...contacts].sort((a, b) => fullName(a).localeCompare(fullName(b))).map(c => <option key={c.id} value={c.id}>{fullName(c)}</option>)}
           </select>
         </div>
         <div>
           <label className="label">Company</label>
           <select value={form.companyId} onChange={f('companyId')} className="input">
             <option value="">-- None --</option>
-            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         <div>
           <label className="label">Property</label>
           <select value={form.propertyId} onChange={f('propertyId')} className="input">
             <option value="">-- None --</option>
-            {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {[...properties].sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
       </div>
@@ -153,7 +153,7 @@ export default function Reminders() {
   }
 
   return (
-    <div className="px-8 py-8 max-w-5xl">
+    <div className="px-8 py-8">
       <PageHeader
         title="Follow-ups"
         subtitle={`${pending.length} pending · ${reminders.filter(r => r.status === 'done').length} completed`}
@@ -171,11 +171,11 @@ export default function Reminders() {
         </div>
         <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-36">
           <option value="">All types</option>
-          {REMINDER_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+          {[...REMINDER_TYPES].sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
         </select>
         <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="input w-36">
           <option value="">All priorities</option>
-          {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+          {[...PRIORITIES].sort((a, b) => a.localeCompare(b)).map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
         </select>
       </div>
 

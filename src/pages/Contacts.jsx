@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, ArrowUpDown } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
@@ -10,6 +10,8 @@ import TagInput from '../components/TagInput'
 import ActivityFeed from '../components/ActivityFeed'
 import ReminderList from '../components/ReminderList'
 import EmptyState from '../components/EmptyState'
+import OutlookMessages from '../components/OutlookMessages'
+import OutlookAttachments from '../components/OutlookAttachments'
 import PageHeader from '../components/PageHeader'
 import CompanyCombobox from '../components/CompanyCombobox'
 import ImportModal from '../components/ImportModal'
@@ -259,6 +261,8 @@ function ContactDetail() {
         <div className="col-span-2 space-y-4">
           <ReminderList contactId={id} />
           <ActivityFeed contactId={id} />
+          <OutlookMessages email={contact.email} />
+          <OutlookAttachments email={contact.email} />
         </div>
       </div>
 
@@ -282,14 +286,38 @@ export default function Contacts() {
   const [showImport, setShowImport] = useState(false)
   const [showOutlookImport, setShowOutlookImport] = useState(false)
   const [filterCompany, setFilterCompany] = useState('')
+  const [sortBy, setSortBy] = useState('name')
   const [dupCheck, setDupCheck] = useState(null)
 
   const filtered = contacts.filter(c => {
     const q = search.toLowerCase()
-    const matches = !q || fullName(c).toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.title?.toLowerCase().includes(q)
+    const matches = !q || fullName(c).toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.title?.toLowerCase().includes(q) || (c.tags || []).some(t => t.toLowerCase().includes(q))
     const comp = !filterCompany || c.companyId === filterCompany
     return matches && comp
-  }).sort((a, b) => fullName(a).localeCompare(fullName(b)))
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'name': return fullName(a).localeCompare(fullName(b))
+      case 'company': {
+        const ca = getCompany(a.companyId)?.name || ''
+        const cb = getCompany(b.companyId)?.name || ''
+        return ca.localeCompare(cb) || fullName(a).localeCompare(fullName(b))
+      }
+      case 'lastTouch': {
+        const da = a.lastContacted || ''
+        const db = b.lastContacted || ''
+        if (!da && !db) return 0
+        if (!da) return 1
+        if (!db) return -1
+        return db.localeCompare(da)
+      }
+      case 'dateAdded': {
+        const da = a.createdAt || ''
+        const db = b.createdAt || ''
+        return db.localeCompare(da)
+      }
+      default: return 0
+    }
+  })
 
   async function handleAdd(form) {
     const dup = contacts.find(c =>
@@ -335,6 +363,12 @@ export default function Contacts() {
         <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)} className="input w-48">
           <option value="">All companies</option>
           {[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="input w-44">
+          <option value="name">Sort by name</option>
+          <option value="company">Sort by company</option>
+          <option value="lastTouch">Sort by last touch</option>
+          <option value="dateAdded">Sort by date added</option>
         </select>
       </div>
 

@@ -9,7 +9,7 @@ async function ensureInit() {
   }
 }
 
-// Get a valid access token — tries silent first, asks user to re-auth if expired
+// Get a valid access token — tries silent first, falls back to popup
 async function getToken() {
   await ensureInit()
   const accounts = msalInstance.getAllAccounts()
@@ -18,7 +18,9 @@ async function getToken() {
       const resp = await msalInstance.acquireTokenSilent({ ...graphScopes, account: accounts[0] })
       return resp.accessToken
     } catch {
-      // Silent failed — need to re-authenticate
+      // Silent failed — popup to re-authenticate (stays on current page)
+      const resp = await msalInstance.acquireTokenPopup({ ...graphScopes, account: accounts[0] })
+      return resp.accessToken
     }
   }
   throw new Error('Microsoft session expired. Please sign in again.')
@@ -40,10 +42,7 @@ async function graphGet(path) {
 
 export async function signInMicrosoft() {
   await ensureInit()
-  // Redirect the entire page to Microsoft — no popups needed.
-  // After auth, Microsoft redirects back and handleRedirectPromise() in
-  // main.jsx processes the token. The user then re-opens the import modal.
-  await msalInstance.loginRedirect(graphScopes)
+  await msalInstance.loginPopup(graphScopes)
 }
 
 export async function getMicrosoftAccount() {
@@ -99,19 +98,67 @@ export async function getLinkedInMap() {
 }
 
 // Returns up to 50 recent emails involving a given email address (last daysBack days)
+// Uses KQL $search (matches the old working implementation)
 export async function getEmailsForContact(email, daysBack = 90) {
   if (!email) return []
-  const since = new Date(Date.now() - daysBack * 86_400_000).toISOString()
-  const filter = encodeURIComponent(
-    `(from/emailAddress/address eq '${email}' or toRecipients/any(r:r/emailAddress/address eq '${email}')) and receivedDateTime ge ${since}`
-  )
+  const since = new Date(Date.now() - daysBack * 86_400_000).toISOString().slice(0, 10)
+  const search = encodeURIComponent(`"participants:${email} received>=${since}"`)
   try {
     const data = await graphGet(
-      `/me/messages?$filter=${filter}&$select=subject,from,receivedDateTime,bodyPreview,isDraft&$top=50&$orderby=receivedDateTime desc`
+      `/me/messages?$search=${search}&$select=subject,from,receivedDateTime,bodyPreview,isDraft,webLink&$top=50`
     )
     return (data.value || []).filter(m => !m.isDraft)
   } catch {
-    // Email fetching is best-effort — skip on error
     return []
   }
+}
+
+// Returns attachments from recent emails involving a given email address
+// Uses its own KQL $search with hasattachments:yes (matches old working implementation)
+export async function getAttachmentsForContact(email, daysBack = 90) {
+  if (!email) return []
+  try {
+    const since = new Date(Date.now() - daysBack * 86_400_000).toISOString().slice(0, 10)
+    const search = encodeURIComponent(`"participants:${email} received>=${since} hasattachments:yes"`)
+    const data = await graphGet(
+      `/me/messages?$search=${search}&$select=id,subject,receivedDateTime,webLink&$top=50`
+    )
+    const messages = (data.value || []).filter(m => !m.isDraft)
+    const results = []
+    for (const msg of messages.slice(0, 20)) {
+      try {
+        const attData = await graphGet(
+          `/me/messages/${msg.id}/attachments?$select=id,name,contentType,size`
+        )
+        for (const att of attData.value || []) {
+          if (att['@odata.type'] === '#microsoft.graph.itemAttachment') continue
+          results.push({
+            id: att.id,
+            messageId: msg.id,
+            name: att.name,
+            size: att.size,
+            contentType: att.contentType,
+            subject: msg.subject,
+            date: msg.receivedDateTime,
+            webLink: msg.webLink,
+          })
+        }
+      } catch { /* skip individual message on error */ }
+    }
+    return results
+  } catch {
+    return []
+  }
+}
+
+// Downloads an attachment and returns a blob URL
+export async function downloadAttachment(messageId, attachmentId) {
+  const token = await getToken()
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/me/messages/${messageId}/attachments/${attachmentId}/$value`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  )
+  if (!res.ok) throw new Error('Failed to download attachment')
+  const blob = await res.blob()
+  return URL.createObjectURL(blob)
 }

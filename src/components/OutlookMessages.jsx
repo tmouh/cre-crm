@@ -1,0 +1,171 @@
+import { useState, useEffect } from 'react'
+import { Mail, Loader2, ChevronDown, ChevronRight, AlertCircle, ExternalLink } from 'lucide-react'
+import clsx from 'clsx'
+import { getMicrosoftAccount, getEmailsForContact, signInMicrosoft } from '../lib/graphClient'
+
+const INITIAL_SHOW = 5
+
+function formatMessageDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+export default function OutlookMessages({ email }) {
+  const [account, setAccount] = useState(null)
+  const [checked, setChecked] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [messages, setMessages] = useState([])
+  const [error, setError] = useState('')
+  const [expanded, setExpanded] = useState(null)
+  const [showAll, setShowAll] = useState(false)
+
+  useEffect(() => {
+    getMicrosoftAccount()
+      .then(acc => { setAccount(acc); setChecked(true) })
+      .catch(() => setChecked(true))
+  }, [])
+
+  useEffect(() => {
+    if (!account || !email) return
+    setLoading(true)
+    setError('')
+    getEmailsForContact(email, 90)
+      .then(msgs => setMessages(msgs))
+      .catch(e => setError(e.message || 'Failed to fetch emails'))
+      .finally(() => setLoading(false))
+  }, [account, email])
+
+  async function handleConnect() {
+    try {
+      await signInMicrosoft()
+    } catch (e) {
+      setError(e.message || 'Sign-in failed')
+    }
+  }
+
+  const displayed = showAll ? messages : messages.slice(0, INITIAL_SHOW)
+
+  return (
+    <div className="card overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center gap-2">
+          <Mail size={15} className="text-blue-500" />
+          <h3 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Outlook Messages</h3>
+          {messages.length > 0 && (
+            <span className="text-[11px] text-gray-400 dark:text-gray-500">({messages.length})</span>
+          )}
+        </div>
+      </div>
+
+      <div className="divide-y divide-gray-50 dark:divide-gray-700/30">
+        {!checked ? (
+          <div className="px-5 py-8 text-center">
+            <Loader2 size={20} className="animate-spin text-gray-300 dark:text-gray-600 mx-auto" />
+          </div>
+        ) : !email ? (
+          <div className="px-5 py-8 text-center">
+            <Mail size={22} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+            <p className="text-sm text-gray-400 dark:text-gray-500">No email address on this contact</p>
+          </div>
+        ) : !account ? (
+          <div className="px-5 py-8 text-center">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-3">
+              <svg viewBox="0 0 21 21" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
+                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+              </svg>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Connect Microsoft to see email history</p>
+            <button onClick={handleConnect} className="btn-secondary text-xs">
+              <Mail size={13} /> Sign in with Microsoft
+            </button>
+          </div>
+        ) : loading ? (
+          <div className="px-5 py-8 text-center">
+            <Loader2 size={20} className="animate-spin text-blue-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-400 dark:text-gray-500">Fetching emails...</p>
+          </div>
+        ) : error ? (
+          <div className="px-5 py-6 text-center">
+            <AlertCircle size={20} className="text-red-400 mx-auto mb-2" />
+            <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="px-5 py-8 text-center">
+            <Mail size={22} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+            <p className="text-sm text-gray-400 dark:text-gray-500">No emails in the last 90 days</p>
+          </div>
+        ) : (
+          <>
+            {displayed.map(msg => (
+              <div key={msg.id} className="px-5 py-3 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                <div className="flex items-start gap-2">
+                  <button
+                    onClick={() => setExpanded(expanded === msg.id ? null : msg.id)}
+                    className="mt-0.5 flex-shrink-0"
+                  >
+                    {expanded === msg.id
+                      ? <ChevronDown size={13} className="text-gray-400" />
+                      : <ChevronRight size={13} className="text-gray-400" />
+                    }
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => setExpanded(expanded === msg.id ? null : msg.id)}
+                        className={clsx('text-sm truncate text-left', expanded === msg.id ? 'font-semibold text-gray-900 dark:text-gray-100' : 'font-medium text-gray-700 dark:text-gray-300')}
+                      >
+                        {msg.subject || '(no subject)'}
+                      </button>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                          {formatMessageDate(msg.receivedDateTime)}
+                        </span>
+                        <a
+                          href={msg.webLink || `https://outlook.office.com/mail/search/id/${msg.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="text-gray-400 hover:text-blue-500 dark:text-gray-500 dark:hover:text-blue-400 transition-colors"
+                          title="Open in Outlook"
+                        >
+                          <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                      {msg.from?.emailAddress?.name || msg.from?.emailAddress?.address || ''}
+                    </p>
+                    {expanded === msg.id && msg.bodyPreview && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 whitespace-pre-wrap leading-relaxed">
+                        {msg.bodyPreview}
+                      </p>
+                    )}
+                    {expanded !== msg.id && msg.bodyPreview && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+                        {msg.bodyPreview}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {messages.length > INITIAL_SHOW && (
+              <div className="px-5 py-2.5 text-center">
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
+                >
+                  {showAll ? `Show less` : `Show more (${messages.length - INITIAL_SHOW} more)`}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
