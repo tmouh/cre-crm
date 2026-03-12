@@ -28,13 +28,13 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <img src="/967007_Vanadium_logo.jpg" alt="Vanadium" className="w-16 h-16 rounded-2xl object-contain mb-4 shadow-lg" />
-          <h1 className="text-xl font-bold text-gray-900">Vanadium CRM</h1>
-          <p className="text-sm text-gray-500 mt-1">Sign in to your workspace</p>
+          <img src="/V.png" alt="Vanadium" className="w-16 h-16 rounded-2xl object-contain mb-4 shadow-lg" />
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Vanadium CRM</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Sign in to your workspace</p>
         </div>
 
         {/* Form */}
@@ -65,7 +65,7 @@ export default function Login() {
             </div>
 
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}
