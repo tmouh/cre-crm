@@ -7,13 +7,15 @@ import { formatDate, isOverdue, isDueToday, PRIORITY_COLORS, TYPE_COLORS, REMIND
 import Modal from '../components/Modal'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
+import SearchableSelect from '../components/SearchableSelect'
 
 const BLANK = { title: '', type: 'call', dueDate: '', priority: 'medium', contactId: '', companyId: '', propertyId: '', notes: '' }
 
 function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
-  const { contacts, companies, properties } = useCRM()
+  const { contacts, companies, properties, addContact, addCompany, addProperty } = useCRM()
   const [form, setForm] = useState({ ...BLANK, ...initial, dueDate: initial.dueDate ? initial.dueDate.slice(0, 10) : '' })
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
+  const setField = (k) => (v) => setForm(p => ({ ...p, [k]: v }))
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ ...form, dueDate: form.dueDate ? new Date(form.dueDate + 'T09:00:00').toISOString() : '' }) }} className="space-y-4">
@@ -42,24 +44,48 @@ function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="label">Contact</label>
-          <select value={form.contactId} onChange={f('contactId')} className="input">
-            <option value="">-- None --</option>
-            {[...contacts].sort((a, b) => fullName(a).localeCompare(fullName(b))).map(c => <option key={c.id} value={c.id}>{fullName(c)}</option>)}
-          </select>
+          <SearchableSelect
+            value={form.contactId}
+            onChange={setField('contactId')}
+            options={[...contacts].sort((a, b) => fullName(a).localeCompare(fullName(b))).map(c => ({ id: c.id, label: fullName(c) }))}
+            placeholder="Search or create contact..."
+            createLabel="Create"
+            onCreate={async (name) => {
+              const parts = name.split(' ')
+              const firstName = parts[0] || ''
+              const lastName = parts.slice(1).join(' ') || ''
+              const created = await addContact({ firstName, lastName })
+              setField('contactId')(created.id)
+            }}
+          />
         </div>
         <div>
           <label className="label">Company</label>
-          <select value={form.companyId} onChange={f('companyId')} className="input">
-            <option value="">-- None --</option>
-            {[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <SearchableSelect
+            value={form.companyId}
+            onChange={setField('companyId')}
+            options={[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ id: c.id, label: c.name }))}
+            placeholder="Search or create company..."
+            createLabel="Create"
+            onCreate={async (name) => {
+              const created = await addCompany({ name })
+              setField('companyId')(created.id)
+            }}
+          />
         </div>
         <div>
           <label className="label">Property</label>
-          <select value={form.propertyId} onChange={f('propertyId')} className="input">
-            <option value="">-- None --</option>
-            {[...properties].sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <SearchableSelect
+            value={form.propertyId}
+            onChange={setField('propertyId')}
+            options={[...properties].sort((a, b) => (a.name || a.address || '').localeCompare(b.name || b.address || '')).map(p => ({ id: p.id, label: p.name || p.address }))}
+            placeholder="Search or create property..."
+            createLabel="Create"
+            onCreate={async (name) => {
+              const created = await addProperty({ address: name })
+              setField('propertyId')(created.id)
+            }}
+          />
         </div>
       </div>
       <div>

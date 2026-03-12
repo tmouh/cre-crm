@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { Plus, Search, Building2, Users, Trash2, Edit2, ArrowLeft, Upload, MapPin, Briefcase, Calendar } from 'lucide-react'
+import SearchableSelect from '../components/SearchableSelect'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { DEAL_TYPES, DEAL_STATUSES, DEAL_STATUS_COLORS, DEAL_TYPE_COLORS, formatDealType, formatDealStatus, fullName, formatDate, isOverdue, isDueToday } from '../utils/helpers'
@@ -89,9 +90,10 @@ function ContactSearch({ contacts, selected, onToggle }) {
 }
 
 function DealForm({ initial = BLANK, onSubmit, onCancel }) {
-  const { companies, contacts } = useCRM()
+  const { companies, contacts, addCompany } = useCRM()
   const [form, setForm] = useState({ ...BLANK, ...initial })
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
+  const setField = (k) => (v) => setForm(p => ({ ...p, [k]: v }))
 
   function toggleContact(id) {
     setForm(p => ({
@@ -147,17 +149,31 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label">Owner / Sponsor</label>
-          <select value={form.ownerCompanyId} onChange={f('ownerCompanyId')} className="input">
-            <option value="">— None —</option>
-            {[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <SearchableSelect
+            value={form.ownerCompanyId}
+            onChange={setField('ownerCompanyId')}
+            options={[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ id: c.id, label: c.name }))}
+            placeholder="Search or create company..."
+            createLabel="Create"
+            onCreate={async (name) => {
+              const created = await addCompany({ name })
+              setField('ownerCompanyId')(created.id)
+            }}
+          />
         </div>
         <div>
           <label className="label">Borrower / Tenant</label>
-          <select value={form.tenantCompanyId} onChange={f('tenantCompanyId')} className="input">
-            <option value="">— None —</option>
-            {[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <SearchableSelect
+            value={form.tenantCompanyId}
+            onChange={setField('tenantCompanyId')}
+            options={[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ id: c.id, label: c.name }))}
+            placeholder="Search or create company..."
+            createLabel="Create"
+            onCreate={async (name) => {
+              const created = await addCompany({ name })
+              setField('tenantCompanyId')(created.id)
+            }}
+          />
         </div>
       </div>
       <ContactSearch
