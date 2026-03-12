@@ -64,7 +64,7 @@ const TABS = [
   { id: 'contacts',  label: 'Contacts' },
   { id: 'companies', label: 'Companies' },
   { id: 'deals',     label: 'Deals' },
-  { id: 'followups', label: 'Follow-Ups' },
+  { id: 'followups', label: 'Reminders' },
 ]
 
 export default function RecentlyDeleted() {
@@ -174,7 +174,7 @@ export default function RecentlyDeleted() {
           )}
 
           {show('followups') && (
-            <Section icon={Bell} label="Follow-Ups" items={deletedReminders} renderItem={r => (
+            <Section icon={Bell} label="Reminders" items={deletedReminders} renderItem={r => (
               <DeletedItem
                 key={r.id}
                 icon={Bell}

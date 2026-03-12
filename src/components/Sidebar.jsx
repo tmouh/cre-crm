@@ -7,7 +7,7 @@ import { isOverdue, isDueToday } from '../utils/helpers'
 
 const NAV = [
   { to: '/',                label: 'Dashboard',         Icon: LayoutDashboard },
-  { to: '/reminders',       label: 'Follow-ups',        Icon: Bell },
+  { to: '/reminders',       label: 'Reminders',        Icon: Bell },
   { to: '/contacts',        label: 'Contacts',          Icon: Users },
   { to: '/companies',       label: 'Companies',         Icon: Building2 },
   { to: '/properties',      label: 'Deals',             Icon: Briefcase },
@@ -50,7 +50,7 @@ export default function Sidebar() {
               <>
                 <Icon size={16} strokeWidth={isActive ? 2 : 1.5} className={clsx('flex-shrink-0', isActive ? 'text-brand-600 dark:text-brand-400' : 'text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300')} />
                 <span className="flex-1">{label}</span>
-                {label === 'Follow-ups' && urgent > 0 && (
+                {label === 'Reminders' && urgent > 0 && (
                   <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
                     {urgent}
                   </span>

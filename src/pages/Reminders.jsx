@@ -94,7 +94,7 @@ function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
         <textarea value={form.notes} onChange={f('notes')} rows={2} className="input resize-y" placeholder="Context or instructions..." />
       </div>
       <div className="flex gap-2 pt-2">
-        <button type="submit" className="btn-primary flex-1">Save Follow-up</button>
+        <button type="submit" className="btn-primary flex-1">Save Reminder</button>
         <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
       </div>
     </form>
@@ -182,9 +182,9 @@ export default function Reminders() {
   return (
     <div className="px-8 py-8">
       <PageHeader
-        title="Follow-ups"
+        title="Reminders"
         subtitle={`${pending.length} pending · ${reminders.filter(r => r.status === 'done').length} completed`}
-        actions={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Follow-up</button>}
+        actions={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Reminder</button>}
       />
 
       {/* Filters */}
@@ -209,7 +209,7 @@ export default function Reminders() {
 
       {filterStatus === 'pending' ? (
         all.length === 0 ? (
-          <EmptyState icon={Bell} title="No pending follow-ups" description="You're all caught up." action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Follow-up</button>} />
+          <EmptyState icon={Bell} title="No pending reminders" description="You're all caught up." action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Reminder</button>} />
         ) : (
           <>
             <Section title="Overdue"  items={overdue}  className="text-red-600 dark:text-red-400" />
@@ -219,7 +219,7 @@ export default function Reminders() {
         )
       ) : (
         done.length === 0 ? (
-          <EmptyState icon={CheckCircle2} title="No completed follow-ups yet" />
+          <EmptyState icon={CheckCircle2} title="No completed reminders yet" />
         ) : (
           <div className="space-y-2">
             {done.map(r => (
@@ -233,7 +233,7 @@ export default function Reminders() {
       )}
 
       {showAdd && (
-        <Modal title="Add Follow-up" onClose={() => setShowAdd(false)} size="lg">
+        <Modal title="Add Reminder" onClose={() => setShowAdd(false)} size="lg">
           <ReminderForm onSubmit={handleAdd} onCancel={() => setShowAdd(false)} />
         </Modal>
       )}

@@ -161,7 +161,7 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
       <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <Bell size={15} className="text-brand-500" />
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Follow-ups</h3>
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Reminders</h3>
           {pending.length > 0 && (
             <span className="badge text-[10px] bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">{pending.length}</span>
           )}
@@ -236,8 +236,8 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
       {displayed.length === 0 && !showForm && done.length === 0 && (
         <div className="px-5 py-8 text-center">
           <Bell size={22} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-          <p className="text-sm text-gray-400 dark:text-gray-500">No follow-ups scheduled</p>
-          <button onClick={() => setShowForm(true)} className="text-xs text-brand-600 dark:text-brand-400 hover:underline mt-1">Add first follow-up</button>
+          <p className="text-sm text-gray-400 dark:text-gray-500">No reminders scheduled</p>
+          <button onClick={() => setShowForm(true)} className="text-xs text-brand-600 dark:text-brand-400 hover:underline mt-1">Add first reminder</button>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { parseISO, isToday, addDays, isBefore, isAfter } from 'date-fns'
-import { Bell, Users, Building2, Briefcase, CheckCircle2, ArrowRight, AlertCircle } from 'lucide-react'
+import { Bell, Users, Building2, Briefcase, CheckCircle2, ArrowRight, AlertCircle, Calendar } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
@@ -86,7 +86,7 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-8">
-        <StatCard icon={Bell}      label="Pending follow-ups" value={pending.length}    to="/reminders"  color="bg-brand-500" />
+        <StatCard icon={Bell}      label="Pending reminders" value={pending.length}    to="/reminders"  color="bg-brand-500" />
         <StatCard icon={Users}     label="Contacts"           value={contacts.length}   to="/contacts"   color="bg-blue-500" />
         <StatCard icon={Building2} label="Companies"          value={companies.length}  to="/companies"  color="bg-violet-500" />
         <StatCard icon={Briefcase}  label="Active deals"        value={properties.length} to="/properties" color="bg-teal-500" />
@@ -158,34 +158,40 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Right: stale contacts */}
-        <div>
+        {/* Right sidebar */}
+        <div className="space-y-6">
+          {/* Needs Attention */}
           <div className="card p-5">
             <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200 mb-1">Needs Attention</h2>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-4">Not contacted in 30+ days</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">Not contacted in 30+ days</p>
             {stale.length === 0 ? (
               <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">All contacts are fresh</p>
             ) : (
-              <div className="space-y-3">
-                {stale.map(c => {
-                  const lastReminder = reminders
-                    .filter(r => r.contactId === c.id && r.status === 'done')
-                    .sort((a, b) => (b.completedAt || b.dueDate).localeCompare(a.completedAt || a.dueDate))[0]
-                  return (
-                    <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-3 group">
-                      <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                        <span className="text-[11px] font-semibold text-brand-700 dark:text-brand-300">
-                          {c.firstName[0]}{c.lastName[0]}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 truncate transition-colors">{fullName(c)}</p>
-                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                          {c.lastContacted ? `${daysDiff(c.lastContacted)}d ago` : 'Never contacted'}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3 flex-shrink-0 mr-4">
-                        <div className="w-16 text-right">
+              <>
+                <div className="flex items-center gap-3 mb-2 px-0">
+                  <div className="w-8 flex-shrink-0" />
+                  <div className="flex-1"><span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Last touch</span></div>
+                  <div className="w-16 text-right flex-shrink-0"><span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Last type</span></div>
+                </div>
+                <div className="space-y-3">
+                  {stale.map(c => {
+                    const lastReminder = reminders
+                      .filter(r => r.contactId === c.id && r.status === 'done')
+                      .sort((a, b) => (b.completedAt || b.dueDate).localeCompare(a.completedAt || a.dueDate))[0]
+                    return (
+                      <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-3 group">
+                        <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
+                          <span className="text-[11px] font-semibold text-brand-700 dark:text-brand-300">
+                            {c.firstName[0]}{c.lastName[0]}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 truncate transition-colors">{fullName(c)}</p>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                            {c.lastContacted ? `${daysDiff(c.lastContacted)}d ago` : 'Never contacted'}
+                          </p>
+                        </div>
+                        <div className="w-16 text-right flex-shrink-0">
                           {lastReminder ? (
                             <span className={clsx('badge text-[10px] py-0', TYPE_COLORS[lastReminder.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
                               {lastReminder.type}
@@ -194,7 +200,59 @@ export default function Dashboard() {
                             <span className="text-[10px] text-gray-400 dark:text-gray-500">None</span>
                           )}
                         </div>
-                        <div className="w-24 flex gap-1 flex-wrap justify-end">
+                      </Link>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+            <Link to="/contacts" className="flex items-center gap-1 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors">
+              All contacts <ArrowRight size={11} />
+            </Link>
+          </div>
+
+          {/* Upcoming */}
+          <div className="card p-5">
+            <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200 mb-1">Upcoming</h2>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">Next reminders by contact</p>
+            {(() => {
+              const contactsWithUpcoming = contacts
+                .map(c => {
+                  const next = reminders
+                    .filter(r => r.contactId === c.id && r.status !== 'done')
+                    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0]
+                  return next ? { contact: c, reminder: next } : null
+                })
+                .filter(Boolean)
+                .sort((a, b) => a.reminder.dueDate.localeCompare(b.reminder.dueDate))
+                .slice(0, 6)
+
+              if (contactsWithUpcoming.length === 0) {
+                return <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">No upcoming reminders</p>
+              }
+
+              return (
+                <div className="space-y-3">
+                  {contactsWithUpcoming.map(({ contact: c, reminder: r }) => {
+                    const ov = isOverdue(r.dueDate)
+                    const td = isDueToday(r.dueDate)
+                    return (
+                      <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-3 group">
+                        <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
+                          <span className="text-[11px] font-semibold text-brand-700 dark:text-brand-300">
+                            {c.firstName[0]}{c.lastName[0]}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 truncate transition-colors">{fullName(c)}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className={clsx('badge text-[10px] py-0', TYPE_COLORS[r.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{r.type}</span>
+                            <span className={clsx('text-[10px] flex items-center gap-0.5', ov ? 'text-red-500' : td ? 'text-orange-500' : 'text-gray-400 dark:text-gray-500')}>
+                              <Calendar size={9} /> {ov ? `${daysDiff(r.dueDate)}d overdue` : formatDate(r.dueDate)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 flex-wrap justify-end flex-shrink-0 max-w-[100px]">
                           {c.tags?.length > 0 ? (
                             <>
                               {c.tags.slice(0, 2).map(t => (
@@ -206,14 +264,14 @@ export default function Dashboard() {
                             <span className="text-[10px] text-gray-400 dark:text-gray-500">—</span>
                           )}
                         </div>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-            <Link to="/contacts" className="flex items-center gap-1 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors">
-              All contacts <ArrowRight size={11} />
+                      </Link>
+                    )
+                  })}
+                </div>
+              )
+            })()}
+            <Link to="/reminders" className="flex items-center gap-1 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors">
+              All reminders <ArrowRight size={11} />
             </Link>
           </div>
         </div>

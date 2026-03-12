@@ -55,7 +55,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
       <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <Clock size={15} className="text-brand-500" />
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Activity</h3>
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Activity Log</h3>
           {items.length > 0 && (
             <span className="text-xs text-gray-400 dark:text-gray-500">{items.length} entries</span>
           )}
