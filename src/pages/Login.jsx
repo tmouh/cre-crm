@@ -32,7 +32,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <img src="/V.png" alt="Vanadium" className="w-16 h-16 rounded-2xl object-contain mb-4 shadow-lg" />
+          <img src="/Vtransparent.png" alt="Vanadium" className="w-16 h-16 rounded-2xl object-contain mb-4 shadow-lg" />
           <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Vanadium CRM</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Sign in to your workspace</p>
         </div>
