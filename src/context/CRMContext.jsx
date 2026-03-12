@@ -3,6 +3,15 @@ import { db, seedDatabase } from '../lib/supabase'
 
 const CRMContext = createContext(null)
 
+// Returns the most recent contact date from activities + completed reminders
+function calcLastContacted(contactId, activitiesList, remindersList) {
+  const dates = [
+    ...activitiesList.filter(a => a.contactId === contactId && a.createdAt).map(a => a.createdAt),
+    ...remindersList.filter(r => r.contactId === contactId && r.status === 'done' && (r.completedAt || r.dueDate)).map(r => r.completedAt || r.dueDate),
+  ].filter(Boolean).sort().reverse()
+  return dates[0] || null
+}
+
 export function CRMProvider({ children }) {
   const [contacts,     setContacts]     = useState([])
   const [companies,    setCompanies]    = useState([])
@@ -195,30 +204,42 @@ export function CRMProvider({ children }) {
   // ─── ACTIVITIES ───────────────────────────────────────────────────────────
   const addActivity = useCallback(async (activity) => {
     const rec = await db.activities.insert(activity)
-    setActivities(prev => [...prev, rec])
+    const newActivities = [...activities, rec]
+    setActivities(newActivities)
     if (activity.contactId) {
-      // Only update lastContacted if the activity date is more recent
-      const contact = contacts.find(c => c.id === activity.contactId)
-      const actDate = rec.date || rec.createdAt
-      if (!contact?.lastContacted || actDate > contact.lastContacted) {
-        await db.contacts.update(activity.contactId, { lastContacted: actDate })
-        setContacts(prev => prev.map(c =>
-          c.id === activity.contactId ? { ...c, lastContacted: actDate } : c
-        ))
-      }
+      const maxDate = calcLastContacted(activity.contactId, newActivities, reminders)
+      await db.contacts.update(activity.contactId, { lastContacted: maxDate })
+      setContacts(prev => prev.map(c =>
+        c.id === activity.contactId ? { ...c, lastContacted: maxDate } : c
+      ))
     }
     return rec
-  }, [contacts])
+  }, [activities, reminders])
 
   const updateActivity = useCallback(async (id, patch) => {
+    const old = activities.find(a => a.id === id)
     const rec = await db.activities.update(id, patch)
-    setActivities(prev => prev.map(a => a.id === id ? rec : a))
-  }, [])
+    const newActivities = activities.map(a => a.id === id ? rec : a)
+    setActivities(newActivities)
+    const contactId = old?.contactId || rec.contactId
+    if (contactId) {
+      const maxDate = calcLastContacted(contactId, newActivities, reminders)
+      await db.contacts.update(contactId, { lastContacted: maxDate })
+      setContacts(prev => prev.map(c => c.id === contactId ? { ...c, lastContacted: maxDate } : c))
+    }
+  }, [activities, reminders])
 
   const deleteActivity = useCallback(async (id) => {
+    const old = activities.find(a => a.id === id)
     await db.activities.delete(id)
-    setActivities(prev => prev.filter(a => a.id !== id))
-  }, [])
+    const newActivities = activities.filter(a => a.id !== id)
+    setActivities(newActivities)
+    if (old?.contactId) {
+      const maxDate = calcLastContacted(old.contactId, newActivities, reminders)
+      await db.contacts.update(old.contactId, { lastContacted: maxDate })
+      setContacts(prev => prev.map(c => c.id === old.contactId ? { ...c, lastContacted: maxDate } : c))
+    }
+  }, [activities, reminders])
 
   // ─── Lookups (synchronous — read from in-memory state) ────────────────────
   const getContact  = useCallback((id) => contacts.find(c => c.id === id),   [contacts])
