@@ -149,7 +149,7 @@ function ContactDetail() {
   }
 
   return (
-    <div className="px-8 py-8 max-w-4xl">
+    <div className="px-8 py-8">
       <Link to="/contacts" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6">
         <ArrowLeft size={15} /> Contacts
       </Link>
@@ -299,7 +299,7 @@ export default function Contacts() {
   }
 
   return (
-    <div className="px-8 py-8 max-w-5xl">
+    <div className="px-8 py-8">
       <PageHeader
         title="Contacts"
         subtitle={`${contacts.length} contact${contacts.length !== 1 ? 's' : ''}`}

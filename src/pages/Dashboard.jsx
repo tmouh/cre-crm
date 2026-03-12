@@ -74,7 +74,7 @@ export default function Dashboard() {
   }).slice(0, 5)
 
   return (
-    <div className="px-8 py-8 max-w-5xl">
+    <div className="px-8 py-8">
       <div className="mb-8">
         <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-sm text-gray-500 mt-0.5">Your CRE outreach at a glance</p>

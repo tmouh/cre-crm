@@ -154,7 +154,7 @@ export default function Reminders() {
   }
 
   return (
-    <div className="px-8 py-8 max-w-3xl">
+    <div className="px-8 py-8">
       <PageHeader
         title="Follow-ups"
         subtitle={`${pending.length} pending · ${reminders.filter(r => r.status === 'done').length} completed`}

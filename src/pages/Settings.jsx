@@ -30,7 +30,7 @@ export default function Settings() {
   ]
 
   return (
-    <div className="px-8 py-8 max-w-2xl">
+    <div className="px-8 py-8">
       <PageHeader title="Settings" subtitle="Manage your preferences" />
 
       {/* Appearance */}

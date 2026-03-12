@@ -147,7 +147,7 @@ function PropertyDetail() {
   }
 
   return (
-    <div className="px-8 py-8 max-w-4xl">
+    <div className="px-8 py-8">
       <Link to="/properties" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6">
         <ArrowLeft size={15} /> Properties
       </Link>
@@ -281,7 +281,7 @@ export default function Properties() {
   }).sort((a, b) => a.name.localeCompare(b.name))
 
   return (
-    <div className="px-8 py-8 max-w-5xl">
+    <div className="px-8 py-8">
       <PageHeader
         title="Properties"
         subtitle={`${properties.length} propert${properties.length !== 1 ? 'ies' : 'y'}`}
