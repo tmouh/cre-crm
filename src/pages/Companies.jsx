@@ -12,6 +12,7 @@ import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import ImportModal from '../components/ImportModal'
 import CompanyTypeCombobox from '../components/CompanyTypeCombobox'
+import DuplicateCheckModal from '../components/DuplicateCheckModal'
 
 const BLANK = { name: '', type: 'owner', address: '', phone: '', email: '', website: '', notes: '', tags: [] }
 
@@ -136,16 +137,17 @@ function CompanyDetail() {
           </div>
 
           {/* Contacts */}
-          {relatedContacts.length > 0 && (
-            <div className="card p-4">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Contacts ({relatedContacts.length})</p>
+          <div className="card p-4">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Contacts ({relatedContacts.length})</p>
+            {relatedContacts.length > 0 ? (
               <div className="space-y-2.5">
                 {relatedContacts.map(c => {
                   const owners = (c.ownerIds || []).map(oid => teamMembers.find(m => m.id === oid)).filter(Boolean)
+                  const initials = `${(c.firstName || '')[0] || ''}${(c.lastName || '')[0] || ''}`
                   return (
                     <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 group">
                       <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{c.firstName[0]}{c.lastName[0]}</span>
+                        <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{initials}</span>
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-gray-800 dark:text-gray-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">{fullName(c)}</p>
@@ -163,8 +165,10 @@ function CompanyDetail() {
                   )
                 })}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-sm text-gray-400 dark:text-gray-500">No contacts linked to this company.</p>
+            )}
+          </div>
 
           {/* Properties */}
           {(ownedProperties.length > 0 || tenantProperties.length > 0) && (
@@ -333,6 +337,7 @@ export default function Companies() {
   const [showImport, setShowImport] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [showBulkEdit, setShowBulkEdit] = useState(false)
+  const [dupCheck, setDupCheck] = useState(null) // { newData, existing }
 
   const filtered = useMemo(() => companies.filter(c => {
     const q = search.toLowerCase()
@@ -527,8 +532,51 @@ export default function Companies() {
 
       {showAdd && (
         <Modal title="Add Company" onClose={() => setShowAdd(false)} size="lg">
-          <CompanyForm onSubmit={async (form) => { await addCompany(form); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
+          <CompanyForm onSubmit={async (form) => {
+            const dup = companies.find(c => c.name.toLowerCase() === form.name.toLowerCase())
+            if (dup) {
+              setDupCheck({ newData: form, existing: dup })
+            } else {
+              await addCompany(form)
+              setShowAdd(false)
+            }
+          }} onCancel={() => setShowAdd(false)} />
         </Modal>
+      )}
+
+      {dupCheck && (
+        <DuplicateCheckModal
+          entityType="company"
+          matchFields={[
+            { label: 'Name', existingVal: dupCheck.existing.name, newVal: dupCheck.newData.name },
+            { label: 'Type', existingVal: dupCheck.existing.type, newVal: dupCheck.newData.type },
+            { label: 'Address', existingVal: dupCheck.existing.address, newVal: dupCheck.newData.address },
+            { label: 'Phone', existingVal: dupCheck.existing.phone, newVal: dupCheck.newData.phone },
+            { label: 'Email', existingVal: dupCheck.existing.email, newVal: dupCheck.newData.email },
+            { label: 'Website', existingVal: dupCheck.existing.website, newVal: dupCheck.newData.website },
+          ]}
+          onAdd={async () => {
+            await addCompany(dupCheck.newData)
+            setDupCheck(null)
+            setShowAdd(false)
+          }}
+          onMerge={async () => {
+            const merged = {}
+            for (const [k, v] of Object.entries(dupCheck.newData)) {
+              if (v && (!dupCheck.existing[k] || (Array.isArray(v) && v.length && (!dupCheck.existing[k] || !dupCheck.existing[k].length)))) {
+                merged[k] = v
+              }
+            }
+            // Merge tags
+            if (dupCheck.newData.tags?.length) {
+              merged.tags = [...new Set([...(dupCheck.existing.tags || []), ...dupCheck.newData.tags])]
+            }
+            await updateCompany(dupCheck.existing.id, merged)
+            setDupCheck(null)
+            setShowAdd(false)
+          }}
+          onCancel={() => setDupCheck(null)}
+        />
       )}
 
       {showImport && (

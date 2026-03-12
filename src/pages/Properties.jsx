@@ -11,6 +11,7 @@ import ReminderList from '../components/ReminderList'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import ImportModal from '../components/ImportModal'
+import DuplicateCheckModal from '../components/DuplicateCheckModal'
 
 const BLANK = { name: '', address: '', type: 'office', subtype: '', size: '', sizeUnit: 'SF', status: 'available', askingRent: '', rentUnit: '/SF/yr', ownerCompanyId: '', tenantCompanyId: '', contactIds: [], floor: '', notes: '', tags: [] }
 
@@ -265,12 +266,13 @@ export default function Properties() {
   const { id } = useParams()
   if (id) return <PropertyDetail />
 
-  const { properties, addProperty, getCompany } = useCRM()
+  const { properties, addProperty, updateProperty, getCompany } = useCRM()
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [dupCheck, setDupCheck] = useState(null)
 
   const filtered = properties.filter(p => {
     const q = search.toLowerCase()
@@ -344,8 +346,55 @@ export default function Properties() {
 
       {showAdd && (
         <Modal title="Add Property" onClose={() => setShowAdd(false)} size="lg">
-          <PropertyForm onSubmit={async (form) => { await addProperty(form); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
+          <PropertyForm onSubmit={async (form) => {
+            const dup = properties.find(p =>
+              p.name.toLowerCase() === form.name.toLowerCase() ||
+              (form.address && p.address && p.address.toLowerCase() === form.address.toLowerCase())
+            )
+            if (dup) {
+              setDupCheck({ newData: form, existing: dup })
+            } else {
+              await addProperty(form)
+              setShowAdd(false)
+            }
+          }} onCancel={() => setShowAdd(false)} />
         </Modal>
+      )}
+
+      {dupCheck && (
+        <DuplicateCheckModal
+          entityType="property"
+          matchFields={[
+            { label: 'Name', existingVal: dupCheck.existing.name, newVal: dupCheck.newData.name },
+            { label: 'Address', existingVal: dupCheck.existing.address, newVal: dupCheck.newData.address },
+            { label: 'Type', existingVal: dupCheck.existing.type, newVal: dupCheck.newData.type },
+            { label: 'Status', existingVal: dupCheck.existing.status, newVal: dupCheck.newData.status },
+            { label: 'Size', existingVal: dupCheck.existing.size ? `${dupCheck.existing.size} ${dupCheck.existing.sizeUnit}` : '', newVal: dupCheck.newData.size ? `${dupCheck.newData.size} ${dupCheck.newData.sizeUnit}` : '' },
+            { label: 'Owner', existingVal: getCompany(dupCheck.existing.ownerCompanyId)?.name, newVal: getCompany(dupCheck.newData.ownerCompanyId)?.name },
+          ]}
+          onAdd={async () => {
+            await addProperty(dupCheck.newData)
+            setDupCheck(null)
+            setShowAdd(false)
+          }}
+          onMerge={async () => {
+            const merged = {}
+            for (const [k, v] of Object.entries(dupCheck.newData)) {
+              if (k === 'tags' || k === 'contactIds') continue
+              if (v && !dupCheck.existing[k]) merged[k] = v
+            }
+            if (dupCheck.newData.tags?.length) {
+              merged.tags = [...new Set([...(dupCheck.existing.tags || []), ...dupCheck.newData.tags])]
+            }
+            if (dupCheck.newData.contactIds?.length) {
+              merged.contactIds = [...new Set([...(dupCheck.existing.contactIds || []), ...dupCheck.newData.contactIds])]
+            }
+            await updateProperty(dupCheck.existing.id, merged)
+            setDupCheck(null)
+            setShowAdd(false)
+          }}
+          onCancel={() => setDupCheck(null)}
+        />
       )}
 
       {showImport && (

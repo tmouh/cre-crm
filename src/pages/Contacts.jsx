@@ -14,6 +14,7 @@ import PageHeader from '../components/PageHeader'
 import CompanyCombobox from '../components/CompanyCombobox'
 import ImportModal from '../components/ImportModal'
 import OutlookImport from '../components/OutlookImport'
+import DuplicateCheckModal from '../components/DuplicateCheckModal'
 
 const BLANK = { firstName: '', lastName: '', title: '', companyId: '', email: '', phone: '', mobile: '', linkedIn: '', notes: '', tags: [], ownerIds: [] }
 
@@ -279,12 +280,13 @@ export default function Contacts() {
   const { id } = useParams()
   if (id) return <ContactDetail />
 
-  const { contacts, companies, addContact, getCompany, teamMembers } = useCRM()
+  const { contacts, companies, addContact, updateContact, getCompany, teamMembers } = useCRM()
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showOutlookImport, setShowOutlookImport] = useState(false)
   const [filterCompany, setFilterCompany] = useState('')
+  const [dupCheck, setDupCheck] = useState(null)
 
   const filtered = contacts.filter(c => {
     const q = search.toLowerCase()
@@ -294,8 +296,16 @@ export default function Contacts() {
   }).sort((a, b) => fullName(a).localeCompare(fullName(b)))
 
   async function handleAdd(form) {
-    await addContact(form)
-    setShowAdd(false)
+    const dup = contacts.find(c =>
+      (c.firstName.toLowerCase() === form.firstName.toLowerCase() && c.lastName.toLowerCase() === form.lastName.toLowerCase()) ||
+      (form.email && c.email && c.email.toLowerCase() === form.email.toLowerCase())
+    )
+    if (dup) {
+      setDupCheck({ newData: form, existing: dup })
+    } else {
+      await addContact(form)
+      setShowAdd(false)
+    }
   }
 
   return (
@@ -412,6 +422,43 @@ export default function Contacts() {
         <Modal title="Add Contact" onClose={() => setShowAdd(false)} size="lg">
           <ContactForm onSubmit={handleAdd} onCancel={() => setShowAdd(false)} />
         </Modal>
+      )}
+
+      {dupCheck && (
+        <DuplicateCheckModal
+          entityType="contact"
+          matchFields={[
+            { label: 'First Name', existingVal: dupCheck.existing.firstName, newVal: dupCheck.newData.firstName },
+            { label: 'Last Name', existingVal: dupCheck.existing.lastName, newVal: dupCheck.newData.lastName },
+            { label: 'Title', existingVal: dupCheck.existing.title, newVal: dupCheck.newData.title },
+            { label: 'Email', existingVal: dupCheck.existing.email, newVal: dupCheck.newData.email },
+            { label: 'Phone', existingVal: dupCheck.existing.phone, newVal: dupCheck.newData.phone },
+            { label: 'Mobile', existingVal: dupCheck.existing.mobile, newVal: dupCheck.newData.mobile },
+            { label: 'Company', existingVal: getCompany(dupCheck.existing.companyId)?.name, newVal: getCompany(dupCheck.newData.companyId)?.name },
+          ]}
+          onAdd={async () => {
+            await addContact(dupCheck.newData)
+            setDupCheck(null)
+            setShowAdd(false)
+          }}
+          onMerge={async () => {
+            const merged = {}
+            for (const [k, v] of Object.entries(dupCheck.newData)) {
+              if (k === 'tags' || k === 'ownerIds') continue
+              if (v && !dupCheck.existing[k]) merged[k] = v
+            }
+            if (dupCheck.newData.tags?.length) {
+              merged.tags = [...new Set([...(dupCheck.existing.tags || []), ...dupCheck.newData.tags])]
+            }
+            if (dupCheck.newData.ownerIds?.length) {
+              merged.ownerIds = [...new Set([...(dupCheck.existing.ownerIds || []), ...dupCheck.newData.ownerIds])]
+            }
+            await updateContact(dupCheck.existing.id, merged)
+            setDupCheck(null)
+            setShowAdd(false)
+          }}
+          onCancel={() => setDupCheck(null)}
+        />
       )}
 
       {showImport && (
