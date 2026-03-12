@@ -27,7 +27,8 @@ function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
         <div>
           <label className="label">Type</label>
           <select value={form.type} onChange={f('type')} className="input">
-            {[...REMINDER_TYPES].sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+            {[...REMINDER_TYPES].filter(t => t !== 'other').sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+            {REMINDER_TYPES.includes('other') && <option value="other">Other</option>}
           </select>
         </div>
         <div>
