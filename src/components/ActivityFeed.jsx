@@ -22,8 +22,9 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
   const [type, setType] = useState('note')
   const [text, setText] = useState('')
   const [activityDate, setActivityDate] = useState(new Date().toISOString().slice(0, 10))
+  const [activityTime, setActivityTime] = useState(new Date().toTimeString().slice(0, 5))
   const [editingId, setEditingId] = useState(null)
-  const [editForm, setEditForm] = useState({ type: '', description: '', date: '' })
+  const [editForm, setEditForm] = useState({ type: '', description: '', date: '', time: '' })
 
   const field = contactId ? 'contactId' : companyId ? 'companyId' : 'propertyId'
   const id = contactId || companyId || propertyId
@@ -32,22 +33,23 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
   async function submit(e) {
     e.preventDefault()
     if (!text.trim()) return
-    await addActivity({ type, description: text.trim(), contactId, companyId, propertyId, createdAt: activityDate ? new Date(activityDate + 'T12:00:00').toISOString() : undefined })
+    await addActivity({ type, description: text.trim(), contactId, companyId, propertyId, createdAt: activityDate ? new Date(activityDate + 'T' + (activityTime || '12:00') + ':00').toISOString() : undefined })
     setText('')
     setType('note')
     setActivityDate(new Date().toISOString().slice(0, 10))
+    setActivityTime(new Date().toTimeString().slice(0, 5))
     setShowForm(false)
   }
 
   function startEdit(a) {
     setEditingId(a.id)
-    setEditForm({ type: a.type, description: a.description, date: (a.createdAt || '').slice(0, 10) })
+    setEditForm({ type: a.type, description: a.description, date: (a.createdAt || '').slice(0, 10), time: a.createdAt ? new Date(a.createdAt).toTimeString().slice(0, 5) : '12:00' })
   }
 
   async function saveEdit(e) {
     e.preventDefault()
     if (!editForm.description.trim()) return
-    await updateActivity(editingId, { type: editForm.type, description: editForm.description, createdAt: editForm.date ? new Date(editForm.date + 'T12:00:00').toISOString() : undefined })
+    await updateActivity(editingId, { type: editForm.type, description: editForm.description, createdAt: editForm.date ? new Date(editForm.date + 'T' + (editForm.time || '12:00') + ':00').toISOString() : undefined })
     setEditingId(null)
   }
 
@@ -91,6 +93,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
             placeholder="What happened?" rows={3} className="input text-sm resize-y" />
           <div className="flex items-center gap-2 mt-2">
             <input type="date" value={activityDate} onChange={e => setActivityDate(e.target.value)} className="input text-xs py-1.5 w-36" />
+            <input type="time" value={activityTime} onChange={e => setActivityTime(e.target.value)} className="input text-xs py-1.5 w-28" />
             <div className="flex-1" />
             <button type="submit" className="btn-primary text-xs py-1.5">Save</button>
             <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-xs py-1.5">Cancel</button>
@@ -132,6 +135,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
                           {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
                         </select>
                         <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} className="input text-xs py-1.5 w-36" />
+                        <input type="time" value={editForm.time} onChange={e => setEditForm(f => ({ ...f, time: e.target.value }))} className="input text-xs py-1.5 w-28" />
                       </div>
                       <textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
                         className="input text-sm resize-y" rows={2} />
