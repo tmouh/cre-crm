@@ -11,6 +11,7 @@ import ReminderList from '../components/ReminderList'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import ImportModal from '../components/ImportModal'
+import CompanyTypeCombobox from '../components/CompanyTypeCombobox'
 
 const BLANK = { name: '', type: 'owner', address: '', phone: '', email: '', website: '', notes: '', tags: [] }
 
@@ -26,9 +27,7 @@ function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       <div>
         <label className="label">Type</label>
-        <select value={form.type} onChange={f('type')} className="input">
-          {COMPANY_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-        </select>
+        <CompanyTypeCombobox value={form.type} onChange={(val) => setForm(p => ({ ...p, type: val }))} />
       </div>
       <div>
         <label className="label">Address</label>
@@ -274,9 +273,7 @@ function BulkEditModal({ selected, onClose, onSave }) {
         {field === 'type' && (
           <div>
             <label className="label">New type</label>
-            <select value={typeVal} onChange={e => setTypeVal(e.target.value)} className="input" disabled={status === 'saving'}>
-              {COMPANY_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-            </select>
+            <CompanyTypeCombobox value={typeVal} onChange={setTypeVal} disabled={status === 'saving'} />
           </div>
         )}
 
@@ -423,7 +420,9 @@ export default function Companies() {
         </div>
         <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-40">
           <option value="">All types</option>
-          {COMPANY_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+          {[...new Set([...COMPANY_TYPES, ...companies.map(c => c.type).filter(Boolean)])].map(t => (
+            <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+          ))}
         </select>
       </div>
 

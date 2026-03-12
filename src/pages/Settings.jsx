@@ -3,6 +3,7 @@ import { Sun, Moon, Monitor, Settings as SettingsIcon } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 import { COMPANY_TYPES, PRIORITIES } from '../utils/helpers'
 import PageHeader from '../components/PageHeader'
+import CompanyTypeCombobox from '../components/CompanyTypeCombobox'
 
 const STORAGE_PREFIX = 'vanadium-setting-'
 
@@ -64,11 +65,9 @@ export default function Settings() {
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Set default values for new records.</p>
 
         <div className="space-y-4">
-          <div>
+          <div className="max-w-xs">
             <label className="label">Default company type</label>
-            <select value={defaultCompanyType} onChange={e => setDefaultCompanyType(e.target.value)} className="input max-w-xs">
-              {COMPANY_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-            </select>
+            <CompanyTypeCombobox value={defaultCompanyType} onChange={setDefaultCompanyType} />
           </div>
           <div>
             <label className="label">Default reminder priority</label>
