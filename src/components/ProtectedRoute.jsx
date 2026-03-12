@@ -7,7 +7,7 @@ export default function ProtectedRoute({ children }) {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
         <Loader2 size={24} className="animate-spin text-brand-500" />
       </div>
     )

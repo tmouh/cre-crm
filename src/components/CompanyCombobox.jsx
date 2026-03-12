@@ -73,16 +73,16 @@ export default function CompanyCombobox({ value, onChange, onCreateAndSelect }) 
       </div>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
           {filtered.length === 0 && !showCreate && (
-            <p className="px-3 py-2.5 text-sm text-gray-400">No companies found</p>
+            <p className="px-3 py-2.5 text-sm text-gray-400 dark:text-gray-500">No companies found</p>
           )}
           {filtered.map(c => (
             <button
               key={c.id}
               type="button"
               onClick={() => handleSelect(c)}
-              className="w-full text-left px-3 py-2 text-sm text-gray-800 hover:bg-brand-50 hover:text-brand-700"
+              className="w-full text-left px-3 py-2 text-sm text-gray-800 dark:text-gray-200 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:text-brand-300"
             >
               {c.name}
             </button>
@@ -92,7 +92,7 @@ export default function CompanyCombobox({ value, onChange, onCreateAndSelect }) 
               type="button"
               onClick={handleCreate}
               disabled={creating}
-              className="w-full text-left px-3 py-2 text-sm text-brand-600 hover:bg-brand-50 flex items-center gap-1.5 border-t border-gray-100"
+              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-gray-100 dark:border-gray-700"
             >
               {creating
                 ? <><Loader2 size={13} className="animate-spin" /> Creating…</>

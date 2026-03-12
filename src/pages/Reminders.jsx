@@ -81,31 +81,31 @@ function ReminderRow({ reminder, onComplete, onDelete, contact, company, propert
   return (
     <div className={clsx(
       'flex items-start gap-3 p-4 rounded-xl border transition-colors group',
-      reminder.status === 'done' ? 'border-gray-100 bg-gray-50 opacity-60' :
-      overdue ? 'border-red-200 bg-red-50' :
-      today   ? 'border-orange-100 bg-orange-50' :
-                'border-gray-200 bg-white hover:border-gray-300'
+      reminder.status === 'done' ? 'border-gray-100 bg-gray-50 opacity-60 dark:border-gray-700 dark:bg-gray-800/50' :
+      overdue ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' :
+      today   ? 'border-orange-100 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20' :
+                'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
     )}>
-      <button onClick={() => onComplete(reminder.id)} className={clsx('mt-0.5 flex-shrink-0 transition-colors', reminder.status === 'done' ? 'text-green-500' : 'text-gray-300 hover:text-green-500')}>
+      <button onClick={() => onComplete(reminder.id)} className={clsx('mt-0.5 flex-shrink-0 transition-colors', reminder.status === 'done' ? 'text-green-500' : 'text-gray-300 hover:text-green-500 dark:text-gray-600 dark:hover:text-green-400')}>
         <CheckCircle2 size={18} />
       </button>
       <div className="flex-1 min-w-0">
-        <p className={clsx('text-sm font-medium', reminder.status === 'done' ? 'line-through text-gray-400' : 'text-gray-900')}>{reminder.title}</p>
+        <p className={clsx('text-sm font-medium', reminder.status === 'done' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100')}>{reminder.title}</p>
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-          {contact && <Link to={`/contacts/${contact.id}`} className="text-xs text-brand-600 hover:underline">{fullName(contact)}</Link>}
-          {company && <><span className="text-gray-300">·</span><Link to={`/companies/${company.id}`} className="text-xs text-gray-500 hover:underline">{company.name}</Link></>}
-          {property && <><span className="text-gray-300">·</span><Link to={`/properties/${property.id}`} className="text-xs text-gray-500 hover:underline">{property.name}</Link></>}
+          {contact && <Link to={`/contacts/${contact.id}`} className="text-xs text-brand-600 hover:underline dark:text-brand-400">{fullName(contact)}</Link>}
+          {company && <><span className="text-gray-300 dark:text-gray-600">·</span><Link to={`/companies/${company.id}`} className="text-xs text-gray-500 hover:underline dark:text-gray-400">{company.name}</Link></>}
+          {property && <><span className="text-gray-300 dark:text-gray-600">·</span><Link to={`/properties/${property.id}`} className="text-xs text-gray-500 hover:underline dark:text-gray-400">{property.name}</Link></>}
         </div>
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-          <span className={clsx('badge', overdue && reminder.status !== 'done' ? 'bg-red-100 text-red-700' : today ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500')}>
+          <span className={clsx('badge', overdue && reminder.status !== 'done' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : today ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300')}>
             <Calendar size={10} className="inline mr-1" />{formatDate(reminder.dueDate)}
           </span>
-          <span className={clsx('badge', TYPE_COLORS[reminder.type] || 'bg-gray-100 text-gray-600')}>{reminder.type}</span>
+          <span className={clsx('badge', TYPE_COLORS[reminder.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{reminder.type}</span>
           <span className={clsx('badge', PRIORITY_COLORS[reminder.priority])}>{reminder.priority}</span>
         </div>
-        {reminder.notes && <p className="text-xs text-gray-400 mt-1.5">{reminder.notes}</p>}
+        {reminder.notes && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">{reminder.notes}</p>}
       </div>
-      <button onClick={() => onDelete(reminder.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-300 hover:text-red-500 transition-all flex-shrink-0">
+      <button onClick={() => onDelete(reminder.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-all flex-shrink-0">
         <Trash2 size={13} />
       </button>
     </div>
@@ -163,9 +163,9 @@ export default function Reminders() {
 
       {/* Filters */}
       <div className="flex gap-3 mb-6 flex-wrap">
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+        <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
           {['pending', 'done'].map(s => (
-            <button key={s} onClick={() => setFilterStatus(s)} className={clsx('px-4 py-2 text-sm font-medium transition-colors', filterStatus === s ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50')}>
+            <button key={s} onClick={() => setFilterStatus(s)} className={clsx('px-4 py-2 text-sm font-medium transition-colors', filterStatus === s ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700')}>
               {s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
           ))}
@@ -185,9 +185,9 @@ export default function Reminders() {
           <EmptyState icon={Bell} title="No pending follow-ups" description="You're all caught up." action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Follow-up</button>} />
         ) : (
           <>
-            <Section title="Overdue"  items={overdue}  className="text-red-600" />
-            <Section title="Today"    items={today}    className="text-orange-600" />
-            <Section title="Upcoming" items={upcoming} className="text-gray-500" />
+            <Section title="Overdue"  items={overdue}  className="text-red-600 dark:text-red-400" />
+            <Section title="Today"    items={today}    className="text-orange-600 dark:text-orange-400" />
+            <Section title="Upcoming" items={upcoming} className="text-gray-500 dark:text-gray-400" />
           </>
         )
       ) : (

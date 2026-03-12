@@ -51,39 +51,39 @@ export const ACTIVITY_TYPES = ['call', 'email', 'meeting', 'note', 'tour', 'prop
 export const PRIORITIES = ['high', 'medium', 'low']
 
 export const STATUS_COLORS = {
-  available:       'bg-green-100 text-green-700',
-  leased:          'bg-blue-100 text-blue-700',
-  'under-contract':'bg-yellow-100 text-yellow-700',
-  sold:            'bg-gray-100 text-gray-600',
-  'off-market':    'bg-gray-100 text-gray-600',
-  pending:         'bg-orange-100 text-orange-700',
+  available:       'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  leased:          'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  'under-contract':'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  sold:            'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+  'off-market':    'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+  pending:         'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
 }
 
 export const PRIORITY_COLORS = {
-  high:   'bg-red-100 text-red-700',
-  medium: 'bg-yellow-100 text-yellow-700',
-  low:    'bg-gray-100 text-gray-600',
+  high:   'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  low:    'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
 }
 
 export const TYPE_COLORS = {
-  call:     'bg-purple-100 text-purple-700',
-  email:    'bg-blue-100 text-blue-700',
-  meeting:  'bg-indigo-100 text-indigo-700',
-  tour:     'bg-teal-100 text-teal-700',
-  proposal: 'bg-orange-100 text-orange-700',
-  note:     'bg-gray-100 text-gray-600',
-  'follow-up': 'bg-pink-100 text-pink-700',
-  other:    'bg-gray-100 text-gray-600',
+  call:     'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  email:    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  meeting:  'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+  tour:     'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+  proposal: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  note:     'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+  'follow-up': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
+  other:    'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
 }
 
 export const COMPANY_TYPE_COLORS = {
-  owner:     'bg-blue-100 text-blue-700',
-  tenant:    'bg-green-100 text-green-700',
-  investor:  'bg-purple-100 text-purple-700',
-  developer: 'bg-orange-100 text-orange-700',
-  broker:    'bg-teal-100 text-teal-700',
-  lender:    'bg-yellow-100 text-yellow-700',
-  other:     'bg-gray-100 text-gray-600',
+  owner:     'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  tenant:    'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  investor:  'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  developer: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  broker:    'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+  lender:    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  other:     'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
 }
 
 export function fullName(contact) {

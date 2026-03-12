@@ -98,11 +98,11 @@ function PropertyForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       <div>
         <label className="label">Key contacts</label>
-        <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-2 space-y-1">
+        <div className="max-h-32 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg p-2 space-y-1">
           {contacts.map(c => (
-            <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+            <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 rounded">
               <input type="checkbox" checked={form.contactIds.includes(c.id)} onChange={() => toggleContact(c.id)} className="rounded" />
-              {fullName(c)} {c.title && <span className="text-gray-400 text-xs">· {c.title}</span>}
+              <span className="text-gray-700 dark:text-gray-300">{fullName(c)}</span> {c.title && <span className="text-gray-400 dark:text-gray-500 text-xs">· {c.title}</span>}
             </label>
           ))}
         </div>
@@ -135,7 +135,7 @@ function PropertyDetail() {
   const [editing, setEditing] = useState(false)
 
   const property = getProperty(id)
-  if (!property) return <div className="p-8 text-gray-400">Property not found.</div>
+  if (!property) return <div className="p-8 text-gray-400 dark:text-gray-500">Property not found.</div>
 
   const owner   = getCompany(property.ownerCompanyId)
   const tenant  = getCompany(property.tenantCompanyId)
@@ -148,7 +148,7 @@ function PropertyDetail() {
 
   return (
     <div className="px-8 py-8">
-      <Link to="/properties" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6">
+      <Link to="/properties" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
         <ArrowLeft size={15} /> Properties
       </Link>
 
@@ -156,7 +156,7 @@ function PropertyDetail() {
         <div className="col-span-1 space-y-4">
           <div className="card p-6">
             <div className="flex items-start justify-between mb-4">
-              <div className={clsx('badge text-sm px-3 py-1', STATUS_COLORS[property.status] || 'bg-gray-100 text-gray-600')}>
+              <div className={clsx('badge text-sm px-3 py-1', STATUS_COLORS[property.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
                 {property.status}
               </div>
               <div className="flex gap-1">
@@ -164,49 +164,49 @@ function PropertyDetail() {
                 <button onClick={handleDelete} className="btn-ghost p-2 hover:text-red-500"><Trash2 size={14} /></button>
               </div>
             </div>
-            <h2 className="text-lg font-bold text-gray-900">{property.name}</h2>
-            {property.subtype && <p className="text-sm text-gray-500">{property.type} · {property.subtype}</p>}
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{property.name}</h2>
+            {property.subtype && <p className="text-sm text-gray-500 dark:text-gray-400">{property.type} · {property.subtype}</p>}
             {property.address && (
-              <p className="text-sm text-gray-500 mt-1 flex items-start gap-1.5">
-                <MapPin size={13} className="text-gray-400 mt-0.5 flex-shrink-0" /> {property.address}
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-start gap-1.5">
+                <MapPin size={13} className="text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" /> {property.address}
               </p>
             )}
 
-            <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
               {property.size && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Size</span>
-                  <span className="font-medium">{Number(property.size).toLocaleString()} {property.sizeUnit}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Size</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{Number(property.size).toLocaleString()} {property.sizeUnit}</span>
                 </div>
               )}
               {property.askingRent && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Asking rent</span>
-                  <span className="font-medium">${property.askingRent}{property.rentUnit}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Asking rent</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">${property.askingRent}{property.rentUnit}</span>
                 </div>
               )}
               {property.floor && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Floor/Suite</span>
-                  <span className="font-medium">{property.floor}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Floor/Suite</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{property.floor}</span>
                 </div>
               )}
             </div>
 
             {(owner || tenant) && (
-              <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
                 {owner && (
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">Owner</p>
-                    <Link to={`/companies/${owner.id}`} className="text-sm text-brand-600 hover:underline flex items-center gap-1.5">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Owner</p>
+                    <Link to={`/companies/${owner.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400 flex items-center gap-1.5">
                       <Building2 size={13} /> {owner.name}
                     </Link>
                   </div>
                 )}
                 {tenant && (
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">Tenant</p>
-                    <Link to={`/companies/${tenant.id}`} className="text-sm text-brand-600 hover:underline flex items-center gap-1.5">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Tenant</p>
+                    <Link to={`/companies/${tenant.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400 flex items-center gap-1.5">
                       <Building2 size={13} /> {tenant.name}
                     </Link>
                   </div>
@@ -215,13 +215,13 @@ function PropertyDetail() {
             )}
 
             {keyContacts.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-400 mb-2">Key contacts</p>
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">Key contacts</p>
                 <div className="space-y-2">
                   {keyContacts.map(c => (
-                    <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600">
-                      <div className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-semibold text-brand-700">{c.firstName[0]}{c.lastName[0]}</span>
+                    <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400">
+                      <div className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{c.firstName[0]}{c.lastName[0]}</span>
                       </div>
                       <span className="truncate">{fullName(c)}</span>
                     </Link>
@@ -231,15 +231,15 @@ function PropertyDetail() {
             )}
 
             {property.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-100">
-                {property.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600">{t}</span>)}
+              <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                {property.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
               </div>
             )}
 
             {property.notes && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs font-medium text-gray-500 mb-1">Notes</p>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap">{property.notes}</p>
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Notes</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{property.notes}</p>
               </div>
             )}
           </div>
@@ -318,22 +318,22 @@ export default function Properties() {
               <Link key={p.id} to={`/properties/${p.id}`} className="card p-5 hover:shadow-md transition-shadow block">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">{p.name}</p>
-                    {p.address && <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1"><MapPin size={11} />{p.address}</p>}
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{p.name}</p>
+                    {p.address && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1"><MapPin size={11} />{p.address}</p>}
                   </div>
-                  <span className={clsx('badge', STATUS_COLORS[p.status] || 'bg-gray-100 text-gray-600')}>{p.status}</span>
+                  <span className={clsx('badge', STATUS_COLORS[p.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{p.status}</span>
                 </div>
-                <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
-                  <span className="badge bg-gray-100 text-gray-600">{p.type}</span>
+                <div className="flex items-center gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{p.type}</span>
                   {p.size && <span>{Number(p.size).toLocaleString()} {p.sizeUnit}</span>}
                   {p.askingRent && <span>${p.askingRent}{p.rentUnit}</span>}
                 </div>
                 {owner && (
-                  <p className="text-xs text-gray-400 mt-2 flex items-center gap-1"><Building2 size={11} />{owner.name}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-1"><Building2 size={11} />{owner.name}</p>
                 )}
                 {p.tags?.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-3">
-                    {p.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600">{t}</span>)}
+                    {p.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
                   </div>
                 )}
               </Link>

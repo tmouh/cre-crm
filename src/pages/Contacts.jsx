@@ -87,17 +87,17 @@ function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
       {teamMembers.length > 0 && (
         <div>
           <label className="label">Owners</label>
-          <div className="border border-gray-200 rounded-lg p-2 space-y-1 max-h-28 overflow-y-auto">
+          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2 space-y-1 max-h-28 overflow-y-auto">
             {teamMembers.map(m => (
-              <label key={m.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+              <label key={m.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 rounded">
                 <input
                   type="checkbox"
                   checked={form.ownerIds.includes(m.id)}
                   onChange={() => toggleOwner(m.id)}
                   className="rounded"
                 />
-                <span className="text-gray-700">{m.displayName || m.email}</span>
-                {m.id === user?.id && <span className="text-xs text-gray-400">(you)</span>}
+                <span className="text-gray-700 dark:text-gray-300">{m.displayName || m.email}</span>
+                {m.id === user?.id && <span className="text-xs text-gray-400 dark:text-gray-500">(you)</span>}
               </label>
             ))}
           </div>
@@ -128,7 +128,7 @@ function ContactDetail() {
   const [editing, setEditing] = useState(false)
 
   const contact = getContact(id)
-  if (!contact) return <div className="p-8 text-gray-400">Contact not found.</div>
+  if (!contact) return <div className="p-8 text-gray-400 dark:text-gray-500">Contact not found.</div>
 
   const company = getCompany(contact.companyId)
   const relatedProps = properties.filter(p => p.contactIds?.includes(id))
@@ -150,7 +150,7 @@ function ContactDetail() {
 
   return (
     <div className="px-8 py-8">
-      <Link to="/contacts" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6">
+      <Link to="/contacts" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
         <ArrowLeft size={15} /> Contacts
       </Link>
 
@@ -159,58 +159,58 @@ function ContactDetail() {
         <div className="col-span-1 space-y-4">
           <div className="card p-6">
             <div className="flex items-start justify-between mb-4">
-              <div className="w-14 h-14 rounded-2xl bg-brand-100 flex items-center justify-center">
-                <span className="text-xl font-bold text-brand-700">{initials(contact)}</span>
+              <div className="w-14 h-14 rounded-2xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
+                <span className="text-xl font-bold text-brand-700 dark:text-brand-300">{initials(contact)}</span>
               </div>
               <div className="flex gap-1">
                 <button onClick={() => setEditing(true)} className="btn-ghost p-2"><Edit2 size={14} /></button>
                 <button onClick={handleDelete} className="btn-ghost p-2 hover:text-red-500"><Trash2 size={14} /></button>
               </div>
             </div>
-            <h2 className="text-lg font-bold text-gray-900">{fullName(contact)}</h2>
-            {contact.title && <p className="text-sm text-gray-500">{contact.title}</p>}
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{fullName(contact)}</h2>
+            {contact.title && <p className="text-sm text-gray-500 dark:text-gray-400">{contact.title}</p>}
             {company && (
-              <Link to={`/companies/${company.id}`} className="flex items-center gap-1.5 mt-2 text-sm text-brand-600 hover:underline">
+              <Link to={`/companies/${company.id}`} className="flex items-center gap-1.5 mt-2 text-sm text-brand-600 hover:underline dark:text-brand-400">
                 <Building2 size={13} /> {company.name}
               </Link>
             )}
 
-            <div className="mt-4 space-y-2.5 border-t border-gray-100 pt-4">
+            <div className="mt-4 space-y-2.5 border-t border-gray-100 dark:border-gray-700 pt-4">
               {contact.email && (
-                <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600">
-                  <Mail size={14} className="text-gray-400" /> {contact.email}
+                <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">
+                  <Mail size={14} className="text-gray-400 dark:text-gray-500" /> {contact.email}
                 </a>
               )}
               {contact.phone && (
-                <a href={`tel:${contact.phone}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600">
-                  <Phone size={14} className="text-gray-400" /> {contact.phone}
+                <a href={`tel:${contact.phone}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">
+                  <Phone size={14} className="text-gray-400 dark:text-gray-500" /> {contact.phone}
                 </a>
               )}
               {contact.mobile && (
-                <a href={`tel:${contact.mobile}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600">
-                  <Phone size={14} className="text-gray-400" /> {contact.mobile} <span className="text-xs text-gray-400">mobile</span>
+                <a href={`tel:${contact.mobile}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">
+                  <Phone size={14} className="text-gray-400 dark:text-gray-500" /> {contact.mobile} <span className="text-xs text-gray-400 dark:text-gray-500">mobile</span>
                 </a>
               )}
               {contact.linkedIn && (
-                <a href={`https://${contact.linkedIn}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600">
-                  <Linkedin size={14} className="text-gray-400" /> LinkedIn <ExternalLink size={11} className="text-gray-400" />
+                <a href={`https://${contact.linkedIn}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">
+                  <Linkedin size={14} className="text-gray-400 dark:text-gray-500" /> LinkedIn <ExternalLink size={11} className="text-gray-400 dark:text-gray-500" />
                 </a>
               )}
             </div>
 
             {/* Owners */}
             {owners.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1.5">
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
                   <UserCheck size={12} /> Owners
                 </p>
                 <div className="space-y-1">
                   {owners.map(m => (
                     <div key={m.id} className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-brand-700">{m.email[0].toUpperCase()}</span>
+                      <div className="w-5 h-5 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-bold text-brand-700 dark:text-brand-300">{m.email[0].toUpperCase()}</span>
                       </div>
-                      <span className="text-xs text-gray-600">{m.displayName || m.email}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{m.displayName || m.email}</span>
                     </div>
                   ))}
                 </div>
@@ -218,22 +218,22 @@ function ContactDetail() {
             )}
 
             {contact.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-100">
+              <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                 {contact.tags.map(t => (
-                  <span key={t} className="badge bg-brand-50 text-brand-600">{t}</span>
+                  <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>
                 ))}
               </div>
             )}
 
-            <div className="mt-4 pt-4 border-t border-gray-100 space-y-1.5 text-xs text-gray-400">
-              <p>Last contacted: <span className="text-gray-600">{formatDate(contact.lastContacted)}</span></p>
-              <p>Added: <span className="text-gray-600">{formatDate(contact.createdAt)}</span></p>
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-1.5 text-xs text-gray-400 dark:text-gray-500">
+              <p>Last contacted: <span className="text-gray-600 dark:text-gray-300">{formatDate(contact.lastContacted)}</span></p>
+              <p>Added: <span className="text-gray-600 dark:text-gray-300">{formatDate(contact.createdAt)}</span></p>
             </div>
 
             {contact.notes && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs font-medium text-gray-500 mb-1">Notes</p>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap">{contact.notes}</p>
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Notes</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{contact.notes}</p>
               </div>
             )}
           </div>
@@ -241,11 +241,11 @@ function ContactDetail() {
           {/* Related properties */}
           {relatedProps.length > 0 && (
             <div className="card p-4">
-              <p className="text-xs font-semibold text-gray-500 mb-3">Properties</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Properties</p>
               <div className="space-y-2">
                 {relatedProps.map(p => (
-                  <Link key={p.id} to={`/properties/${p.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600">
-                    <MapPin size={13} className="text-gray-400" />
+                  <Link key={p.id} to={`/properties/${p.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400">
+                    <MapPin size={13} className="text-gray-400 dark:text-gray-500" />
                     <span className="truncate">{p.name}</span>
                   </Link>
                 ))}
@@ -338,16 +338,16 @@ export default function Contacts() {
         <div className="card overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/60">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500">Name</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Company</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Contact</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Last touch</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Owners</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Tags</th>
+              <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/60">
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Name</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Company</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Contact</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Last touch</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Owners</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Tags</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
               {filtered.map(c => {
                 const company = getCompany(c.companyId)
                 const stale = !c.lastContacted || daysDiff(c.lastContacted) > 30
@@ -355,49 +355,49 @@ export default function Contacts() {
                   .map(oid => teamMembers.find(m => m.id === oid))
                   .filter(Boolean)
                 return (
-                  <tr key={c.id} className="hover:bg-gray-50/70 transition-colors">
+                  <tr key={c.id} className="hover:bg-gray-50/70 dark:hover:bg-gray-700/50 transition-colors">
                     <td className="px-5 py-3.5">
                       <Link to={`/contacts/${c.id}`} className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-semibold text-brand-700">{initials(c)}</span>
+                        <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{initials(c)}</span>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900 hover:text-brand-600">{fullName(c)}</p>
-                          {c.title && <p className="text-xs text-gray-400">{c.title}</p>}
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-brand-600 dark:hover:text-brand-400">{fullName(c)}</p>
+                          {c.title && <p className="text-xs text-gray-400 dark:text-gray-500">{c.title}</p>}
                         </div>
                       </Link>
                     </td>
                     <td className="px-4 py-3.5">
                       {company ? (
-                        <Link to={`/companies/${company.id}`} className="text-sm text-gray-600 hover:text-brand-600">{company.name}</Link>
-                      ) : <span className="text-sm text-gray-300">—</span>}
+                        <Link to={`/companies/${company.id}`} className="text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">{company.name}</Link>
+                      ) : <span className="text-sm text-gray-300 dark:text-gray-600">—</span>}
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex gap-2">
-                        {c.email && <a href={`mailto:${c.email}`} className="text-gray-400 hover:text-brand-600"><Mail size={14} /></a>}
-                        {c.phone && <a href={`tel:${c.phone}`} className="text-gray-400 hover:text-brand-600"><Phone size={14} /></a>}
-                        {c.linkedIn && <a href={`https://${c.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-brand-600"><Linkedin size={14} /></a>}
+                        {c.email && <a href={`mailto:${c.email}`} className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Mail size={14} /></a>}
+                        {c.phone && <a href={`tel:${c.phone}`} className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Phone size={14} /></a>}
+                        {c.linkedIn && <a href={`https://${c.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Linkedin size={14} /></a>}
                       </div>
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className={clsx('text-xs', stale ? 'text-red-500 font-medium' : 'text-gray-400')}>
+                      <span className={clsx('text-xs', stale ? 'text-red-500 font-medium' : 'text-gray-400 dark:text-gray-500')}>
                         {c.lastContacted ? formatDate(c.lastContacted) : 'Never'}
                       </span>
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex gap-1">
                         {owners.slice(0, 3).map(m => (
-                          <div key={m.id} title={m.displayName || m.email} className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center">
-                            <span className="text-xs font-bold text-brand-700">{m.email[0].toUpperCase()}</span>
+                          <div key={m.id} title={m.displayName || m.email} className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
+                            <span className="text-xs font-bold text-brand-700 dark:text-brand-300">{m.email[0].toUpperCase()}</span>
                           </div>
                         ))}
-                        {owners.length === 0 && <span className="text-xs text-gray-300">—</span>}
+                        {owners.length === 0 && <span className="text-xs text-gray-300 dark:text-gray-600">—</span>}
                       </div>
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex flex-wrap gap-1">
-                        {(c.tags || []).slice(0, 3).map(t => <span key={t} className="badge bg-gray-100 text-gray-600">{t}</span>)}
-                        {(c.tags || []).length > 3 && <span className="badge bg-gray-100 text-gray-500">+{c.tags.length - 3}</span>}
+                        {(c.tags || []).slice(0, 3).map(t => <span key={t} className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{t}</span>)}
+                        {(c.tags || []).length > 3 && <span className="badge bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">+{c.tags.length - 3}</span>}
                       </div>
                     </td>
                   </tr>
