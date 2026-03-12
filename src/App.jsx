@@ -12,6 +12,7 @@ import Properties           from './pages/Properties'
 import Reminders            from './pages/Reminders'
 import Settings             from './pages/Settings'
 import RecentlyDeleted      from './pages/RecentlyDeleted'
+import MapPage              from './pages/Map'
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
               <Route path="/properties"      element={<Properties />} />
               <Route path="/properties/:id"  element={<Properties />} />
               <Route path="/settings"          element={<Settings />} />
+              <Route path="/map"               element={<MapPage />} />
               <Route path="/recently-deleted" element={<RecentlyDeleted />} />
               <Route path="*"               element={<Navigate to="/" replace />} />
             </Route>
