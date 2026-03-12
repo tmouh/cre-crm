@@ -43,7 +43,6 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
         q: text,
         format: 'json',
         addressdetails: '1',
-        countrycodes: 'us',
         limit: '5',
       })
       const res = await fetch(`${NOMINATIM_URL}?${params}`, {
@@ -118,21 +117,33 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
     return map[state] || state || ''
   }
 
+  function isUS(item) {
+    const cc = item.address?.country_code
+    return cc === 'us'
+  }
+
   function formatAddress(item) {
     const a = item.address || {}
     const street = [a.house_number, a.road].filter(Boolean).join(' ')
     const city = a.city || a.town || a.village || ''
-    const state = stateAbbr(a.state)
+    if (isUS(item)) {
+      const state = stateAbbr(a.state)
+      const zip = a.postcode || ''
+      return [street, city, state, zip].filter(Boolean).join(', ')
+    }
+    const state = a.state || ''
     const zip = a.postcode || ''
-    return [street, city, state, zip].filter(Boolean).join(', ')
+    const country = a.country || ''
+    return [street, city, state, zip, country].filter(Boolean).join(', ')
   }
 
   function formatSuggestion(item) {
     const a = item.address || {}
     const street = [a.house_number, a.road].filter(Boolean).join(' ')
     const city = a.city || a.town || a.village || ''
-    const state = stateAbbr(a.state)
-    return { main: street || item.display_name.split(',')[0], secondary: [city, state].filter(Boolean).join(', ') }
+    const state = isUS(item) ? stateAbbr(a.state) : (a.state || '')
+    const country = isUS(item) ? '' : (a.country || '')
+    return { main: street || item.display_name.split(',')[0], secondary: [city, state, country].filter(Boolean).join(', ') }
   }
 
   return (
