@@ -233,7 +233,7 @@ export default function Reminders() {
       )}
 
       {showAdd && (
-        <Modal title="Add Reminder" onClose={() => setShowAdd(false)} size="lg">
+        <Modal title="Add Reminder" onClose={() => setShowAdd(false)} size="lg" disableBackdropClose>
           <ReminderForm onSubmit={handleAdd} onCancel={() => setShowAdd(false)} />
         </Modal>
       )}
