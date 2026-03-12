@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, X, CheckSquare } from 'lucide-react'
+import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, X, CheckSquare, ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { COMPANY_TYPES, COMPANY_TYPE_COLORS, companyInitials, formatDate, fullName } from '../utils/helpers'
@@ -11,14 +11,74 @@ import ReminderList from '../components/ReminderList'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import ImportModal from '../components/ImportModal'
-import CompanyTypeCombobox from '../components/CompanyTypeCombobox'
 import DuplicateCheckModal from '../components/DuplicateCheckModal'
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
+
+// Inline type combobox – supports picking or typing a new type
+function TypeCombobox({ value, onChange, disabled, allTypes }) {
+  const [inputText, setInputText] = useState(value || '')
+  const [open, setOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const wrapRef = useRef(null)
+
+  useEffect(() => { if (!isEditing) setInputText(value || '') }, [value, isEditing])
+  useEffect(() => {
+    function h(e) { if (wrapRef.current && !wrapRef.current.contains(e.target)) { setOpen(false); setIsEditing(false); setInputText(value || '') } }
+    document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+  }, [value])
+
+  const query = inputText.toLowerCase().trim()
+  const filtered = allTypes.filter(t => t.toLowerCase().includes(query))
+  const hasExactMatch = allTypes.some(t => t.toLowerCase() === query)
+  const normalizedNew = query.replace(/\s+/g, '-')
+  const showCreate = normalizedNew.length > 0 && !hasExactMatch
+
+  function select(type) { onChange(type); setInputText(type); setOpen(false); setIsEditing(false) }
+  function create() { if (!normalizedNew) return; onChange(normalizedNew); setInputText(normalizedNew); setOpen(false); setIsEditing(false) }
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <div className="relative">
+        <input type="text" value={isEditing ? inputText : capitalize(inputText)}
+          onChange={e => { setInputText(e.target.value); setIsEditing(true); setOpen(true) }}
+          onFocus={() => { setOpen(true); setIsEditing(true) }}
+          onBlur={() => setTimeout(() => setIsEditing(false), 200)}
+          className="input pr-8" placeholder="Search or create type..." disabled={disabled} />
+        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+      </div>
+      {open && !disabled && (
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+          {filtered.length === 0 && !showCreate && <p className="px-3 py-2.5 text-sm text-gray-400 dark:text-gray-500">No types found</p>}
+          {filtered.map(t => (
+            <button key={t} type="button" onMouseDown={e => e.preventDefault()} onClick={() => select(t)}
+              className="w-full text-left px-3 py-2 text-sm text-gray-800 dark:text-gray-200 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:text-brand-300 flex items-center gap-2">
+              <span className={clsx('badge text-[10px]', COMPANY_TYPE_COLORS[t] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{capitalize(t)}</span>
+            </button>
+          ))}
+          {showCreate && (
+            <button type="button" onMouseDown={e => e.preventDefault()} onClick={create}
+              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-gray-100 dark:border-gray-700">
+              <Plus size={13} /> Create &ldquo;{normalizedNew}&rdquo;
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const BLANK = { name: '', type: 'owner', address: '', phone: '', email: '', website: '', notes: '', tags: [] }
 
 function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
+  const { companies } = useCRM()
   const [form, setForm] = useState({ ...BLANK, ...initial })
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
+
+  const allTypes = [...new Set([...COMPANY_TYPES, ...companies.map(c => c.type).filter(Boolean)])].sort((a, b) => {
+    const aBuiltin = COMPANY_TYPES.includes(a), bBuiltin = COMPANY_TYPES.includes(b)
+    if (aBuiltin && !bBuiltin) return -1; if (!aBuiltin && bBuiltin) return 1; return a.localeCompare(b)
+  })
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-4">
@@ -28,7 +88,7 @@ function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       <div>
         <label className="label">Type</label>
-        <CompanyTypeCombobox value={form.type} onChange={(val) => setForm(p => ({ ...p, type: val }))} />
+        <TypeCombobox value={form.type} onChange={(val) => setForm(p => ({ ...p, type: val }))} allTypes={allTypes} />
       </div>
       <div>
         <label className="label">Address</label>
@@ -277,7 +337,7 @@ function BulkEditModal({ selected, onClose, onSave }) {
         {field === 'type' && (
           <div>
             <label className="label">New type</label>
-            <CompanyTypeCombobox value={typeVal} onChange={setTypeVal} disabled={status === 'saving'} />
+            <TypeCombobox value={typeVal} onChange={setTypeVal} disabled={status === 'saving'} allTypes={[...new Set([...COMPANY_TYPES])]} />
           </div>
         )}
 
