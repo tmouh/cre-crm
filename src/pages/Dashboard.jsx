@@ -141,7 +141,7 @@ export default function Dashboard() {
           {week.length > 0 && (
             <section>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Next 7 days ({week.length})</h2>
+                <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">This Week ({week.length})</h2>
                 <Link to="/reminders" className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 flex items-center gap-1 transition-colors">
                   View all <ArrowRight size={11} />
                 </Link>
