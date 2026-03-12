@@ -186,7 +186,8 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
         <div className="px-5 py-2.5 bg-gray-50/60 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2 flex-wrap">
           <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input text-[11px] py-1 px-2 w-auto">
             <option value="">All types</option>
-            {[...REMINDER_TYPES].sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
+            {[...REMINDER_TYPES].filter(t => t !== 'other').sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
+            {REMINDER_TYPES.includes('other') && <option value="other">Other</option>}
           </select>
           <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="input text-[11px] py-1 px-2 w-auto">
             <option value="">All priorities</option>
@@ -208,7 +209,8 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
             <div>
               <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Type</label>
               <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="input text-xs py-1.5">
-                {[...REMINDER_TYPES].sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
+                {[...REMINDER_TYPES].filter(t => t !== 'other').sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
+                {REMINDER_TYPES.includes('other') && <option value="other">Other</option>}
               </select>
             </div>
             <div>
@@ -249,7 +251,8 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
                   <div>
                     <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Type</label>
                     <select value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className="input text-xs py-1.5">
-                      {[...REMINDER_TYPES].sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
+                      {[...REMINDER_TYPES].filter(t => t !== 'other').sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
+                      {REMINDER_TYPES.includes('other') && <option value="other">Other</option>}
                     </select>
                   </div>
                   <div>

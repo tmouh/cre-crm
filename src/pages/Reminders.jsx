@@ -198,7 +198,8 @@ export default function Reminders() {
         </div>
         <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-36">
           <option value="">All types</option>
-          {[...REMINDER_TYPES].sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+          {[...REMINDER_TYPES].filter(t => t !== 'other').sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+          {REMINDER_TYPES.includes('other') && <option value="other">Other</option>}
         </select>
         <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="input w-36">
           <option value="">All priorities</option>
