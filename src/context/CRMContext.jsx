@@ -6,7 +6,7 @@ const CRMContext = createContext(null)
 // Returns the most recent contact date from activities + completed reminders
 function calcLastContacted(contactId, activitiesList, remindersList) {
   const dates = [
-    ...activitiesList.filter(a => a.contactId === contactId && a.createdAt).map(a => a.createdAt),
+    ...activitiesList.filter(a => a.contactId === contactId).map(a => a.date || a.createdAt).filter(Boolean),
     ...remindersList.filter(r => r.contactId === contactId && r.status === 'done' && (r.completedAt || r.dueDate)).map(r => r.completedAt || r.dueDate),
   ].filter(Boolean).sort().reverse()
   return dates[0] || null

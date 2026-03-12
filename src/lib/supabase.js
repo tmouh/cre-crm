@@ -30,6 +30,15 @@ function clean(obj) {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== ''))
 }
 
+// For updates: convert empty strings to null (lets Supabase clear columns) but strip undefined
+function cleanForUpdate(obj) {
+  return Object.fromEntries(
+    Object.entries(obj)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => [k, v === '' ? null : v])
+  )
+}
+
 function row(data)  { return toCamel(data) }
 function rows(data) { return (data || []).map(toCamel) }
 
@@ -51,7 +60,7 @@ function table(name, { trackDeleted = false } = {}) {
     },
     update: async (id, patch) => {
       const { data, error } = await supabase
-        .from(name).update(clean(toSnake(patch))).eq('id', id).select().single()
+        .from(name).update(cleanForUpdate(toSnake(patch))).eq('id', id).select().single()
       if (error) throw error
       return row(data)
     },
@@ -149,9 +158,9 @@ export async function seedDatabase() {
   ]).select()
   if (pe) throw pe
 
-  const broadway   = props.find(p => p.name === '1440 Broadway').id
-  const edisonDC   = props.find(p => p.name.includes('Edison')).id
-  const seaport    = props.find(p => p.name === 'Seaport Land Site').id
+  const broadway   = props.find(p => p.name.includes('1440 Broadway'))?.id
+  const edisonDC   = props.find(p => p.name.includes('Edison'))?.id
+  const seaport    = props.find(p => p.name.includes('Seaport'))?.id
 
   // 4. Reminders
   const { error: re } = await supabase.from('reminders').insert([

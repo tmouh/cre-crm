@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, CheckCircle2, Trash2, Bell, Calendar } from 'lucide-react'
+import { Plus, CheckCircle2, Trash2, Bell, Calendar, RotateCcw } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { formatDate, isOverdue, isDueToday, PRIORITY_COLORS, TYPE_COLORS, REMINDER_TYPES, PRIORITIES, fullName } from '../utils/helpers'
@@ -101,7 +101,7 @@ function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
   )
 }
 
-function ReminderRow({ reminder, onComplete, onDelete, contact, company, property }) {
+function ReminderRow({ reminder, onComplete, onUncomplete, onDelete, contact, company, property }) {
   const overdue = isOverdue(reminder.dueDate)
   const today   = isDueToday(reminder.dueDate)
 
@@ -113,9 +113,15 @@ function ReminderRow({ reminder, onComplete, onDelete, contact, company, propert
       today   ? 'border-orange-200/80 bg-orange-50 dark:border-orange-800/60 dark:bg-orange-900/20' :
                 'border-gray-200/80 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
     )}>
-      <button onClick={() => onComplete(reminder.id)} className={clsx('mt-0.5 flex-shrink-0 transition-colors', reminder.status === 'done' ? 'text-green-500' : 'text-gray-300 hover:text-green-500 dark:text-gray-600 dark:hover:text-green-400')}>
-        <CheckCircle2 size={18} />
-      </button>
+      {reminder.status === 'done' ? (
+        <button onClick={() => onUncomplete(reminder.id)} className="mt-0.5 flex-shrink-0 text-green-500 hover:text-brand-500 transition-colors" title="Mark as pending">
+          <RotateCcw size={16} />
+        </button>
+      ) : (
+        <button onClick={() => onComplete(reminder.id)} className="mt-0.5 flex-shrink-0 text-gray-300 hover:text-green-500 dark:text-gray-600 dark:hover:text-green-400 transition-colors" title="Complete">
+          <CheckCircle2 size={18} />
+        </button>
+      )}
       <div className="flex-1 min-w-0">
         <p className={clsx('text-sm font-medium', reminder.status === 'done' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100')}>{reminder.title}</p>
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -140,7 +146,7 @@ function ReminderRow({ reminder, onComplete, onDelete, contact, company, propert
 }
 
 export default function Reminders() {
-  const { reminders, addReminder, completeReminder, deleteReminder, getContact, getCompany, getProperty } = useCRM()
+  const { reminders, addReminder, completeReminder, uncompleteReminder, deleteReminder, getContact, getCompany, getProperty } = useCRM()
   const [showAdd, setShowAdd] = useState(false)
   const [filterStatus, setFilterStatus] = useState('pending')
   const [filterType, setFilterType]     = useState('')
@@ -171,7 +177,7 @@ export default function Reminders() {
           {items.map(r => (
             <ReminderRow key={r.id} reminder={r}
               contact={getContact(r.contactId)} company={getCompany(r.companyId)} property={getProperty(r.propertyId)}
-              onComplete={completeReminder} onDelete={deleteReminder}
+              onComplete={completeReminder} onUncomplete={uncompleteReminder} onDelete={deleteReminder}
             />
           ))}
         </div>
@@ -225,7 +231,7 @@ export default function Reminders() {
             {done.map(r => (
               <ReminderRow key={r.id} reminder={r}
                 contact={getContact(r.contactId)} company={getCompany(r.companyId)} property={getProperty(r.propertyId)}
-                onComplete={completeReminder} onDelete={deleteReminder}
+                onComplete={completeReminder} onUncomplete={uncompleteReminder} onDelete={deleteReminder}
               />
             ))}
           </div>

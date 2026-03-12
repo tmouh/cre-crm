@@ -54,7 +54,7 @@ function saveCache(cache) {
 }
 
 async function geocodeAddress(address) {
-  const params = new URLSearchParams({ q: address, format: 'json', countrycodes: 'us', limit: '1' })
+  const params = new URLSearchParams({ q: address, format: 'json', limit: '1' })
   const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
     headers: { 'Accept-Language': 'en' },
   })
