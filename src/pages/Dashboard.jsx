@@ -73,7 +73,7 @@ export default function Dashboard() {
   }).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
 
   const stale = contacts.filter(c => {
-    if (!c.lastContacted) return true
+    if (!c.lastContacted) return false
     return daysDiff(c.lastContacted) > 90
   }).slice(0, 5)
 

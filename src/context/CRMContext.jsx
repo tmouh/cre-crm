@@ -199,7 +199,7 @@ export function CRMProvider({ children }) {
     if (activity.contactId) {
       // Only update lastContacted if the activity date is more recent
       const contact = contacts.find(c => c.id === activity.contactId)
-      const actDate = rec.createdAt
+      const actDate = rec.date || rec.createdAt
       if (!contact?.lastContacted || actDate > contact.lastContacted) {
         await db.contacts.update(activity.contactId, { lastContacted: actDate })
         setContacts(prev => prev.map(c =>
