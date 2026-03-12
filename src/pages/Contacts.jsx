@@ -17,6 +17,7 @@ import CompanyCombobox from '../components/CompanyCombobox'
 import ImportModal from '../components/ImportModal'
 import OutlookImport from '../components/OutlookImport'
 import DuplicateCheckModal from '../components/DuplicateCheckModal'
+import LinkedInProfile from '../components/LinkedInProfile'
 
 const BLANK = { firstName: '', lastName: '', title: '', companyId: '', email: '', phone: '', mobile: '', linkedIn: '', notes: '', tags: [], ownerIds: [] }
 
@@ -240,6 +241,8 @@ function ContactDetail() {
               </div>
             )}
           </div>
+
+          <LinkedInProfile contact={contact} />
 
           {/* Related properties */}
           {relatedProps.length > 0 && (
