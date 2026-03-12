@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload } from 'lucide-react'
+import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, X, CheckSquare } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { COMPANY_TYPES, COMPANY_TYPE_COLORS, companyInitials, formatDate, fullName } from '../utils/helpers'
@@ -202,23 +202,171 @@ function CompanyDetail() {
   )
 }
 
+// ---- Bulk Edit Modal ----
+function BulkEditModal({ selected, onClose, onSave }) {
+  const [field, setField] = useState('')
+  const [typeVal, setTypeVal] = useState('owner')
+  const [tagsVal, setTagsVal] = useState([])
+  const [tagMode, setTagMode] = useState('add') // 'add' | 'replace'
+  const [textVal, setTextVal] = useState('')
+
+  const EDITABLE_FIELDS = [
+    { key: 'type', label: 'Type' },
+    { key: 'tags', label: 'Tags' },
+    { key: 'address', label: 'Address' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'email', label: 'Email' },
+    { key: 'website', label: 'Website' },
+    { key: 'notes', label: 'Notes' },
+  ]
+
+  function handleApply() {
+    let patch = {}
+    if (field === 'type') patch = { type: typeVal }
+    else if (field === 'tags') patch = { tags: tagsVal, _tagMode: tagMode }
+    else if (field === 'notes') patch = { notes: textVal }
+    else if (field) patch = { [field]: textVal }
+    onSave(patch)
+  }
+
+  return (
+    <Modal title={`Bulk Edit — ${selected.size} compan${selected.size !== 1 ? 'ies' : 'y'}`} onClose={onClose} size="md">
+      <div className="space-y-4">
+        <div>
+          <label className="label">Field to edit</label>
+          <select value={field} onChange={e => setField(e.target.value)} className="input">
+            <option value="">Select a field…</option>
+            {EDITABLE_FIELDS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+          </select>
+        </div>
+
+        {field === 'type' && (
+          <div>
+            <label className="label">New type</label>
+            <select value={typeVal} onChange={e => setTypeVal(e.target.value)} className="input">
+              {COMPANY_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+            </select>
+          </div>
+        )}
+
+        {field === 'tags' && (
+          <>
+            <div>
+              <label className="label">Tag mode</label>
+              <div className="flex gap-3">
+                <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                  <input type="radio" name="tagMode" checked={tagMode === 'add'} onChange={() => setTagMode('add')} className="accent-brand-600" />
+                  Add to existing
+                </label>
+                <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                  <input type="radio" name="tagMode" checked={tagMode === 'replace'} onChange={() => setTagMode('replace')} className="accent-brand-600" />
+                  Replace all
+                </label>
+              </div>
+            </div>
+            <div>
+              <label className="label">Tags</label>
+              <TagInput tags={tagsVal} onChange={setTagsVal} />
+            </div>
+          </>
+        )}
+
+        {field && field !== 'type' && field !== 'tags' && (
+          <div>
+            <label className="label">New value</label>
+            {field === 'notes' ? (
+              <textarea value={textVal} onChange={e => setTextVal(e.target.value)} rows={3} className="input resize-none" placeholder="Enter new value…" />
+            ) : (
+              <input value={textVal} onChange={e => setTextVal(e.target.value)} className="input" placeholder="Enter new value…" />
+            )}
+          </div>
+        )}
+
+        <div className="flex gap-2 pt-2">
+          <button onClick={handleApply} disabled={!field} className="btn-primary flex-1 disabled:opacity-40 disabled:cursor-not-allowed">
+            Apply to {selected.size} compan{selected.size !== 1 ? 'ies' : 'y'}
+          </button>
+          <button onClick={onClose} className="btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 // ---- List ----
 export default function Companies() {
   const { id } = useParams()
   if (id) return <CompanyDetail />
 
-  const { companies, contacts, addCompany } = useCRM()
+  const { companies, contacts, addCompany, updateCompany, deleteCompany } = useCRM()
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [selected, setSelected] = useState(new Set())
+  const [showBulkEdit, setShowBulkEdit] = useState(false)
 
-  const filtered = companies.filter(c => {
+  const filtered = useMemo(() => companies.filter(c => {
     const q = search.toLowerCase()
     const matches = !q || c.name.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q)
     const type = !filterType || c.type === filterType
     return matches && type
-  }).sort((a, b) => a.name.localeCompare(b.name))
+  }).sort((a, b) => a.name.localeCompare(b.name)), [companies, search, filterType])
+
+  const allVisibleSelected = filtered.length > 0 && filtered.every(c => selected.has(c.id))
+
+  function toggleOne(id) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (allVisibleSelected) {
+      setSelected(prev => {
+        const next = new Set(prev)
+        filtered.forEach(c => next.delete(c.id))
+        return next
+      })
+    } else {
+      setSelected(prev => {
+        const next = new Set(prev)
+        filtered.forEach(c => next.add(c.id))
+        return next
+      })
+    }
+  }
+
+  function clearSelection() {
+    setSelected(new Set())
+  }
+
+  async function handleBulkEdit(patch) {
+    const { _tagMode, ...fields } = patch
+    const ids = [...selected]
+    for (const cid of ids) {
+      let finalPatch = { ...fields }
+      if (patch.tags && _tagMode === 'add') {
+        const existing = companies.find(c => c.id === cid)
+        const merged = [...new Set([...(existing?.tags || []), ...patch.tags])]
+        finalPatch.tags = merged
+      }
+      await updateCompany(cid, finalPatch)
+    }
+    setShowBulkEdit(false)
+    clearSelection()
+  }
+
+  async function handleBulkDelete() {
+    const count = selected.size
+    if (!confirm(`Delete ${count} compan${count !== 1 ? 'ies' : 'y'}? This cannot be undone.`)) return
+    for (const cid of selected) {
+      await deleteCompany(cid)
+    }
+    clearSelection()
+  }
 
   return (
     <div className="px-8 py-8 max-w-5xl">
@@ -244,6 +392,24 @@ export default function Companies() {
         </select>
       </div>
 
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl bg-brand-50 border border-brand-200 px-5 py-3 animate-in fade-in slide-in-from-top-2">
+          <CheckSquare size={16} className="text-brand-600" />
+          <span className="text-sm font-medium text-brand-700">{selected.size} selected</span>
+          <div className="flex-1" />
+          <button onClick={() => setShowBulkEdit(true)} className="btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5">
+            <Edit2 size={13} /> Edit
+          </button>
+          <button onClick={handleBulkDelete} className="btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5 text-red-600 hover:bg-red-50 hover:border-red-200">
+            <Trash2 size={13} /> Delete
+          </button>
+          <button onClick={clearSelection} className="btn-ghost p-1.5 text-gray-400 hover:text-gray-600">
+            <X size={15} />
+          </button>
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <EmptyState icon={Building2} title="No companies found" action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Company</button>} />
       ) : (
@@ -251,6 +417,14 @@ export default function Companies() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
+                <th className="px-3 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleAll}
+                    className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600"
+                  />
+                </th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500">Company</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Type</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Contacts</th>
@@ -261,8 +435,17 @@ export default function Companies() {
             <tbody className="divide-y divide-gray-50">
               {filtered.map(c => {
                 const compContacts = contacts.filter(ct => ct.companyId === c.id)
+                const isSelected = selected.has(c.id)
                 return (
-                  <tr key={c.id} className="hover:bg-gray-50/70 transition-colors">
+                  <tr key={c.id} className={clsx('transition-colors', isSelected ? 'bg-brand-50/50' : 'hover:bg-gray-50/70')}>
+                    <td className="px-3 py-3.5">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleOne(c.id)}
+                        className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600"
+                      />
+                    </td>
                     <td className="px-5 py-3.5">
                       <Link to={`/companies/${c.id}`} className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center flex-shrink-0">
@@ -309,6 +492,10 @@ export default function Companies() {
 
       {showImport && (
         <ImportModal entity="companies" onClose={() => setShowImport(false)} />
+      )}
+
+      {showBulkEdit && (
+        <BulkEditModal selected={selected} onClose={() => setShowBulkEdit(false)} onSave={handleBulkEdit} />
       )}
     </div>
   )
