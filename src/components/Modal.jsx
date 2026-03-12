@@ -3,7 +3,7 @@ import { X } from 'lucide-react'
 
 export default function Modal({ title, onClose, children, size = 'md', disableBackdropClose = false }) {
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape' && !disableBackdropClose) onClose() }
+    const handler = (e) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [onClose, disableBackdropClose])

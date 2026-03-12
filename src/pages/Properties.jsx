@@ -113,7 +113,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
     setSaving(true)
     setSaveError(null)
     try {
-      await onSubmit(form)
+      await onSubmit({ ...form, name: form.name || form.address })
     } catch (err) {
       setSaveError(err?.message || 'Failed to save deal. Please try again.')
       setSaving(false)
