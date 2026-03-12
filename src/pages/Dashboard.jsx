@@ -168,9 +168,6 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {stale.map(c => {
-                  const nextReminder = reminders
-                    .filter(r => r.contactId === c.id && r.status !== 'done')
-                    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0]
                   return (
                     <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-3 group">
                       <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
@@ -185,15 +182,6 @@ export default function Dashboard() {
                         </p>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0 mr-4">
-                        <div className="w-16 text-right">
-                          {nextReminder ? (
-                            <span className={clsx('badge text-[10px] py-0', TYPE_COLORS[nextReminder.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
-                              {nextReminder.type}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-gray-400 dark:text-gray-500">None</span>
-                          )}
-                        </div>
                         <div className="w-24 flex gap-1 flex-wrap justify-end">
                           {c.tags?.length > 0 ? (
                             <>
