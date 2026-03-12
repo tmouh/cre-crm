@@ -3,6 +3,7 @@ import { parseISO, isToday, addDays, isBefore, isAfter } from 'date-fns'
 import { Bell, Users, Building2, Briefcase, CheckCircle2, ArrowRight, AlertCircle } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
+import { useAuth } from '../context/AuthContext'
 import { formatDate, isOverdue, isDueToday, PRIORITY_COLORS, TYPE_COLORS, fullName, daysDiff } from '../utils/helpers'
 
 function StatCard({ icon: Icon, label, value, to, color }) {
@@ -60,6 +61,8 @@ function ReminderCard({ reminder, contact, company, property, onComplete }) {
 
 export default function Dashboard() {
   const { contacts, companies, properties, reminders, completeReminder, getContact, getCompany, getProperty } = useCRM()
+  const { user } = useAuth()
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'
 
   const pending = reminders.filter(r => r.status !== 'done')
   const overdue = pending.filter(r => isOverdue(r.dueDate)).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
@@ -78,7 +81,7 @@ export default function Dashboard() {
     <div className="px-8 py-8">
       <div className="mb-8">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Dashboard</h1>
-        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">Your CRE outreach at a glance</p>
+        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">Welcome, {displayName}</p>
       </div>
 
       {/* Stats */}

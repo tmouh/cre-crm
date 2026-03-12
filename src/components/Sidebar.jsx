@@ -25,8 +25,8 @@ export default function Sidebar() {
         <div className="flex items-center gap-2.5">
           <img src="/Vtransparent.png" alt="Vanadium" className="w-8 h-8 object-contain" />
           <div>
-            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight tracking-tight">Vanadium CRM</p>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500">Follow-up CRM</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight tracking-tight">Vanadium OS</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">by Vanadium Group</p>
           </div>
         </div>
       </div>
