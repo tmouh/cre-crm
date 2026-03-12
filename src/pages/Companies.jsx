@@ -68,7 +68,7 @@ function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
 function CompanyDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getCompany, contacts, properties, updateCompany, deleteCompany } = useCRM()
+  const { getCompany, contacts, properties, updateCompany, deleteCompany, teamMembers } = useCRM()
   const [editing, setEditing] = useState(false)
 
   const company = getCompany(id)
@@ -140,18 +140,29 @@ function CompanyDetail() {
           {relatedContacts.length > 0 && (
             <div className="card p-4">
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Contacts ({relatedContacts.length})</p>
-              <div className="space-y-2">
-                {relatedContacts.map(c => (
-                  <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 group">
-                    <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{c.firstName[0]}{c.lastName[0]}</span>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-800 dark:text-gray-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">{fullName(c)}</p>
-                      {c.title && <p className="text-xs text-gray-400 dark:text-gray-500">{c.title}</p>}
-                    </div>
-                  </Link>
-                ))}
+              <div className="space-y-2.5">
+                {relatedContacts.map(c => {
+                  const owners = (c.ownerIds || []).map(oid => teamMembers.find(m => m.id === oid)).filter(Boolean)
+                  return (
+                    <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 group">
+                      <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{c.firstName[0]}{c.lastName[0]}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-gray-800 dark:text-gray-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">{fullName(c)}</p>
+                        <div className="flex items-center gap-1.5">
+                          {c.title && <span className="text-xs text-gray-400 dark:text-gray-500">{c.title}</span>}
+                          {c.title && owners.length > 0 && <span className="text-xs text-gray-300 dark:text-gray-600">·</span>}
+                          {owners.length > 0 && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              Owner: {owners.map(o => o.name || o.email).join(', ')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -451,8 +462,8 @@ export default function Companies() {
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Company</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Type</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Description</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Contacts</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Contact</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Tags</th>
               </tr>
             </thead>
@@ -471,28 +482,35 @@ export default function Companies() {
                       />
                     </td>
                     <td className="px-5 py-3.5">
-                      <Link to={`/companies/${c.id}`} className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-bold text-brand-700 dark:text-brand-300">{companyInitials(c)}</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-brand-600 dark:hover:text-brand-400">{c.name}</p>
-                          {c.address && <p className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[200px]">{c.address}</p>}
-                        </div>
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        <Link to={`/companies/${c.id}`} className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs font-bold text-brand-700 dark:text-brand-300">{companyInitials(c)}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-brand-600 dark:hover:text-brand-400">{c.name}</p>
+                            {c.address && <p className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[200px]">{c.address}</p>}
+                          </div>
+                        </Link>
+                        {c.website && (
+                          <a href={`https://${c.website}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400 flex-shrink-0" title={c.website}>
+                            <Globe size={14} />
+                          </a>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3.5">
                       <span className={clsx('badge', COMPANY_TYPE_COLORS[c.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{c.type}</span>
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{compContacts.length}</span>
+                      {c.notes ? (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 max-w-[250px] line-clamp-3">{c.notes}</p>
+                      ) : (
+                        <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3.5">
-                      <div className="flex gap-2">
-                        {c.email && <a href={`mailto:${c.email}`} className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Mail size={14} /></a>}
-                        {c.phone && <a href={`tel:${c.phone}`} className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Phone size={14} /></a>}
-                        {c.website && <a href={`https://${c.website}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Globe size={14} /></a>}
-                      </div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{compContacts.length}</span>
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex flex-wrap gap-1">
