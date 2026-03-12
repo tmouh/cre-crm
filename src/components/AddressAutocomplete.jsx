@@ -1,59 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { MapPin, Loader2 } from 'lucide-react'
 
-let googleScriptLoaded = false
-let googleScriptLoading = false
-const loadCallbacks = []
-
-function loadGoogleMaps() {
-  return new Promise((resolve, reject) => {
-    if (window.google?.maps?.places) { resolve(); return }
-    if (googleScriptLoaded) { resolve(); return }
-    loadCallbacks.push({ resolve, reject })
-    if (googleScriptLoading) return
-    googleScriptLoading = true
-
-    const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-    if (!key) { reject(new Error('Missing VITE_GOOGLE_MAPS_API_KEY')); return }
-
-    const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`
-    script.async = true
-    script.onload = () => {
-      googleScriptLoaded = true
-      googleScriptLoading = false
-      loadCallbacks.forEach(cb => cb.resolve())
-      loadCallbacks.length = 0
-    }
-    script.onerror = () => {
-      googleScriptLoading = false
-      const err = new Error('Failed to load Google Maps')
-      loadCallbacks.forEach(cb => cb.reject(err))
-      loadCallbacks.length = 0
-    }
-    document.head.appendChild(script)
-  })
-}
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
 
 export default function AddressAutocomplete({ value, onChange, placeholder = 'Property address', required = false }) {
   const [inputText, setInputText] = useState(value || '')
-  const [predictions, setPredictions] = useState([])
+  const [suggestions, setSuggestions] = useState([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [ready, setReady] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
   const wrapRef = useRef(null)
-  const serviceRef = useRef(null)
   const debounceRef = useRef(null)
+  const abortRef = useRef(null)
 
   useEffect(() => { setInputText(value || '') }, [value])
-
-  useEffect(() => {
-    loadGoogleMaps().then(() => {
-      serviceRef.current = new window.google.maps.places.AutocompleteService()
-      setReady(true)
-    }).catch(() => {})
-  }, [])
 
   useEffect(() => {
     function handleClick(e) {
@@ -66,24 +26,38 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const fetchPredictions = useCallback((text) => {
-    if (!serviceRef.current || !text.trim() || text.length < 3) {
-      setPredictions([])
+  const fetchSuggestions = useCallback(async (text) => {
+    if (!text.trim() || text.length < 3) {
+      setSuggestions([])
       setLoading(false)
       return
     }
+
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     setLoading(true)
-    serviceRef.current.getPlacePredictions(
-      { input: text, types: ['address'], componentRestrictions: { country: 'us' } },
-      (results, status) => {
-        setLoading(false)
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-          setPredictions(results.slice(0, 5))
-        } else {
-          setPredictions([])
-        }
-      }
-    )
+    try {
+      const params = new URLSearchParams({
+        q: text,
+        format: 'json',
+        addressdetails: '1',
+        countrycodes: 'us',
+        limit: '5',
+      })
+      const res = await fetch(`${NOMINATIM_URL}?${params}`, {
+        signal: controller.signal,
+        headers: { 'Accept-Language': 'en' },
+      })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setSuggestions(data)
+    } catch (err) {
+      if (err.name !== 'AbortError') setSuggestions([])
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   function handleInputChange(e) {
@@ -93,40 +67,48 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
     setActiveIdx(-1)
 
     clearTimeout(debounceRef.current)
-    if (ready && text.length >= 3) {
+    if (text.length >= 3) {
       setOpen(true)
-      debounceRef.current = setTimeout(() => fetchPredictions(text), 250)
+      debounceRef.current = setTimeout(() => fetchSuggestions(text), 350)
     } else {
-      setPredictions([])
+      setSuggestions([])
       setOpen(false)
     }
   }
 
-  function handleSelect(prediction) {
-    const desc = prediction.description
-    setInputText(desc)
-    onChange(desc)
-    setPredictions([])
+  function handleSelect(item) {
+    const addr = item.display_name
+    setInputText(addr)
+    onChange(addr)
+    setSuggestions([])
     setOpen(false)
     setActiveIdx(-1)
   }
 
   function handleKeyDown(e) {
-    if (!open || predictions.length === 0) return
+    if (!open || suggestions.length === 0) return
 
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActiveIdx(i => (i < predictions.length - 1 ? i + 1 : 0))
+      setActiveIdx(i => (i < suggestions.length - 1 ? i + 1 : 0))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setActiveIdx(i => (i > 0 ? i - 1 : predictions.length - 1))
+      setActiveIdx(i => (i > 0 ? i - 1 : suggestions.length - 1))
     } else if (e.key === 'Enter' && activeIdx >= 0) {
       e.preventDefault()
-      handleSelect(predictions[activeIdx])
+      handleSelect(suggestions[activeIdx])
     } else if (e.key === 'Escape') {
       setOpen(false)
       setActiveIdx(-1)
     }
+  }
+
+  function formatSuggestion(item) {
+    const a = item.address || {}
+    const street = [a.house_number, a.road].filter(Boolean).join(' ')
+    const city = a.city || a.town || a.village || ''
+    const state = a.state || ''
+    return { main: street || item.display_name.split(',')[0], secondary: [city, state].filter(Boolean).join(', ') }
   }
 
   return (
@@ -137,7 +119,7 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
           value={inputText}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => { if (predictions.length > 0) setOpen(true) }}
+          onFocus={() => { if (suggestions.length > 0) setOpen(true) }}
           className="input pl-8"
           placeholder={placeholder}
           required={required}
@@ -149,16 +131,15 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
         )}
       </div>
 
-      {open && predictions.length > 0 && (
+      {open && suggestions.length > 0 && (
         <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-          {predictions.map((p, i) => {
-            const main = p.structured_formatting?.main_text || ''
-            const secondary = p.structured_formatting?.secondary_text || ''
+          {suggestions.map((item, i) => {
+            const { main, secondary } = formatSuggestion(item)
             return (
               <button
-                key={p.place_id}
+                key={item.place_id}
                 type="button"
-                onClick={() => handleSelect(p)}
+                onClick={() => handleSelect(item)}
                 className={`w-full text-left px-3 py-2 text-sm flex items-start gap-2 transition-colors ${
                   i === activeIdx
                     ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300'
