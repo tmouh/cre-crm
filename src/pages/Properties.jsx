@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { Plus, Search, Building2, Users, Trash2, Edit2, ArrowLeft, Upload, MapPin, Briefcase, Calendar } from 'lucide-react'
 import SearchableSelect from '../components/SearchableSelect'
+import AddressAutocomplete from '../components/AddressAutocomplete'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { DEAL_TYPES, DEAL_STATUSES, DEAL_STATUS_COLORS, DEAL_TYPE_COLORS, formatDealType, formatDealStatus, fullName, formatDate, isOverdue, isDueToday } from '../utils/helpers'
@@ -108,7 +109,11 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-4">
       <div>
         <label className="label">Address *</label>
-        <input value={form.address} onChange={f('address')} className="input" required placeholder="Property address" />
+        <AddressAutocomplete
+          value={form.address}
+          onChange={setField('address')}
+          required
+        />
       </div>
       <div>
         <label className="label">Deal name</label>
