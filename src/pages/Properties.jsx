@@ -181,7 +181,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
           />
         </div>
         <div>
-          <label className="label">Borrower / Tenant</label>
+          <label className="label">Seller / Lender</label>
           <SearchableSelect
             value={form.tenantCompanyId}
             onChange={setField('tenantCompanyId')}
@@ -296,7 +296,7 @@ function DealDetail() {
                 )}
                 {tenant && (
                   <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Borrower / Tenant</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Seller / Lender</p>
                     <Link to={`/companies/${tenant.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400 flex items-center gap-1.5">
                       <Building2 size={13} /> {tenant.name}
                     </Link>
