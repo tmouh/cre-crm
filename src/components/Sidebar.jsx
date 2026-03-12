@@ -1,16 +1,17 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Building2, Briefcase, Bell, LogOut, Settings } from 'lucide-react'
+import { LayoutDashboard, Users, Building2, Briefcase, Bell, LogOut, Settings, Trash2 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
 import { isOverdue, isDueToday } from '../utils/helpers'
 
 const NAV = [
-  { to: '/',           label: 'Dashboard',  Icon: LayoutDashboard },
-  { to: '/reminders',  label: 'Follow-ups', Icon: Bell },
-  { to: '/contacts',   label: 'Contacts',   Icon: Users },
-  { to: '/companies',  label: 'Companies',  Icon: Building2 },
-  { to: '/properties', label: 'Deals',      Icon: Briefcase },
+  { to: '/',                label: 'Dashboard',         Icon: LayoutDashboard },
+  { to: '/reminders',       label: 'Follow-ups',        Icon: Bell },
+  { to: '/contacts',        label: 'Contacts',          Icon: Users },
+  { to: '/companies',       label: 'Companies',         Icon: Building2 },
+  { to: '/properties',      label: 'Deals',             Icon: Briefcase },
+  { to: '/recently-deleted', label: 'Recently Deleted', Icon: Trash2 },
 ]
 
 export default function Sidebar() {

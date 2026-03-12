@@ -33,10 +33,12 @@ function row(data)  { return toCamel(data) }
 function rows(data) { return (data || []).map(toCamel) }
 
 // ─── Generic table helper ──────────────────────────────────────────────────────
-function table(name) {
+function table(name, { trackDeleted = false } = {}) {
   return {
     getAll: async (order = 'created_at') => {
-      const { data, error } = await supabase.from(name).select('*').order(order)
+      let query = supabase.from(name).select('*')
+      if (trackDeleted) query = query.is('deleted_at', null)
+      const { data, error } = await query.order(order)
       if (error) throw error
       return rows(data)
     },
@@ -56,15 +58,35 @@ function table(name) {
       const { error } = await supabase.from(name).delete().eq('id', id)
       if (error) throw error
     },
+    softDelete: async (id) => {
+      const { data, error } = await supabase
+        .from(name).update({ deleted_at: new Date().toISOString() }).eq('id', id).select().single()
+      if (error) throw error
+      return row(data)
+    },
+    restore: async (id) => {
+      const { data, error } = await supabase
+        .from(name).update({ deleted_at: null }).eq('id', id).select().single()
+      if (error) throw error
+      return row(data)
+    },
+    getDeleted: async (days = 15) => {
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+      const { data, error } = await supabase
+        .from(name).select('*').not('deleted_at', 'is', null).gte('deleted_at', cutoff)
+        .order('deleted_at', { ascending: false })
+      if (error) throw error
+      return rows(data)
+    },
   }
 }
 
 // ─── db API (mirrors old storage.js interface, but async) ─────────────────────
 export const db = {
-  companies:   table('companies'),
-  contacts:    table('contacts'),
-  properties:  table('properties'),
-  reminders:   table('reminders'),
+  companies:   table('companies',   { trackDeleted: true }),
+  contacts:    table('contacts',    { trackDeleted: true }),
+  properties:  table('properties',  { trackDeleted: true }),
+  reminders:   table('reminders',   { trackDeleted: true }),
   activities:  table('activities'),
   teamMembers: table('team_members'),
   config: {

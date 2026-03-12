@@ -13,6 +13,11 @@ export function CRMProvider({ children }) {
   const [loading,      setLoading]      = useState(true)
   const [error,        setError]        = useState(null)
 
+  const [deletedContacts,   setDeletedContacts]   = useState([])
+  const [deletedCompanies,  setDeletedCompanies]  = useState([])
+  const [deletedProperties, setDeletedProperties] = useState([])
+  const [deletedReminders,  setDeletedReminders]  = useState([])
+
   // ─── Initial load + seed ───────────────────────────────────────────────────
   useEffect(() => {
     async function init() {
@@ -24,13 +29,17 @@ export function CRMProvider({ children }) {
           await seedDatabase()
           await db.config.markSeeded()
         }
-        const [co, ct, pr, re, ac, tm] = await Promise.all([
+        const [co, ct, pr, re, ac, tm, delCo, delCt, delPr, delRe] = await Promise.all([
           db.companies.getAll(),
           db.contacts.getAll(),
           db.properties.getAll(),
           db.reminders.getAll(),
           db.activities.getAll(),
           db.teamMembers.getAll(),
+          db.companies.getDeleted(),
+          db.contacts.getDeleted(),
+          db.properties.getDeleted(),
+          db.reminders.getDeleted(),
         ])
         setCompanies(co)
         setContacts(ct)
@@ -38,6 +47,10 @@ export function CRMProvider({ children }) {
         setReminders(re)
         setActivities(ac)
         setTeamMembers(tm)
+        setDeletedCompanies(delCo)
+        setDeletedContacts(delCt)
+        setDeletedProperties(delPr)
+        setDeletedReminders(delRe)
       } catch (err) {
         setError(err.message || 'Failed to load data.')
       } finally {
@@ -60,8 +73,20 @@ export function CRMProvider({ children }) {
   }, [])
 
   const deleteContact = useCallback(async (id) => {
-    await db.contacts.delete(id)
+    const rec = await db.contacts.softDelete(id)
     setContacts(prev => prev.filter(c => c.id !== id))
+    setDeletedContacts(prev => [rec, ...prev])
+  }, [])
+
+  const restoreContact = useCallback(async (id) => {
+    const rec = await db.contacts.restore(id)
+    setDeletedContacts(prev => prev.filter(c => c.id !== id))
+    setContacts(prev => [...prev, rec])
+  }, [])
+
+  const purgeContact = useCallback(async (id) => {
+    await db.contacts.delete(id)
+    setDeletedContacts(prev => prev.filter(c => c.id !== id))
   }, [])
 
   // ─── COMPANIES ────────────────────────────────────────────────────────────
@@ -77,8 +102,20 @@ export function CRMProvider({ children }) {
   }, [])
 
   const deleteCompany = useCallback(async (id) => {
-    await db.companies.delete(id)
+    const rec = await db.companies.softDelete(id)
     setCompanies(prev => prev.filter(c => c.id !== id))
+    setDeletedCompanies(prev => [rec, ...prev])
+  }, [])
+
+  const restoreCompany = useCallback(async (id) => {
+    const rec = await db.companies.restore(id)
+    setDeletedCompanies(prev => prev.filter(c => c.id !== id))
+    setCompanies(prev => [...prev, rec])
+  }, [])
+
+  const purgeCompany = useCallback(async (id) => {
+    await db.companies.delete(id)
+    setDeletedCompanies(prev => prev.filter(c => c.id !== id))
   }, [])
 
   // ─── PROPERTIES ───────────────────────────────────────────────────────────
@@ -94,8 +131,20 @@ export function CRMProvider({ children }) {
   }, [])
 
   const deleteProperty = useCallback(async (id) => {
-    await db.properties.delete(id)
+    const rec = await db.properties.softDelete(id)
     setProperties(prev => prev.filter(p => p.id !== id))
+    setDeletedProperties(prev => [rec, ...prev])
+  }, [])
+
+  const restoreProperty = useCallback(async (id) => {
+    const rec = await db.properties.restore(id)
+    setDeletedProperties(prev => prev.filter(p => p.id !== id))
+    setProperties(prev => [...prev, rec])
+  }, [])
+
+  const purgeProperty = useCallback(async (id) => {
+    await db.properties.delete(id)
+    setDeletedProperties(prev => prev.filter(p => p.id !== id))
   }, [])
 
   // ─── REMINDERS ────────────────────────────────────────────────────────────
@@ -116,8 +165,20 @@ export function CRMProvider({ children }) {
   }, [])
 
   const deleteReminder = useCallback(async (id) => {
-    await db.reminders.delete(id)
+    const rec = await db.reminders.softDelete(id)
     setReminders(prev => prev.filter(r => r.id !== id))
+    setDeletedReminders(prev => [rec, ...prev])
+  }, [])
+
+  const restoreReminder = useCallback(async (id) => {
+    const rec = await db.reminders.restore(id)
+    setDeletedReminders(prev => prev.filter(r => r.id !== id))
+    setReminders(prev => [...prev, rec])
+  }, [])
+
+  const purgeReminder = useCallback(async (id) => {
+    await db.reminders.delete(id)
+    setDeletedReminders(prev => prev.filter(r => r.id !== id))
   }, [])
 
   // ─── ACTIVITIES ───────────────────────────────────────────────────────────
@@ -160,10 +221,11 @@ export function CRMProvider({ children }) {
     <CRMContext.Provider value={{
       contacts, companies, properties, reminders, activities, teamMembers,
       loading, error,
-      addContact, updateContact, deleteContact,
-      addCompany, updateCompany, deleteCompany,
-      addProperty, updateProperty, deleteProperty,
-      addReminder, updateReminder, completeReminder, deleteReminder,
+      deletedContacts, deletedCompanies, deletedProperties, deletedReminders,
+      addContact, updateContact, deleteContact, restoreContact, purgeContact,
+      addCompany, updateCompany, deleteCompany, restoreCompany, purgeCompany,
+      addProperty, updateProperty, deleteProperty, restoreProperty, purgeProperty,
+      addReminder, updateReminder, completeReminder, deleteReminder, restoreReminder, purgeReminder,
       addActivity, updateActivity, deleteActivity,
       getContact, getCompany, getProperty,
       activitiesFor, remindersFor,

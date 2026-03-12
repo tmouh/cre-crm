@@ -11,6 +11,7 @@ import Companies            from './pages/Companies'
 import Properties           from './pages/Properties'
 import Reminders            from './pages/Reminders'
 import Settings             from './pages/Settings'
+import RecentlyDeleted      from './pages/RecentlyDeleted'
 
 export default function App() {
   return (
@@ -39,7 +40,8 @@ export default function App() {
               <Route path="/companies/:id"   element={<Companies />} />
               <Route path="/properties"      element={<Properties />} />
               <Route path="/properties/:id"  element={<Properties />} />
-              <Route path="/settings"        element={<Settings />} />
+              <Route path="/settings"          element={<Settings />} />
+              <Route path="/recently-deleted" element={<RecentlyDeleted />} />
               <Route path="*"               element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
