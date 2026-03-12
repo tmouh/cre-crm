@@ -21,6 +21,8 @@ export default function CompanyTypeCombobox({ value, onChange, disabled }) {
     ...COMPANY_TYPES,
     ...companies.map(c => c.type).filter(Boolean),
   ])].sort((a, b) => {
+    if (a === 'other' && b !== 'other') return 1
+    if (b === 'other' && a !== 'other') return -1
     const aBuiltin = COMPANY_TYPES.includes(a)
     const bBuiltin = COMPANY_TYPES.includes(b)
     if (aBuiltin && !bBuiltin) return -1

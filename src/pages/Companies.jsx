@@ -543,7 +543,7 @@ export default function Companies() {
         </div>
         <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-40">
           <option value="">All types</option>
-          {[...new Set([...COMPANY_TYPES, ...companies.map(c => c.type).filter(Boolean)])].sort((a, b) => a.localeCompare(b)).map(t => (
+          {[...new Set([...COMPANY_TYPES, ...companies.map(c => c.type).filter(Boolean)])].sort((a, b) => { if (a === 'other') return 1; if (b === 'other') return -1; return a.localeCompare(b) }).map(t => (
             <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
           ))}
         </select>
