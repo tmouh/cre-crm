@@ -74,7 +74,7 @@ export default function Dashboard() {
 
   const stale = contacts.filter(c => {
     if (!c.lastContacted) return true
-    return daysDiff(c.lastContacted) > 30
+    return daysDiff(c.lastContacted) > 90
   }).slice(0, 5)
 
   return (
@@ -163,7 +163,7 @@ export default function Dashboard() {
           {/* Needs Attention */}
           <div className="card p-5">
             <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200 mb-1">Needs Attention</h2>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">Not contacted in 30+ days</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">Not contacted in 3+ months</p>
             {stale.length === 0 ? (
               <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">All contacts are fresh</p>
             ) : (

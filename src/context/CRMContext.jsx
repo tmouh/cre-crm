@@ -160,9 +160,20 @@ export function CRMProvider({ children }) {
   }, [])
 
   const completeReminder = useCallback(async (id) => {
-    const rec = await db.reminders.update(id, { status: 'done', completedAt: new Date().toISOString() })
+    const now = new Date().toISOString()
+    const rec = await db.reminders.update(id, { status: 'done', completedAt: now })
     setReminders(prev => prev.map(r => r.id === id ? rec : r))
-  }, [])
+    // Update last touch on the linked contact (only if more recent)
+    if (rec.contactId) {
+      const contact = contacts.find(c => c.id === rec.contactId)
+      if (!contact?.lastContacted || now > contact.lastContacted) {
+        await db.contacts.update(rec.contactId, { lastContacted: now })
+        setContacts(prev => prev.map(c =>
+          c.id === rec.contactId ? { ...c, lastContacted: now } : c
+        ))
+      }
+    }
+  }, [contacts])
 
   const deleteReminder = useCallback(async (id) => {
     const rec = await db.reminders.softDelete(id)
@@ -186,13 +197,18 @@ export function CRMProvider({ children }) {
     const rec = await db.activities.insert(activity)
     setActivities(prev => [...prev, rec])
     if (activity.contactId) {
-      await db.contacts.update(activity.contactId, { lastContacted: rec.createdAt })
-      setContacts(prev => prev.map(c =>
-        c.id === activity.contactId ? { ...c, lastContacted: rec.createdAt } : c
-      ))
+      // Only update lastContacted if the activity date is more recent
+      const contact = contacts.find(c => c.id === activity.contactId)
+      const actDate = rec.createdAt
+      if (!contact?.lastContacted || actDate > contact.lastContacted) {
+        await db.contacts.update(activity.contactId, { lastContacted: actDate })
+        setContacts(prev => prev.map(c =>
+          c.id === activity.contactId ? { ...c, lastContacted: actDate } : c
+        ))
+      }
     }
     return rec
-  }, [])
+  }, [contacts])
 
   const updateActivity = useCallback(async (id, patch) => {
     const rec = await db.activities.update(id, patch)
