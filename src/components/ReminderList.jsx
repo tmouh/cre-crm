@@ -31,15 +31,15 @@ function ReminderRow({ reminder, onComplete, onUncomplete, onDelete, onEdit, onS
   return (
     <div className={clsx(
       'flex items-start gap-3 px-5 py-3.5 group transition-colors',
-      done ? 'opacity-40' : 'hover:bg-gray-50/50 dark:hover:bg-gray-700/20'
+      !done && 'hover:bg-gray-50/50 dark:hover:bg-gray-700/20'
     )}>
       {/* Priority dot */}
-      <div className="flex flex-col items-center gap-1 pt-1.5 flex-shrink-0">
+      <div className={clsx('flex flex-col items-center gap-1 pt-1.5 flex-shrink-0', done && 'opacity-40')}>
         <div className={clsx('w-2 h-2 rounded-full', PRIORITY_DOTS[reminder.priority] || PRIORITY_DOTS.medium)} />
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
+      <div className={clsx('flex-1 min-w-0', done && 'opacity-40')}>
         <p className={clsx('text-sm font-medium text-gray-800 dark:text-gray-200', done && 'line-through text-gray-400 dark:text-gray-500 font-normal')}>
           {reminder.title}
         </p>
@@ -61,14 +61,14 @@ function ReminderRow({ reminder, onComplete, onUncomplete, onDelete, onEdit, onS
       {/* Actions */}
       {!done && (
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-          <button onClick={() => onComplete(reminder.id)} className="p-1.5 text-gray-300 hover:text-green-500 dark:text-gray-600 dark:hover:text-green-400 transition-colors" title="Complete">
+          <button onClick={() => onComplete(reminder.id)} className="p-1.5 text-gray-400 hover:text-green-500 dark:text-gray-500 dark:hover:text-green-400 transition-colors" title="Complete">
             <CheckCircle2 size={14} />
           </button>
-          <button onClick={() => onEdit(reminder)} className="p-1.5 text-gray-300 hover:text-brand-500 dark:text-gray-600 dark:hover:text-brand-400 transition-colors" title="Edit">
+          <button onClick={() => onEdit(reminder)} className="p-1.5 text-gray-400 hover:text-brand-500 dark:text-gray-500 dark:hover:text-brand-400 transition-colors" title="Edit">
             <Edit3 size={13} />
           </button>
           <div className="relative" ref={snoozeRef}>
-            <button onClick={() => setShowSnooze(v => !v)} className="p-1.5 text-gray-300 hover:text-orange-500 dark:text-gray-600 dark:hover:text-orange-400 transition-colors" title="Snooze">
+            <button onClick={() => setShowSnooze(v => !v)} className="p-1.5 text-gray-400 hover:text-orange-500 dark:text-gray-500 dark:hover:text-orange-400 transition-colors" title="Snooze">
               <Clock size={13} />
             </button>
             {showSnooze && (
@@ -82,17 +82,17 @@ function ReminderRow({ reminder, onComplete, onUncomplete, onDelete, onEdit, onS
               </div>
             )}
           </div>
-          <button onClick={() => onDelete(reminder.id)} className="p-1.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-colors" title="Delete">
+          <button onClick={() => onDelete(reminder.id)} className="p-1.5 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition-colors" title="Delete">
             <Trash2 size={13} />
           </button>
         </div>
       )}
       {done && (
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-          <button onClick={() => onUncomplete(reminder.id)} className="p-1.5 text-gray-300 hover:text-brand-500 dark:text-gray-600 dark:hover:text-brand-400 transition-colors" title="Mark as pending">
+          <button onClick={() => onUncomplete(reminder.id)} className="p-1.5 text-gray-500 hover:text-brand-500 dark:text-gray-400 dark:hover:text-brand-400 transition-colors" title="Mark as pending">
             <RotateCcw size={13} />
           </button>
-          <button onClick={() => onDelete(reminder.id)} className="p-1.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-colors" title="Delete">
+          <button onClick={() => onDelete(reminder.id)} className="p-1.5 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors" title="Delete">
             <Trash2 size={13} />
           </button>
         </div>
