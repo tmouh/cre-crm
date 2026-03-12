@@ -18,9 +18,9 @@ async function getToken() {
       const resp = await msalInstance.acquireTokenSilent({ ...graphScopes, account: accounts[0] })
       return resp.accessToken
     } catch {
-      // Silent failed — popup to re-authenticate (stays on current page)
-      const resp = await msalInstance.acquireTokenPopup({ ...graphScopes, account: accounts[0] })
-      return resp.accessToken
+      // Silent failed — redirect to re-authenticate
+      await msalInstance.acquireTokenRedirect({ ...graphScopes, account: accounts[0] })
+      return // page will redirect; execution stops here
     }
   }
   throw new Error('Microsoft session expired. Please sign in again.')
@@ -42,7 +42,7 @@ async function graphGet(path) {
 
 export async function signInMicrosoft() {
   await ensureInit()
-  await msalInstance.loginPopup(graphScopes)
+  await msalInstance.loginRedirect(graphScopes)
 }
 
 export async function getMicrosoftAccount() {
