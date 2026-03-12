@@ -105,12 +105,12 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-4">
       <div>
-        <label className="label">Deal name *</label>
-        <input value={form.name} onChange={f('name')} className="input" required placeholder="e.g. 1440 Broadway Acquisition" />
+        <label className="label">Address *</label>
+        <input value={form.address} onChange={f('address')} className="input" required placeholder="Property address" />
       </div>
       <div>
-        <label className="label">Address</label>
-        <input value={form.address} onChange={f('address')} className="input" placeholder="Property address" />
+        <label className="label">Deal name</label>
+        <input value={form.name} onChange={f('name')} className="input" placeholder="e.g. 1440 Broadway Acquisition" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -349,11 +349,11 @@ export default function Properties() {
 
   const filtered = properties.filter(p => {
     const q = search.toLowerCase()
-    const matches = !q || p.name.toLowerCase().includes(q) || p.address?.toLowerCase().includes(q)
+    const matches = !q || p.name?.toLowerCase().includes(q) || p.address?.toLowerCase().includes(q)
     const type   = !filterType   || p.dealType === filterType
     const status = !filterStatus || p.status   === filterStatus
     return matches && type && status
-  }).sort((a, b) => a.name.localeCompare(b.name))
+  }).sort((a, b) => (a.name || a.address || '').localeCompare(b.name || b.address || ''))
 
   return (
     <div className="px-8 py-8">
@@ -460,7 +460,7 @@ export default function Properties() {
         <Modal title="Add Deal" onClose={() => setShowAdd(false)} size="lg">
           <DealForm onSubmit={async (form) => {
             const dup = properties.find(p =>
-              p.name.toLowerCase() === form.name.toLowerCase() ||
+              (form.name && p.name && p.name.toLowerCase() === form.name.toLowerCase()) ||
               (form.address && p.address && p.address.toLowerCase() === form.address.toLowerCase())
             )
             if (dup) {
