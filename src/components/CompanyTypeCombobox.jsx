@@ -37,14 +37,17 @@ export default function CompanyTypeCombobox({ value, onChange, disabled }) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  const rawInput = inputText.toLowerCase().trim()
+
   const filtered = allTypes.filter(t =>
-    t.toLowerCase().includes(inputText.toLowerCase())
+    t.toLowerCase().includes(rawInput)
   )
 
   const hasExactMatch = allTypes.some(
-    t => t.toLowerCase() === inputText.trim().toLowerCase()
+    t => t.toLowerCase() === rawInput
   )
-  const showCreate = inputText.trim().length > 0 && !hasExactMatch
+  const normalizedNew = rawInput.replace(/\s+/g, '-')
+  const showCreate = normalizedNew.length > 0 && !hasExactMatch
 
   function handleSelect(type) {
     onChange(type)
@@ -53,14 +56,14 @@ export default function CompanyTypeCombobox({ value, onChange, disabled }) {
   }
 
   function handleCreate() {
-    const newType = inputText.trim().toLowerCase().replace(/\s+/g, '-')
-    if (!newType) return
-    onChange(newType)
-    setInputText(newType)
+    if (!normalizedNew) return
+    onChange(normalizedNew)
+    setInputText(normalizedNew)
     setOpen(false)
   }
 
   function capitalize(s) {
+    if (!s) return ''
     return s.charAt(0).toUpperCase() + s.slice(1)
   }
 
@@ -69,8 +72,8 @@ export default function CompanyTypeCombobox({ value, onChange, disabled }) {
       <div className="relative">
         <input
           type="text"
-          value={inputText ? capitalize(inputText) : ''}
-          onChange={e => { setInputText(e.target.value); setOpen(true) }}
+          value={capitalize(inputText)}
+          onChange={e => { setInputText(e.target.value.toLowerCase()); setOpen(true) }}
           onFocus={() => setOpen(true)}
           className="input pr-8"
           placeholder="Search or create type..."
