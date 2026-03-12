@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { Plus, Search, Building2, Users, Trash2, Edit2, ArrowLeft, Upload, MapPin, Briefcase, Calendar } from 'lucide-react'
 import SearchableSelect from '../components/SearchableSelect'
 import AddressAutocomplete from '../components/AddressAutocomplete'
+import NumericInput from '../components/NumericInput'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { DEAL_TYPES, DEAL_STATUSES, DEAL_STATUS_COLORS, DEAL_TYPE_COLORS, formatDealType, formatDealStatus, fullName, formatDate, isOverdue, isDueToday } from '../utils/helpers'
@@ -138,12 +139,9 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="label">Size</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={form.size ? Number(form.size).toLocaleString() : ''}
-            onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); setForm(p => ({ ...p, size: raw })) }}
-            className="input"
+          <NumericInput
+            value={form.size}
+            onChange={v => setForm(p => ({ ...p, size: v }))}
             placeholder="0"
           />
         </div>
@@ -155,12 +153,10 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
         </div>
         <div>
           <label className="label">Deal value ($)</label>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={form.dealValue ? Number(form.dealValue).toLocaleString(undefined, { minimumFractionDigits: form.dealValue.includes?.('.') ? 2 : 0, maximumFractionDigits: 2 }) : ''}
-            onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ''); setForm(p => ({ ...p, dealValue: raw })) }}
-            className="input"
+          <NumericInput
+            value={form.dealValue}
+            onChange={v => setForm(p => ({ ...p, dealValue: v }))}
+            decimals
             placeholder="0.00"
           />
         </div>
