@@ -122,29 +122,27 @@ export default function Dashboard() {
         </Link>
       )}
 
-      {/* Overdue — full width above the grid so Today and Needs Attention align */}
-      {overdue.length > 0 && (
-        <section className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertCircle size={15} className="text-red-500" />
-            <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Overdue ({overdue.length})</h2>
-          </div>
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-2 space-y-2">
-              {overdue.map(r => (
-                <ReminderCard key={r.id} reminder={r}
-                  contact={getContact(r.contactId)} company={getCompany(r.companyId)} property={getProperty(r.propertyId)}
-                  onComplete={completeReminder}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       <div className="grid grid-cols-3 gap-6 items-start">
         {/* Left: reminders */}
         <div className="col-span-2 space-y-8">
+          {/* Overdue */}
+          {overdue.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <AlertCircle size={15} className="text-red-500" />
+                <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Overdue ({overdue.length})</h2>
+              </div>
+              <div className="space-y-2">
+                {overdue.map(r => (
+                  <ReminderCard key={r.id} reminder={r}
+                    contact={getContact(r.contactId)} company={getCompany(r.companyId)} property={getProperty(r.propertyId)}
+                    onComplete={completeReminder}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Today */}
           <section>
             <div className="flex items-center justify-between mb-3">
