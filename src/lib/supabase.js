@@ -170,6 +170,51 @@ export const db = {
     },
   },
 
+  graphSubscriptions: {
+    upsert: async (data) => {
+      const { error } = await supabase
+        .from('graph_subscriptions')
+        .upsert(clean(toSnake(data)), { onConflict: 'ms_subscription_id' })
+      if (error) throw error
+    },
+    getActive: async () => {
+      const { data, error } = await supabase
+        .from('graph_subscriptions')
+        .select('*')
+        .gt('expires_at', new Date().toISOString())
+      if (error) throw error
+      return rows(data)
+    },
+    delete: async (msSubscriptionId) => {
+      const { error } = await supabase
+        .from('graph_subscriptions')
+        .delete()
+        .eq('ms_subscription_id', msSubscriptionId)
+      if (error) throw error
+    },
+  },
+
+  webhookNotifications: {
+    getUnprocessed: async (limit = 50) => {
+      const { data, error } = await supabase
+        .from('webhook_notifications')
+        .select('*')
+        .eq('processed', false)
+        .order('received_at', { ascending: true })
+        .limit(limit)
+      if (error) throw error
+      return rows(data)
+    },
+    markProcessed: async (ids) => {
+      if (!ids.length) return
+      const { error } = await supabase
+        .from('webhook_notifications')
+        .update({ processed: true })
+        .in('id', ids)
+      if (error) throw error
+    },
+  },
+
   config: {
     isSeeded: async () => {
       const { data, error } = await supabase

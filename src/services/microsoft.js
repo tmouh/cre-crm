@@ -62,6 +62,49 @@ async function graphGet(path, scopes) {
   return res.json()
 }
 
+async function graphPost(path, body, scopes) {
+  const token = await getToken(scopes)
+  if (!token) return null
+  const res = await fetch(`https://graph.microsoft.com/v1.0${path}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Graph API POST ${res.status}: ${text}`)
+  }
+  return res.json()
+}
+
+async function graphPatch(path, body, scopes) {
+  const token = await getToken(scopes)
+  if (!token) return null
+  const res = await fetch(`https://graph.microsoft.com/v1.0${path}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Graph API PATCH ${res.status}: ${text}`)
+  }
+  return res.json()
+}
+
+async function graphDelete(path, scopes) {
+  const token = await getToken(scopes)
+  if (!token) return null
+  const res = await fetch(`https://graph.microsoft.com/v1.0${path}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok && res.status !== 404) {
+    const text = await res.text()
+    throw new Error(`Graph API DELETE ${res.status}: ${text}`)
+  }
+}
+
 async function graphGetBeta(path, scopes) {
   const token = await getToken(scopes)
   if (!token) return null
@@ -410,4 +453,53 @@ export async function checkCapabilities() {
   } catch { /* best-effort */ }
 
   return capabilities
+}
+
+// ─── Graph Subscriptions (Webhooks) ─────────────────────────────────────────
+
+const SUBSCRIPTION_LIFETIME_MS = 2 * 24 * 60 * 60 * 1000 // 2 days (max for mail is ~3 days)
+
+/**
+ * Create a Graph change notification subscription.
+ * @param {string} resource - e.g. '/me/messages', '/me/events'
+ * @param {string} changeType - 'created', 'updated', 'deleted' (comma-separated for multiple)
+ */
+export async function createGraphSubscription(resource, changeType = 'created,updated') {
+  const notificationUrl = `${window.location.origin}/api/graph-webhook`
+  const clientState = import.meta.env.VITE_GRAPH_WEBHOOK_SECRET || 'vanadium-crm'
+  return graphPost('/subscriptions', {
+    changeType,
+    notificationUrl,
+    resource,
+    expirationDateTime: new Date(Date.now() + SUBSCRIPTION_LIFETIME_MS).toISOString(),
+    clientState,
+  })
+}
+
+/**
+ * Renew a subscription before it expires.
+ */
+export async function renewGraphSubscription(subscriptionId) {
+  return graphPatch(`/subscriptions/${subscriptionId}`, {
+    expirationDateTime: new Date(Date.now() + SUBSCRIPTION_LIFETIME_MS).toISOString(),
+  })
+}
+
+/**
+ * Delete a subscription.
+ */
+export async function deleteGraphSubscription(subscriptionId) {
+  return graphDelete(`/subscriptions/${subscriptionId}`)
+}
+
+/**
+ * List all active subscriptions.
+ */
+export async function listGraphSubscriptions() {
+  try {
+    const data = await graphGet('/subscriptions')
+    return data?.value || []
+  } catch {
+    return []
+  }
 }

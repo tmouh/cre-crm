@@ -8,6 +8,9 @@ import {
   getRecentEmails,
   getUpcomingEvents,
   getRecentFiles,
+  createGraphSubscription,
+  renewGraphSubscription,
+  listGraphSubscriptions,
 } from '../services/microsoft'
 import { db, supabase } from '../lib/supabase'
 
@@ -111,6 +114,82 @@ export function MicrosoftProvider({ children }) {
     if (!isConnected) return
     syncIntervalRef.current = setInterval(() => sync(), 5 * 60 * 1000)
     return () => clearInterval(syncIntervalRef.current)
+  }, [isConnected, sync])
+
+  // Auto-create Graph webhook subscriptions when connected
+  useEffect(() => {
+    if (!isConnected || !capabilities) return
+    async function ensureSubscriptions() {
+      try {
+        const existing = await listGraphSubscriptions()
+        const existingResources = new Set((existing || []).map(s => s.resource))
+        const desired = []
+        if (capabilities.mail && !existingResources.has('me/messages'))
+          desired.push({ resource: 'me/messages', changeType: 'created,updated' })
+        if (capabilities.calendar && !existingResources.has('me/events'))
+          desired.push({ resource: 'me/events', changeType: 'created,updated,deleted' })
+
+        for (const sub of desired) {
+          try {
+            const result = await createGraphSubscription(sub.resource, sub.changeType)
+            if (result?.id) {
+              await db.graphSubscriptions.upsert({
+                msSubscriptionId: result.id,
+                resource: sub.resource,
+                changeType: sub.changeType,
+                expiresAt: result.expirationDateTime,
+                notificationUrl: result.notificationUrl,
+              }).catch(() => {})
+            }
+          } catch {
+            // Subscription creation can fail if webhook URL isn't reachable yet
+          }
+        }
+
+        // Renew any subscriptions expiring within 12 hours
+        for (const s of existing || []) {
+          const expiresAt = new Date(s.expirationDateTime)
+          if (expiresAt.getTime() - Date.now() < 12 * 60 * 60 * 1000) {
+            try {
+              const renewed = await renewGraphSubscription(s.id)
+              if (renewed?.id) {
+                await db.graphSubscriptions.upsert({
+                  msSubscriptionId: renewed.id,
+                  resource: s.resource,
+                  expiresAt: renewed.expirationDateTime,
+                }).catch(() => {})
+              }
+            } catch { /* subscription may have already expired */ }
+          }
+        }
+      } catch {
+        // Graph subscriptions are best-effort
+      }
+    }
+    ensureSubscriptions()
+    // Re-check subscriptions every 6 hours
+    const interval = setInterval(ensureSubscriptions, 6 * 60 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [isConnected, capabilities]) // eslint-disable-line
+
+  // Poll for unprocessed webhook notifications and trigger sync
+  useEffect(() => {
+    if (!isConnected) return
+    async function pollNotifications() {
+      try {
+        const pending = await db.webhookNotifications.getUnprocessed(20)
+        if (pending.length > 0) {
+          await db.webhookNotifications.markProcessed(pending.map(n => n.id))
+          // Trigger a data refresh
+          sync()
+        }
+      } catch { /* polling is best-effort */ }
+    }
+    // Poll every 30 seconds for near-real-time updates
+    const interval = setInterval(pollNotifications, 30 * 1000)
+    // Initial check
+    pollNotifications()
+    return () => clearInterval(interval)
   }, [isConnected, sync])
 
   const connect = useCallback(async (fullScopes = false) => {
