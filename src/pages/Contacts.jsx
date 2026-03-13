@@ -4,7 +4,7 @@ import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, 
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
-import { fullName, initials, formatDate, daysDiff } from '../utils/helpers'
+import { fullName, initials, formatDate, daysDiff, CONTACT_FUNCTIONS, formatContactFunction } from '../utils/helpers'
 import Modal from '../components/Modal'
 import TagInput from '../components/TagInput'
 import ActivityFeed from '../components/ActivityFeed'
@@ -29,7 +29,7 @@ class LinkedInErrorBoundary extends Component {
   }
 }
 
-const BLANK = { firstName: '', lastName: '', title: '', companyId: '', email: '', phone: '', mobile: '', linkedIn: '', notes: '', tags: [], ownerIds: [] }
+const BLANK = { firstName: '', lastName: '', title: '', contactFunction: '', companyId: '', email: '', phone: '', mobile: '', linkedIn: '', notes: '', tags: [], ownerIds: [] }
 
 function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
   const { addCompany, teamMembers } = useCRM()
@@ -61,9 +61,18 @@ function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
           <input value={form.lastName} onChange={f('lastName')} className="input" required />
         </div>
       </div>
-      <div>
-        <label className="label">Title / Role</label>
-        <input value={form.title} onChange={f('title')} className="input" placeholder="e.g. VP Real Estate" />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="label">Title / Role</label>
+          <input value={form.title} onChange={f('title')} className="input" placeholder="e.g. VP Real Estate" />
+        </div>
+        <div>
+          <label className="label">Function</label>
+          <select value={form.contactFunction || ''} onChange={f('contactFunction')} className="input">
+            <option value="">— Select —</option>
+            {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
+          </select>
+        </div>
       </div>
       <div>
         <label className="label">Company</label>
@@ -190,6 +199,11 @@ function ContactDetail() {
             </div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{fullName(contact)}</h2>
             {contact.title && <p className="text-sm text-gray-500 dark:text-gray-400">{contact.title}</p>}
+            {contact.contactFunction && (
+              <span className={clsx('badge mt-1 inline-block', contact.contactFunction === 'lp-investor' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+                {formatContactFunction(contact.contactFunction)}
+              </span>
+            )}
             {company && (
               <Link to={`/companies/${company.id}`} className="flex items-center gap-1.5 mt-2 text-sm text-brand-600 hover:underline dark:text-brand-400">
                 <Building2 size={13} /> {company.name}
@@ -311,6 +325,8 @@ export default function Contacts() {
   const [showImport, setShowImport] = useState(false)
   const [showOutlookImport, setShowOutlookImport] = useState(false)
   const [filterCompany, setFilterCompany] = useState('')
+  const [filterOwner, setFilterOwner] = useState('')
+  const [filterFunction, setFilterFunction] = useState('')
   const [sortField, setSortField] = useState('name')
   const [sortDir, setSortDir] = useState('asc')
   const [dupCheck, setDupCheck] = useState(null)
@@ -324,7 +340,9 @@ export default function Contacts() {
     const q = search.toLowerCase()
     const matches = !q || fullName(c).toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.title?.toLowerCase().includes(q) || (c.tags || []).some(t => t.toLowerCase().includes(q))
     const comp = !filterCompany || c.companyId === filterCompany
-    return matches && comp
+    const owner = !filterOwner || (c.ownerIds || []).includes(filterOwner)
+    const fn = !filterFunction || c.contactFunction === filterFunction
+    return matches && comp && owner && fn
   }).sort((a, b) => {
     let cmp = 0
     switch (sortField) {
@@ -335,6 +353,7 @@ export default function Contacts() {
         cmp = ca.localeCompare(cb) || fullName(a).localeCompare(fullName(b)); break
       }
       case 'title': cmp = (a.title || '').localeCompare(b.title || ''); break
+      case 'function': cmp = (a.contactFunction || '').localeCompare(b.contactFunction || ''); break
       case 'lastTouch': {
         const da = a.lastContacted || '', db = b.lastContacted || ''
         if (!da && !db) cmp = 0; else if (!da) cmp = 1; else if (!db) cmp = -1; else cmp = da.localeCompare(db); break
@@ -386,9 +405,19 @@ export default function Contacts() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search contacts..." className="input pl-9" />
         </div>
-        <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)} className="input w-48">
+        <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)} className="input w-44">
           <option value="">All companies</option>
           {[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select value={filterOwner} onChange={e => setFilterOwner(e.target.value)} className="input w-40">
+          <option value="">All owners</option>
+          {[...teamMembers].sort((a, b) => (a.displayName || a.email).localeCompare(b.displayName || b.email)).map(m => (
+            <option key={m.id} value={m.id}>{m.displayName || m.email}</option>
+          ))}
+        </select>
+        <select value={filterFunction} onChange={e => setFilterFunction(e.target.value)} className="input w-40">
+          <option value="">All functions</option>
+          {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
         </select>
       </div>
 
@@ -403,6 +432,7 @@ export default function Contacts() {
                   { field: 'name', label: 'Name', className: 'px-5' },
                   { field: 'company', label: 'Company' },
                   { field: 'title', label: 'Title' },
+                  { field: 'function', label: 'Function' },
                   { field: null, label: 'Contact' },
                   { field: 'lastTouch', label: 'Last touch' },
                   { field: null, label: 'Owners' },
@@ -440,6 +470,13 @@ export default function Contacts() {
                     </td>
                     <td className="px-4 py-3.5">
                       {c.title ? <span className="text-sm text-gray-600 dark:text-gray-400">{c.title}</span> : <span className="text-sm text-gray-300 dark:text-gray-600">—</span>}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      {c.contactFunction ? (
+                        <span className={clsx('badge text-[11px]', c.contactFunction === 'lp-investor' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+                          {formatContactFunction(c.contactFunction)}
+                        </span>
+                      ) : <span className="text-sm text-gray-300 dark:text-gray-600">—</span>}
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex gap-2">

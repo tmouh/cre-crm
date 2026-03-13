@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { Plus, Search, ArrowLeft, Edit2, Trash2, Users2, Building2, Target, Filter } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
-import { ASSET_TYPES, CAPITAL_TYPES, formatAssetType, formatCapitalType, formatCurrency, fullName } from '../utils/helpers'
+import { ASSET_TYPES, CAPITAL_TYPES, formatAssetType, formatCapitalType, formatCurrency, fullName, formatContactFunction } from '../utils/helpers'
 import Modal from '../components/Modal'
 import TagInput from '../components/TagInput'
 import NumericInput from '../components/NumericInput'
@@ -270,7 +270,7 @@ export default function Investors() {
   const { id } = useParams()
   if (id) return <InvestorDetail />
 
-  const { investors, addInvestor, companies, contacts, properties } = useCRM()
+  const { investors, addInvestor, companies, contacts, properties, getCompany } = useCRM()
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [showAdd, setShowAdd] = useState(false)
@@ -282,6 +282,12 @@ export default function Investors() {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortField(field); setSortDir(field === 'minDealSize' ? 'desc' : 'asc') }
   }
+
+  const lpContacts = contacts.filter(c => c.contactFunction === 'lp-investor').filter(c => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return fullName(c).toLowerCase().includes(q) || getCompany(c.companyId)?.name?.toLowerCase().includes(q) || c.title?.toLowerCase().includes(q)
+  })
 
   const filtered = investors.filter(inv => {
     const company = companies.find(c => c.id === inv.companyId)
@@ -309,7 +315,7 @@ export default function Investors() {
     <div className="px-8 py-8">
       <PageHeader
         title="Investors"
-        subtitle={`${investors.length} investor profile${investors.length !== 1 ? 's' : ''}`}
+        subtitle={`${investors.length} investor profile${investors.length !== 1 ? 's' : ''}${lpContacts.length ? ` · ${lpContacts.length} LP contact${lpContacts.length !== 1 ? 's' : ''}` : ''}`}
         actions={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Investor</button>}
       />
 
@@ -325,10 +331,10 @@ export default function Investors() {
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2">
-          {filtered.length === 0 ? (
+        <div className="col-span-2 space-y-6">
+          {filtered.length === 0 && lpContacts.length === 0 ? (
             <EmptyState icon={Users2} title="No investors found" action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Investor</button>} />
-          ) : (
+          ) : filtered.length > 0 ? (
             <div className="card overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
@@ -380,6 +386,50 @@ export default function Investors() {
                             {inv.targetMarkets?.slice(0, 2).map(m => <span key={m} className="badge text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">{m}</span>)}
                             {(inv.targetMarkets?.length || 0) > 2 && <span className="text-[10px] text-gray-400">+{inv.targetMarkets.length - 2}</span>}
                             {!inv.targetMarkets?.length && <span className="text-gray-300 dark:text-gray-600">—</span>}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+
+          {lpContacts.length > 0 && (
+            <div className="card overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">LP Investor Contacts</span>
+                <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-[10px]">{lpContacts.length}</span>
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 dark:border-gray-700/50">
+                    {['Name', 'Company', 'Title', 'Contact'].map(label => (
+                      <th key={label} className="text-left px-4 py-2.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                  {lpContacts.map(c => {
+                    const company = getCompany(c.companyId)
+                    return (
+                      <tr key={c.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                        <td className="px-4 py-3">
+                          <Link to={`/contacts/${c.id}`} className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-brand-600 dark:hover:text-brand-400">{fullName(c)}</Link>
+                        </td>
+                        <td className="px-4 py-3">
+                          {company ? (
+                            <Link to={`/companies/${company.id}`} className="text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">{company.name}</Link>
+                          ) : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          {c.title ? <span className="text-sm text-gray-600 dark:text-gray-400">{c.title}</span> : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
+                            {c.email && <a href={`mailto:${c.email}`} className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400" title={c.email}><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></a>}
+                            {(c.phone || c.mobile) && <a href={`tel:${c.phone || c.mobile}`} className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400" title={c.phone || c.mobile}><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.77 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.9-.9a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></a>}
                           </div>
                         </td>
                       </tr>

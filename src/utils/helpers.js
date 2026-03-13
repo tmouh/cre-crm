@@ -100,6 +100,21 @@ export function formatDealStatus(s) {
   return labels[s] || (s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ') : '')
 }
 export const COMPANY_TYPES = ['owner', 'tenant', 'investor', 'developer', 'broker', 'lender', 'other']
+
+export const CONTACT_FUNCTIONS = [
+  'lp-investor', 'broker', 'developer', 'lender', 'owner-operator',
+  'tenant', 'attorney', 'accountant', 'property-manager', 'other',
+]
+
+export function formatContactFunction(f) {
+  const labels = {
+    'lp-investor': 'LP Investor', 'broker': 'Broker', 'developer': 'Developer',
+    'lender': 'Lender', 'owner-operator': 'Owner / Operator', 'tenant': 'Tenant',
+    'attorney': 'Attorney', 'accountant': 'Accountant',
+    'property-manager': 'Property Manager', 'other': 'Other',
+  }
+  return labels[f] || (f ? f.charAt(0).toUpperCase() + f.slice(1).replace(/-/g, ' ') : '')
+}
 export const REMINDER_TYPES = ['call', 'email', 'meeting', 'tour', 'proposal', 'follow-up', 'other']
 export const ACTIVITY_TYPES = ['call', 'email', 'meeting', 'note', 'tour', 'proposal', 'other']
 export const PRIORITIES = ['high', 'medium', 'low']
