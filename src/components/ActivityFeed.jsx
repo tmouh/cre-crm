@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Phone, Mail, Users, FileText, Building2, Map, MessageSquare, Plus, Trash2, Edit3, Clock, ExternalLink } from 'lucide-react'
+import { useState } from 'react'
+import { Phone, Mail, Users, FileText, Building2, Map, MessageSquare, Plus, Trash2, Edit3, Clock } from 'lucide-react'
 import clsx from 'clsx'
 import { formatDateTime, ACTIVITY_TYPES, TYPE_COLORS } from '../utils/helpers'
 import { useCRM } from '../context/CRMContext'
-import { db } from '../lib/supabase'
+import DealActivityItem from './DealActivityItem'
 
 const TYPE_ICONS = {
   call:     Phone,
@@ -18,7 +18,7 @@ const TYPE_ICONS = {
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
 
 export default function ActivityFeed({ contactId, companyId, propertyId }) {
-  const { activitiesFor, addActivity, updateActivity, deleteActivity } = useCRM()
+  const { activitiesFor, dealActivitiesFor, addActivity, updateActivity, deleteActivity } = useCRM()
   const [showForm, setShowForm] = useState(false)
   const [type, setType] = useState('note')
   const [text, setText] = useState('')
@@ -26,14 +26,6 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
   const [activityTime, setActivityTime] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({ type: '', description: '', date: '', time: '' })
-  const [emailItems, setEmailItems] = useState([])
-
-  useEffect(() => {
-    if (!contactId) return
-    db.emailInteractions.forContact(contactId)
-      .then(rows => setEmailItems(rows))
-      .catch(() => {})
-  }, [contactId])
 
   function openForm() {
     setActivityDate(new Date().toISOString().slice(0, 10))
@@ -45,23 +37,26 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
   const id = contactId || companyId || propertyId
   const manualItems = activitiesFor(field, id)
 
-  // Merge manual activities with persisted email interactions, sorted newest first
-  const emailActivityItems = emailItems.map(e => ({
-    id: `email-${e.id}`,
-    type: 'email',
-    description: e.subject || '(no subject)',
-    fromName: e.fromName || e.fromAddress || '',
-    webLink: e.webLink,
-    createdAt: e.receivedAt,
-    isEmail: true,
-  }))
-  const items = [...manualItems, ...emailActivityItems]
-    .sort((a, b) => (b.createdAt || '') > (a.createdAt || '') ? 1 : -1)
+  // Deal activities: curated email thread entries — one per thread, not per email.
+  // Replaces the old raw email_interactions merge.
+  const dealItems = dealActivitiesFor(field, id)
+  const reviewCount = dealItems.filter(d => d.status === 'needs_review').length
+
+  // Merge and sort newest first
+  const mergedItems = [
+    ...manualItems.map(a => ({ ...a, _kind: 'manual', _sortKey: a.date || a.createdAt || '' })),
+    ...dealItems.map(d => ({ ...d, _kind: 'deal', _sortKey: d.lastMessageAt || d.createdAt || '' })),
+  ].sort((a, b) => b._sortKey.localeCompare(a._sortKey))
 
   async function submit(e) {
     e.preventDefault()
     if (!text.trim()) return
-    await addActivity({ type, description: text.trim(), contactId, companyId, propertyId, createdAt: activityDate ? new Date(activityDate + 'T' + (activityTime || '12:00') + ':00').toISOString() : undefined })
+    await addActivity({
+      type, description: text.trim(), contactId, companyId, propertyId,
+      createdAt: activityDate
+        ? new Date(activityDate + 'T' + (activityTime || '12:00') + ':00').toISOString()
+        : undefined,
+    })
     setText('')
     setType('note')
     setActivityDate(new Date().toISOString().slice(0, 10))
@@ -71,13 +66,24 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
 
   function startEdit(a) {
     setEditingId(a.id)
-    setEditForm({ type: a.type, description: a.description, date: (a.createdAt || '').slice(0, 10), time: a.createdAt ? new Date(a.createdAt).toTimeString().slice(0, 5) : '12:00' })
+    setEditForm({
+      type: a.type,
+      description: a.description,
+      date: (a.createdAt || '').slice(0, 10),
+      time: a.createdAt ? new Date(a.createdAt).toTimeString().slice(0, 5) : '12:00',
+    })
   }
 
   async function saveEdit(e) {
     e.preventDefault()
     if (!editForm.description.trim()) return
-    await updateActivity(editingId, { type: editForm.type, description: editForm.description, createdAt: editForm.date ? new Date(editForm.date + 'T' + (editForm.time || '12:00') + ':00').toISOString() : undefined })
+    await updateActivity(editingId, {
+      type: editForm.type,
+      description: editForm.description,
+      createdAt: editForm.date
+        ? new Date(editForm.date + 'T' + (editForm.time || '12:00') + ':00').toISOString()
+        : undefined,
+    })
     setEditingId(null)
   }
 
@@ -88,12 +94,22 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
         <div className="flex items-center gap-1.5">
           <Clock size={12} className="text-slate-400 dark:text-slate-500" />
           <span className="os-zone-title">Activity Log</span>
-          {items.length > 0 && (
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{manualItems.length} logged{emailItems.length > 0 ? ` · ${emailItems.length} emails` : ''}</span>
+          {(manualItems.length > 0 || dealItems.length > 0) && (
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+              {manualItems.length} logged
+              {dealItems.length > 0 ? ` · ${dealItems.length} thread${dealItems.length !== 1 ? 's' : ''}` : ''}
+            </span>
+          )}
+          {reviewCount > 0 && (
+            <span className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-medium">
+              {reviewCount} to review
+            </span>
           )}
         </div>
         <button onClick={openForm}
-          className={clsx('p-1 transition-colors', showForm ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300')}>
+          className={clsx('p-1 transition-colors', showForm
+            ? 'text-brand-600 dark:text-brand-400'
+            : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300')}>
           <Plus size={12} />
         </button>
       </div>
@@ -101,7 +117,6 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
       {/* Log form */}
       {showForm && (
         <form onSubmit={submit} className="px-3 py-3 bg-surface-50 dark:bg-surface-100 border-b border-[var(--border)]">
-          {/* Type picker pills */}
           <div className="flex flex-wrap gap-1.5 mb-3">
             {ACTIVITY_TYPES.map(t => {
               const Icon = TYPE_ICONS[t] || MessageSquare
@@ -117,7 +132,9 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
               )
             })}
           </div>
-          <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Description <span className="text-red-500">*</span></label>
+          <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">
+            Description <span className="text-red-500">*</span>
+          </label>
           <textarea autoFocus value={text} onChange={e => setText(e.target.value)}
             placeholder="What happened?" rows={3} className="v-input text-sm resize-y" />
           <div className="flex items-center gap-2 mt-2">
@@ -131,64 +148,61 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
       )}
 
       {/* Empty state */}
-      {manualItems.length === 0 && emailItems.length === 0 && !showForm && (
+      {manualItems.length === 0 && dealItems.length === 0 && !showForm && (
         <div className="px-5 py-8 text-center">
           <MessageSquare size={22} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
           <p className="text-sm text-slate-400 dark:text-slate-500">No activity logged yet</p>
-          <button onClick={openForm} className="text-xs text-brand-600 dark:text-brand-400 hover:underline mt-1">Log first activity</button>
+          <button onClick={openForm} className="text-xs text-brand-600 dark:text-brand-400 hover:underline mt-1">
+            Log first activity
+          </button>
         </div>
       )}
 
       {/* Timeline */}
-      {items.length > 0 && (
-        <div className="px-5 py-3">
-          {items.map((a, i) => {
+      {mergedItems.length > 0 && (
+        <div className="px-3 py-3 space-y-1.5">
+          {mergedItems.map((item, i) => {
+            // Deal activity thread (email threads from the smart layer)
+            if (item._kind === 'deal') {
+              return <DealActivityItem key={`da-${item.id}`} da={item} />
+            }
+
+            // Manual activity (call, note, meeting, etc.)
+            const a = item
             const Icon = TYPE_ICONS[a.type] || MessageSquare
             return (
               <div key={a.id} className="flex gap-3 group relative">
                 {/* Connector line */}
-                {i < items.length - 1 && (
+                {i < mergedItems.length - 1 && mergedItems[i + 1]?._kind === 'manual' && (
                   <div className="absolute left-[13px] top-8 bottom-0 w-px bg-slate-100 dark:bg-slate-700/60" />
                 )}
                 {/* Icon circle */}
-                <div className={clsx('w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 relative z-10',
-                  a.isEmail
-                    ? 'bg-blue-50 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400'
-                    : TYPE_COLORS[a.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
+                <div className={clsx(
+                  'w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 relative z-10',
+                  TYPE_COLORS[a.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+                )}>
                   <Icon size={13} />
                 </div>
                 {/* Content */}
-                <div className="flex-1 min-w-0 pb-5">
-                  {a.isEmail ? (
-                    // Read-only email item
-                    <>
-                      <div className="flex items-start justify-between">
-                        <p className="text-sm text-slate-800 dark:text-slate-200 truncate">{a.description}</p>
-                        {a.webLink && (
-                          <a href={a.webLink} target="_blank" rel="noopener noreferrer"
-                            className="ml-2 flex-shrink-0 text-slate-300 hover:text-blue-500 dark:text-slate-600 dark:hover:text-blue-400 transition-colors"
-                            title="Open in Outlook">
-                            <ExternalLink size={12} />
-                          </a>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                        {a.fromName && <span className="mr-1">{a.fromName} ·</span>}
-                        {formatDateTime(a.createdAt)}
-                        <span className="ml-1.5 text-[10px] text-blue-400 dark:text-blue-500">Outlook</span>
-                      </p>
-                    </>
-                  ) : editingId === a.id ? (
+                <div className="flex-1 min-w-0 pb-4">
+                  {editingId === a.id ? (
                     <form onSubmit={saveEdit} className="bg-brand-50/30 dark:bg-brand-900/10 rounded-lg p-3 space-y-2">
                       <div className="flex gap-2">
-                        <select value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className="v-input text-xs py-1.5 flex-1">
+                        <select
+                          value={editForm.type}
+                          onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}
+                          className="v-input text-xs py-1.5 flex-1"
+                        >
                           {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
                         </select>
                         <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} className="v-input text-xs py-1.5 w-36" />
                         <input type="time" value={editForm.time} onChange={e => setEditForm(f => ({ ...f, time: e.target.value }))} className="v-input text-xs py-1.5 w-28" />
                       </div>
-                      <textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
-                        className="v-input text-sm resize-y" rows={2} />
+                      <textarea
+                        value={editForm.description}
+                        onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                        className="v-input text-sm resize-y" rows={2}
+                      />
                       <div className="flex gap-2">
                         <button type="submit" className="v-btn-primary text-xs py-1.5">Save</button>
                         <button type="button" onClick={() => setEditingId(null)} className="v-btn-secondary text-xs py-1.5">Cancel</button>

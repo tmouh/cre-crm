@@ -215,6 +215,86 @@ export const db = {
     },
   },
 
+  // ─── Deal activities (smart email-to-activity layer) ────────────────────
+  dealActivities: {
+    getAll: async () => {
+      const { data, error } = await supabase
+        .from('deal_activities')
+        .select('*')
+        .neq('status', 'dismissed')
+        .order('last_message_at', { ascending: false })
+      if (error) throw error
+      return rows(data)
+    },
+    forContact: async (contactId) => {
+      const { data, error } = await supabase
+        .from('deal_activities')
+        .select('*')
+        .eq('contact_id', contactId)
+        .neq('status', 'dismissed')
+        .order('last_message_at', { ascending: false })
+      if (error) throw error
+      return rows(data)
+    },
+    forCompany: async (companyId) => {
+      const { data, error } = await supabase
+        .from('deal_activities')
+        .select('*')
+        .eq('company_id', companyId)
+        .neq('status', 'dismissed')
+        .order('last_message_at', { ascending: false })
+      if (error) throw error
+      return rows(data)
+    },
+    forProperty: async (propertyId) => {
+      const { data, error } = await supabase
+        .from('deal_activities')
+        .select('*')
+        .eq('property_id', propertyId)
+        .neq('status', 'dismissed')
+        .order('last_message_at', { ascending: false })
+      if (error) throw error
+      return rows(data)
+    },
+    getByConversationId: async (conversationId) => {
+      const { data, error } = await supabase
+        .from('deal_activities')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .maybeSingle()
+      if (error) throw error
+      return data ? toCamel(data) : null
+    },
+    insert: async (obj) => {
+      const { data, error } = await supabase
+        .from('deal_activities')
+        .insert(clean(toSnake(obj)))
+        .select()
+        .single()
+      if (error) throw error
+      return toCamel(data)
+    },
+    update: async (id, patch) => {
+      const { data, error } = await supabase
+        .from('deal_activities')
+        .update(cleanForUpdate(toSnake(patch)))
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      return toCamel(data)
+    },
+    getNeedsReview: async () => {
+      const { data, error } = await supabase
+        .from('deal_activities')
+        .select('*')
+        .eq('status', 'needs_review')
+        .order('last_message_at', { ascending: false })
+      if (error) throw error
+      return rows(data)
+    },
+  },
+
   config: {
     isSeeded: async () => {
       const { data, error } = await supabase

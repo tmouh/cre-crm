@@ -13,10 +13,22 @@ import {
   listGraphSubscriptions,
 } from '../services/microsoft'
 import { db, supabase } from '../lib/supabase'
+import { useCRM } from './CRMContext'
+import { syncDealActivities } from '../services/dealActivitySync'
 
 const MicrosoftContext = createContext(null)
 
 export function MicrosoftProvider({ children }) {
+  // CRMProvider wraps MicrosoftProvider in App.jsx, so useCRM() is safe here.
+  const { contacts, companies, properties, addDealActivity, updateDealActivity } = useCRM()
+
+  // Keep a ref so the sync callback always sees fresh CRM data without
+  // needing contacts/companies/properties in its dependency array.
+  const crmDataRef = useRef({ contacts, companies, properties, addDealActivity, updateDealActivity })
+  useEffect(() => {
+    crmDataRef.current = { contacts, companies, properties, addDealActivity, updateDealActivity }
+  }, [contacts, companies, properties, addDealActivity, updateDealActivity])
+
   const [account, setAccount] = useState(null)
   const [profile, setProfile] = useState(null)
   const [capabilities, setCapabilities] = useState(null)
@@ -97,10 +109,14 @@ export function MicrosoftProvider({ children }) {
       supabase.auth.getUser().then(({ data: { user } }) => {
         if (user) db.microsoftConnections.upsert({ userId: user.id, lastSyncedAt: now }).catch(() => {})
       })
+      // Run deal activity scoring on recent sent messages (best-effort, non-blocking)
+      if (capabilities?.mail) {
+        syncDealActivities(crmDataRef.current).catch(() => {})
+      }
     } catch (err) {
       setSyncState(prev => ({ ...prev, syncing: false, error: err.message }))
     }
-  }, [isConnected, capabilities])
+  }, [isConnected, capabilities]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-sync when connected and capabilities are known
   useEffect(() => {

@@ -105,7 +105,7 @@ export async function getEmailsForContact(email, daysBack = 90) {
   const search = encodeURIComponent(`"participants:${email} received>=${since}"`)
   try {
     const data = await graphGet(
-      `/me/messages?$search=${search}&$select=subject,from,receivedDateTime,bodyPreview,isDraft,webLink&$top=50`
+      `/me/messages?$search=${search}&$select=id,subject,conversationId,from,toRecipients,receivedDateTime,bodyPreview,isDraft,webLink,hasAttachments&$top=50`
     )
     return (data.value || []).filter(m => !m.isDraft)
   } catch {

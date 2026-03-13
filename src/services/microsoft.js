@@ -455,6 +455,51 @@ export async function checkCapabilities() {
   return capabilities
 }
 
+/**
+ * Fetch recent messages from the Sent Items folder.
+ * Used by the deal activity scoring pipeline to detect outbound deal emails.
+ * @param {number} count    - max messages to return
+ * @param {number} daysBack - how far back to look (default 2 days)
+ */
+export async function getSentMessages(count = 50, daysBack = 2) {
+  try {
+    const since = new Date(Date.now() - daysBack * 86_400_000).toISOString()
+    const data = await graphGet(
+      `/me/mailFolders/SentItems/messages?$top=${count}&$orderby=sentDateTime desc&$select=id,subject,conversationId,from,toRecipients,ccRecipients,sentDateTime,bodyPreview,hasAttachments`
+    )
+    // Filter client-side to messages after `since` (Graph $filter + $orderby together can conflict with some tenants)
+    return (data?.value || []).filter(m => (m.sentDateTime || '') >= since)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Fetch attachments for a message including sourceUrl for SharePoint reference attachments.
+ * referenceAttachments have sourceUrl pointing to OneDrive/SharePoint paths like
+ * "/sites/Deals/Shared Documents/105 N 13th/OM/Summary.pdf" which we use for deal scoring.
+ * @param {string} messageId
+ */
+export async function getMessageAttachmentsWithSource(messageId) {
+  try {
+    const data = await graphGet(
+      `/me/messages/${messageId}/attachments?$select=id,name,@odata.type,size,sourceUrl,contentType`
+    )
+    return (data?.value || [])
+      .filter(att => att['@odata.type'] !== '#microsoft.graph.itemAttachment')
+      .map(att => ({
+        id: att.id,
+        name: att.name,
+        size: att.size,
+        contentType: att.contentType,
+        sourceUrl: att.sourceUrl || null, // only present on referenceAttachment
+        isReference: att['@odata.type'] === '#microsoft.graph.referenceAttachment',
+      }))
+  } catch {
+    return []
+  }
+}
+
 // ─── Graph Subscriptions (Webhooks) ─────────────────────────────────────────
 
 const SUBSCRIPTION_LIFETIME_MS = 2 * 24 * 60 * 60 * 1000 // 2 days (max for mail is ~3 days)

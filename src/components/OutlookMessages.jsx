@@ -54,17 +54,21 @@ export default function OutlookMessages({ email, contactId }) {
           // Persist to Supabase for health scoring and offline access
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
+            const msAccount = await import('../lib/msalConfig').then(mod => {
+              try { return mod.msalInstance.getAllAccounts()[0]?.username?.toLowerCase() || '' } catch { return '' }
+            })
             await db.emailInteractions.upsertBatch(msgs.map(m => ({
               userId: user.id,
               contactId,
               msMessageId: m.id,
+              conversationId: m.conversationId || null,
               subject: m.subject || '',
               fromAddress: m.from?.emailAddress?.address || '',
               fromName: m.from?.emailAddress?.name || '',
               receivedAt: m.receivedDateTime,
               bodyPreview: (m.bodyPreview || '').slice(0, 500),
               webLink: m.webLink || '',
-              isInbound: true,
+              isInbound: msAccount ? m.from?.emailAddress?.address?.toLowerCase() !== msAccount : true,
             }))).catch(() => {})
 
             // Update contact's lastContacted if newest email is more recent

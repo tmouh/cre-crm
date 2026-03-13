@@ -23,6 +23,7 @@ export function CRMProvider({ children }) {
   const [investors,      setInvestors]      = useState([])
   const [dealInvestors,  setDealInvestors]  = useState([])
   const [automations,    setAutomations]    = useState([])
+  const [dealActivities, setDealActivities] = useState([])
   const [loading,        setLoading]        = useState(true)
   const [error,          setError]          = useState(null)
 
@@ -45,7 +46,7 @@ export function CRMProvider({ children }) {
           await seedDatabase()
           await db.config.markSeeded()
         }
-        const [co, ct, pr, re, ac, tm, delCo, delCt, delPr, delRe, cp, inv, di, auto] = await Promise.all([
+        const [co, ct, pr, re, ac, tm, delCo, delCt, delPr, delRe, cp, inv, di, auto, da] = await Promise.all([
           db.companies.getAll(),
           db.contacts.getAll(),
           db.properties.getAll(),
@@ -60,6 +61,7 @@ export function CRMProvider({ children }) {
           db.investors.getAll().catch(() => []),
           db.dealInvestors.getAll().catch(() => []),
           db.automations.getAll().catch(() => []),
+          db.dealActivities.getAll().catch(() => []),
         ])
         setCompanies(co)
         setContacts(ct)
@@ -75,6 +77,7 @@ export function CRMProvider({ children }) {
         setInvestors(inv)
         setDealInvestors(di)
         setAutomations(auto)
+        setDealActivities(da)
       } catch (err) {
         setError(err.message || 'Failed to load data.')
       } finally {
@@ -421,6 +424,19 @@ export function CRMProvider({ children }) {
     return updateProperty(id, patch)
   }, [properties, automations, updateProperty, addReminder])
 
+  // ─── DEAL ACTIVITIES ───────────────────────────────────────────────────
+  const addDealActivity = useCallback(async (da) => {
+    const rec = await db.dealActivities.insert(da)
+    setDealActivities(prev => [rec, ...prev])
+    return rec
+  }, [])
+
+  const updateDealActivity = useCallback(async (id, patch) => {
+    const rec = await db.dealActivities.update(id, patch)
+    setDealActivities(prev => prev.map(d => d.id === id ? rec : d))
+    return rec
+  }, [])
+
   // ─── Lookups (synchronous — read from in-memory state) ────────────────────
   const getContact  = useCallback((id) => contacts.find(c => c.id === id),   [contacts])
   const getCompany  = useCallback((id) => companies.find(c => c.id === id),  [companies])
@@ -434,10 +450,17 @@ export function CRMProvider({ children }) {
     reminders.filter(r => r[field] === id && r.status !== 'done'),
   [reminders])
 
+  const dealActivitiesFor = useCallback((field, id) =>
+    dealActivities
+      .filter(d => d.status !== 'dismissed' && d[field] === id)
+      .sort((a, b) => (b.lastMessageAt || b.createdAt || '').localeCompare(a.lastMessageAt || a.createdAt || '')),
+  [dealActivities])
+
   return (
     <CRMContext.Provider value={{
       contacts, companies, properties, reminders, activities, teamMembers,
       comps, investors, investorCompanies, dealInvestors, automations,
+      dealActivities,
       loading, error,
       deletedContacts, deletedCompanies, deletedProperties, deletedReminders,
       addContact, updateContact, deleteContact, restoreContact, purgeContact,
@@ -448,9 +471,10 @@ export function CRMProvider({ children }) {
       addComp, updateComp, deleteComp,
       addDealInvestor, updateDealInvestor, deleteDealInvestor,
       addAutomation, updateAutomation, deleteAutomation,
+      addDealActivity, updateDealActivity,
       undoStack, undoLastDelete, dismissUndo,
       getContact, getCompany, getProperty,
-      activitiesFor, remindersFor,
+      activitiesFor, remindersFor, dealActivitiesFor,
     }}>
       {children}
     </CRMContext.Provider>
