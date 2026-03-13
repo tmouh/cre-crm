@@ -33,11 +33,11 @@ export default function Inbox() {
   }, [activities, activeFilter])
 
   return (
-    <div className="p-6 max-w-[1000px] mx-auto animate-fade-in">
-      {/* Tabs */}
-      <div className="flex items-center gap-1 mb-4 border-b border-slate-200 dark:border-slate-700/40">
+    <div className="h-full flex flex-col animate-fade-in">
+      {/* Tabs toolbar */}
+      <div className="os-toolbar flex-shrink-0 border-b-0">
         {[
-          { id: 'activity', label: 'Activity Feed', icon: Activity },
+          { id: 'activity', label: 'Activity', icon: Activity },
           ...(isConnected ? [
             { id: 'emails', label: 'Emails', icon: Mail },
             { id: 'calendar', label: 'Calendar', icon: Calendar },
@@ -47,16 +47,18 @@ export default function Inbox() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={clsx(
-              'flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors',
+              'flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium border-b-2 -mb-[1.5px] transition-colors',
               activeTab === tab.id
                 ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400'
                 : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
             )}
           >
-            <tab.icon size={13} /> {tab.label}
+            <tab.icon size={12} /> {tab.label}
           </button>
         ))}
       </div>
+
+      <div className="flex-1 overflow-auto p-4 max-w-[1000px]">
 
       {/* Activity Feed tab */}
       {activeTab === 'activity' && (
@@ -95,7 +97,7 @@ export default function Inbox() {
                 return (
                   <div key={a.id} className="v-card p-3 flex gap-3 hover:border-slate-300 dark:hover:border-slate-600 transition-colors group">
                     <div className={clsx(
-                      'w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0',
+                      'w-6 h-6 flex items-center justify-center flex-shrink-0',
                       TYPE_COLORS[a.type] || TYPE_COLORS.other
                     )}>
                       <Icon size={13} />
@@ -128,7 +130,7 @@ export default function Inbox() {
                     </div>
                     <button
                       onClick={() => deleteActivity(a.id)}
-                      className="p-1.5 rounded-md text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 self-center"
+                      className="p-1 text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 self-center"
                       title="Delete activity"
                     >
                       <Trash2 size={13} />
@@ -217,6 +219,7 @@ export default function Inbox() {
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }

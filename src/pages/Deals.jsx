@@ -8,7 +8,7 @@ import { useState, Component } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ArrowLeft, Edit2, Trash2, MapPin, Building2,
-  Users, Upload, Clock, TrendingUp, ChevronRight,
+  Users, Upload, Clock, TrendingUp, ChevronRight, Briefcase,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
@@ -115,10 +115,10 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
       {teamMembers.length > 0 && (
         <div>
           <label className="v-label">Owners</label>
-          <div className="border border-slate-200 dark:border-slate-700 rounded-md p-2 space-y-1 max-h-28 overflow-y-auto">
+          <div className="border border-[var(--border)] p-2 space-y-1 max-h-28 overflow-y-auto">
             {teamMembers.map(m => (
-              <label key={m.id} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 px-2 py-1 rounded">
-                <input type="checkbox" checked={form.ownerIds.includes(m.id)} onChange={() => toggleOwner(m.id)} className="rounded" />
+              <label key={m.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-100 px-2 py-1">
+                <input type="checkbox" checked={form.ownerIds.includes(m.id)} onChange={() => toggleOwner(m.id)} />
                 <span className="text-slate-700 dark:text-slate-300">{m.displayName || m.email}</span>
               </label>
             ))}
@@ -149,7 +149,7 @@ function DealDetail() {
   const [editing, setEditing] = useState(false)
 
   const deal = getProperty(id)
-  if (!deal) return <div className="p-8 text-slate-400">Deal not found.</div>
+  if (!deal) return <div className="p-8 text-slate-400 dark:text-slate-500">Deal not found.</div>
 
   const ownerCompany = getCompany(deal.ownerCompanyId)
   const tenantCompany = getCompany(deal.tenantCompanyId)
@@ -170,39 +170,53 @@ function DealDetail() {
   }
 
   return (
-    <div className="p-6 max-w-[1200px] mx-auto animate-fade-in">
-      <Link to="/deals" className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 mb-4">
-        <ArrowLeft size={13} /> Back to Deals
-      </Link>
+    <div className="h-full flex flex-col animate-fade-in">
+      {/* Command header bar */}
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--border)] bg-surface-0 flex-shrink-0">
+        <Link to="/deals" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+          <ArrowLeft size={14} />
+        </Link>
+        <div className="w-8 h-8 bg-brand-600 flex items-center justify-center flex-shrink-0">
+          <Briefcase size={14} className="text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-[13px] font-bold text-slate-900 dark:text-white truncate">{deal.name || 'Untitled Deal'}</h2>
+          <div className="flex items-center gap-2">
+            {deal.status && (
+              <span className={clsx('v-badge text-[10px]', DEAL_STATUS_COLORS[deal.status])}>{formatDealStatus(deal.status)}</span>
+            )}
+            {deal.dealType && (
+              <>
+                <span className="text-slate-300 dark:text-slate-600 text-[10px]">·</span>
+                <span className={clsx('v-badge text-[10px]', DEAL_TYPE_COLORS[deal.dealType])}>{formatDealType(deal.dealType)}</span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setEditing(true)} className="v-btn-ghost p-1.5"><Edit2 size={13} /></button>
+          <button onClick={handleDelete} className="v-btn-ghost p-1.5 hover:text-red-500"><Trash2 size={13} /></button>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        {/* Left: Deal profile */}
-        <div className="col-span-1 space-y-4">
-          <div className="v-card p-5">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className={clsx('v-badge', DEAL_STATUS_COLORS[deal.status])}>{formatDealStatus(deal.status)}</span>
-                {deal.dealType && <span className={clsx('v-badge', DEAL_TYPE_COLORS[deal.dealType])}>{formatDealType(deal.dealType)}</span>}
-              </div>
-              <div className="flex gap-1">
-                <button onClick={() => setEditing(true)} className="v-btn-ghost p-1.5"><Edit2 size={13} /></button>
-                <button onClick={handleDelete} className="v-btn-ghost p-1.5 hover:text-red-500"><Trash2 size={13} /></button>
-              </div>
-            </div>
-
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">{deal.name || 'Untitled Deal'}</h2>
+      {/* Two-zone workspace */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: deal info */}
+        <div className="w-[280px] flex-shrink-0 border-r border-[var(--border)] overflow-auto bg-surface-0">
+          {/* Address & key metrics */}
+          <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)] space-y-1.5">
             {deal.address && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
-                <MapPin size={11} /> {deal.address}
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-start gap-1.5">
+                <MapPin size={11} className="text-slate-400 dark:text-slate-500 mt-0.5 flex-shrink-0" /> {deal.address}
               </p>
             )}
 
             {/* Momentum score */}
             {momentum && (
-              <div className="mt-3 p-2.5 rounded-md bg-slate-50 dark:bg-surface-100">
+              <div className="p-2 bg-surface-50 dark:bg-surface-100">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-2xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Momentum</span>
-                  <span className={clsx('text-xs font-bold tabular-nums',
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono">Momentum</span>
+                  <span className={clsx('text-[11px] font-bold font-mono tabular-nums',
                     momentum.momentumScore >= 75 ? 'text-emerald-500' :
                     momentum.momentumScore >= 50 ? 'text-blue-500' :
                     momentum.momentumScore >= 25 ? 'text-amber-500' : 'text-red-500'
@@ -210,8 +224,8 @@ function DealDetail() {
                     {momentum.momentumScore}/100
                   </span>
                 </div>
-                <div className="h-1.5 bg-slate-200 dark:bg-surface-200 rounded-full overflow-hidden">
-                  <div className={clsx('h-full rounded-full transition-all duration-500',
+                <div className="h-1.5 bg-surface-200 dark:bg-surface-200 overflow-hidden">
+                  <div className={clsx('h-full transition-all duration-500',
                     momentum.momentumScore >= 75 ? 'bg-emerald-500' :
                     momentum.momentumScore >= 50 ? 'bg-blue-500' :
                     momentum.momentumScore >= 25 ? 'bg-amber-500' : 'bg-red-500'
@@ -220,105 +234,111 @@ function DealDetail() {
               </div>
             )}
 
-            <div className="mt-4 space-y-2.5 border-t border-slate-100 dark:border-slate-800/50 pt-4">
-              {deal.dealValue && (
-                <div className="flex justify-between">
-                  <span className="text-2xs text-slate-400 dark:text-slate-500">Value</span>
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tabular-nums">{formatCurrency(deal.dealValue)}</span>
-                </div>
-              )}
-              {deal.size && (
-                <div className="flex justify-between">
-                  <span className="text-2xs text-slate-400 dark:text-slate-500">Size</span>
-                  <span className="text-xs text-slate-600 dark:text-slate-300">{Number(deal.size).toLocaleString()} {deal.sizeUnit || 'SF'}</span>
-                </div>
-              )}
-              {deal.propertyType && (
-                <div className="flex justify-between">
-                  <span className="text-2xs text-slate-400 dark:text-slate-500">Property</span>
-                  <span className="text-xs text-slate-600 dark:text-slate-300">{formatAssetType(deal.propertyType)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Companies */}
-            {(ownerCompany || tenantCompany) && (
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50 space-y-2">
-                {ownerCompany && (
-                  <Link to={`/companies/${ownerCompany.id}`} className="flex items-center gap-2 text-xs text-slate-600 hover:text-brand-600 dark:text-slate-400">
-                    <Building2 size={12} className="text-slate-400" /> {ownerCompany.name} <span className="text-2xs text-slate-400">(Owner)</span>
-                  </Link>
+            {(deal.dealValue || deal.size || deal.propertyType) && (
+              <div className="space-y-1">
+                {deal.dealValue && (
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-500 dark:text-slate-400">Value</span>
+                    <span className="font-medium font-mono tabular-nums text-slate-900 dark:text-slate-100">{formatCurrency(deal.dealValue)}</span>
+                  </div>
                 )}
-                {tenantCompany && (
-                  <Link to={`/companies/${tenantCompany.id}`} className="flex items-center gap-2 text-xs text-slate-600 hover:text-brand-600 dark:text-slate-400">
-                    <Building2 size={12} className="text-slate-400" /> {tenantCompany.name} <span className="text-2xs text-slate-400">(Tenant)</span>
-                  </Link>
+                {deal.size && (
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-500 dark:text-slate-400">Size</span>
+                    <span className="font-medium font-mono tabular-nums text-slate-900 dark:text-slate-100">{Number(deal.size).toLocaleString()} {deal.sizeUnit || 'SF'}</span>
+                  </div>
                 )}
-              </div>
-            )}
-
-            {/* Related contacts */}
-            {relatedContacts.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
-                <p className="text-2xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Contacts</p>
-                <div className="space-y-1.5">
-                  {relatedContacts.map(c => (
-                    <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 text-xs text-slate-600 hover:text-brand-600 dark:text-slate-400">
-                      <Users size={12} className="text-slate-400" /> {fullName(c)}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Owners */}
-            {owners.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
-                <p className="text-2xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Team</p>
-                <div className="flex gap-1.5">
-                  {owners.map(m => (
-                    <div key={m.id} title={m.displayName || m.email} className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
-                      <span className="text-2xs font-bold text-brand-700 dark:text-brand-300">{(m.displayName || m.email)[0].toUpperCase()}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Tags */}
-            {deal.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
-                {deal.tags.map(t => <span key={t} className="v-badge bg-brand-50 text-brand-600 dark:bg-brand-950/30 dark:text-brand-400">{t}</span>)}
-              </div>
-            )}
-
-            {/* Stage history */}
-            {deal.stageHistory?.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
-                <p className="text-2xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Stage History</p>
-                <div className="space-y-1.5">
-                  {[...deal.stageHistory].reverse().slice(0, 5).map((h, i) => (
-                    <div key={i} className="flex items-center gap-2 text-2xs">
-                      <span className="text-slate-400 dark:text-slate-500">{formatDate(h.at)}</span>
-                      <span className="text-slate-300 dark:text-slate-600"><ChevronRight size={10} /></span>
-                      <span className={clsx('v-badge', DEAL_STATUS_COLORS[h.to])}>{formatDealStatus(h.to)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {deal.notes && (
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
-                <p className="text-2xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Notes</p>
-                <p className="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{deal.notes}</p>
+                {deal.propertyType && (
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-500 dark:text-slate-400">Property</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">{formatAssetType(deal.propertyType)}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
+
+          {/* Companies */}
+          {(ownerCompany || tenantCompany) && (
+            <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)] space-y-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono mb-1">Companies</p>
+              {ownerCompany && (
+                <Link to={`/companies/${ownerCompany.id}`} className="flex items-center gap-2 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400">
+                  <Building2 size={11} className="text-slate-400" /> {ownerCompany.name} <span className="text-[10px] text-slate-400">(Owner)</span>
+                </Link>
+              )}
+              {tenantCompany && (
+                <Link to={`/companies/${tenantCompany.id}`} className="flex items-center gap-2 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400">
+                  <Building2 size={11} className="text-slate-400" /> {tenantCompany.name} <span className="text-[10px] text-slate-400">(Tenant)</span>
+                </Link>
+              )}
+            </div>
+          )}
+
+          {/* Related contacts */}
+          {relatedContacts.length > 0 && (
+            <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono mb-1.5">Contacts</p>
+              <div className="space-y-1.5">
+                {relatedContacts.map(c => (
+                  <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400">
+                    <Users size={11} className="text-slate-400" /> {fullName(c)}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Owners / Team */}
+          {owners.length > 0 && (
+            <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono mb-1.5">Team</p>
+              <div className="flex gap-1.5">
+                {owners.map(m => (
+                  <div key={m.id} title={m.displayName || m.email} className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
+                    <span className="text-[10px] font-bold font-mono text-brand-700 dark:text-brand-300">{(m.displayName || m.email)[0].toUpperCase()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tags */}
+          {deal.tags?.length > 0 && (
+            <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <div className="flex flex-wrap gap-1">
+                {deal.tags.map(t => <span key={t} className="v-badge bg-brand-50 text-brand-600 dark:bg-brand-950/30 dark:text-brand-400">{t}</span>)}
+              </div>
+            </div>
+          )}
+
+          {/* Stage history */}
+          {deal.stageHistory?.length > 0 && (
+            <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono mb-1.5">Stage History</p>
+              <div className="space-y-1.5">
+                {[...deal.stageHistory].reverse().slice(0, 5).map((h, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[10px]">
+                    <span className="text-slate-400 dark:text-slate-500 font-mono tabular-nums">{formatDate(h.at)}</span>
+                    <span className="text-slate-300 dark:text-slate-600"><ChevronRight size={10} /></span>
+                    <span className={clsx('v-badge', DEAL_STATUS_COLORS[h.to])}>{formatDealStatus(h.to)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Notes */}
+          {deal.notes && (
+            <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono mb-1">Notes</p>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{deal.notes}</p>
+            </div>
+          )}
         </div>
 
         {/* Right: Activity & Reminders */}
-        <div className="col-span-2 space-y-4">
+        <div className="flex-1 overflow-auto bg-surface-50 dark:bg-surface-50 p-4 space-y-4">
           <ReminderList propertyId={id} />
           <ActivityFeed propertyId={id} />
         </div>
@@ -380,7 +400,7 @@ export default function Deals() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <p className="text-2xs text-slate-400 dark:text-slate-500">{properties.length} deal{properties.length !== 1 ? 's' : ''}</p>
+          <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500">{properties.length} deal{properties.length !== 1 ? 's' : ''}</p>
         </div>
         <button onClick={() => setShowAdd(true)} className="v-btn-primary"><Plus size={13} /> New Deal</button>
       </div>
@@ -403,13 +423,13 @@ export default function Deals() {
 
       {/* Table */}
       {withMomentum.length === 0 ? (
-        <div className="v-card p-8 text-center">
+        <div className="os-zone p-8 text-center">
           <Briefcase size={20} className="text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-          <p className="text-xs text-slate-400 dark:text-slate-500">No deals found</p>
-          <button onClick={() => setShowAdd(true)} className="v-btn-primary mt-3 text-2xs"><Plus size={12} /> Add Deal</button>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500">No deals found</p>
+          <button onClick={() => setShowAdd(true)} className="v-btn-primary mt-3 text-[10px]"><Plus size={12} /> Add Deal</button>
         </div>
       ) : (
-        <div className="v-card overflow-hidden">
+        <div className="os-zone overflow-hidden">
           <table className="v-table">
             <thead>
               <tr>
@@ -434,31 +454,31 @@ export default function Deals() {
                 return (
                   <tr key={p.id}>
                     <td>
-                      <Link to={`/deals/${p.id}`} className="font-medium text-slate-800 dark:text-slate-200 hover:text-brand-600 dark:hover:text-brand-400">
+                      <Link to={`/deals/${p.id}`} className="font-medium text-[12px] text-slate-800 dark:text-slate-200 hover:text-brand-600 dark:hover:text-brand-400">
                         {p.name || p.address || 'Untitled'}
                       </Link>
-                      {p.address && p.name && <p className="text-2xs text-slate-400 dark:text-slate-500 mt-0.5">{p.address}</p>}
+                      {p.address && p.name && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{p.address}</p>}
                     </td>
                     <td><span className={clsx('v-badge', DEAL_STATUS_COLORS[p.status])}>{formatDealStatus(p.status)}</span></td>
                     <td>{p.dealType ? <span className={clsx('v-badge', DEAL_TYPE_COLORS[p.dealType])}>{formatDealType(p.dealType)}</span> : '—'}</td>
-                    <td className="font-bold tabular-nums text-slate-800 dark:text-slate-200">{formatCurrency(p.dealValue)}</td>
+                    <td className="font-bold font-mono tabular-nums text-slate-800 dark:text-slate-200">{formatCurrency(p.dealValue)}</td>
                     <td>
                       {p.momentumScore != null ? (
                         <div className="flex items-center gap-2">
-                          <div className="w-12 h-1.5 bg-slate-100 dark:bg-surface-200 rounded-full overflow-hidden">
-                            <div className={clsx('h-full rounded-full',
+                          <div className="w-12 h-1.5 bg-surface-100 dark:bg-surface-200 overflow-hidden">
+                            <div className={clsx('h-full',
                               p.momentumScore >= 75 ? 'bg-emerald-500' :
                               p.momentumScore >= 50 ? 'bg-blue-500' :
                               p.momentumScore >= 25 ? 'bg-amber-500' : 'bg-red-500'
                             )} style={{ width: `${p.momentumScore}%` }} />
                           </div>
-                          <span className="text-2xs tabular-nums text-slate-400">{p.momentumScore}</span>
+                          <span className="text-[10px] font-mono tabular-nums text-slate-400">{p.momentumScore}</span>
                         </div>
                       ) : '—'}
                     </td>
                     <td>
                       {company ? (
-                        <Link to={`/companies/${company.id}`} className="text-slate-500 hover:text-brand-600 dark:text-slate-400">{company.name}</Link>
+                        <Link to={`/companies/${company.id}`} className="text-[12px] text-slate-500 hover:text-brand-600 dark:text-slate-400">{company.name}</Link>
                       ) : '—'}
                     </td>
                   </tr>

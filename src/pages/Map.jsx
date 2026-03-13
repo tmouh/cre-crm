@@ -201,7 +201,7 @@ export default function MapPage() {
 
       {/* Loading overlay */}
       {loading && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-white dark:bg-slate-800 shadow-lg rounded-full px-4 py-2 flex items-center gap-2 text-[13px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-surface-0 shadow-elevated px-4 py-2 flex items-center gap-2 text-[12px] text-slate-600 dark:text-slate-300 border border-[var(--border)]">
           <Loader2 size={14} className="animate-spin text-brand-500" />
           Locating deals… {progress.done}/{progress.total}
         </div>
@@ -209,18 +209,18 @@ export default function MapPage() {
 
       {/* No deals empty state */}
       {!loading && activeDeals.length === 0 && (
-        <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/70 dark:bg-slate-900/70">
+        <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-surface-0/70">
           <div className="text-center">
             <MapPin size={36} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-            <p className="text-slate-500 dark:text-slate-400 text-sm">No deals with addresses yet.</p>
-            <Link to="/deals" className="mt-2 inline-block text-sm text-brand-600 hover:underline dark:text-brand-400">Add a deal →</Link>
+            <p className="text-slate-500 dark:text-slate-400 text-[12px]">No deals with addresses yet.</p>
+            <Link to="/deals" className="mt-2 inline-block text-[12px] text-brand-600 hover:underline dark:text-brand-400">Add a deal</Link>
           </div>
         </div>
       )}
 
       {/* Failed geocodes warning */}
       {!loading && failed > 0 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 shadow-md rounded-lg px-4 py-2 flex items-center gap-2 text-[12px] text-amber-700 dark:text-amber-300">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 shadow-elevated px-4 py-2 flex items-center gap-2 text-[12px] text-amber-700 dark:text-amber-300">
           <AlertCircle size={13} />
           {failed} address{failed > 1 ? 'es' : ''} could not be located on the map.
         </div>
@@ -228,8 +228,8 @@ export default function MapPage() {
 
       {/* Legend */}
       {geoDeals.length > 0 && (
-        <div className="absolute bottom-4 right-4 z-[1000] bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60 text-[11px]">
-          <p className="font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 text-[10px]">Status</p>
+        <div className="absolute bottom-4 right-4 z-[1000] bg-surface-0/90 backdrop-blur-sm shadow-elevated p-3 border border-[var(--border)] text-[11px]">
+          <p className="font-mono font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 text-[10px]">Status</p>
           {Object.entries(STATUS_PIN_COLORS).map(([status, color]) => (
             <div key={status} className="flex items-center gap-2 mb-1 last:mb-0">
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />

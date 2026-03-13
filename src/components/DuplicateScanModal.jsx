@@ -14,7 +14,7 @@ function ConfidenceBadge({ confidence }) {
     confidence >= 85 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
     confidence >= 65 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
     'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
-  return <span className={clsx('badge text-[10px]', cls)}>{confidence}% match</span>
+  return <span className={clsx('v-badge', cls)}>{confidence}%</span>
 }
 
 function ContactPair({ pair, onMerge, onDismiss }) {
@@ -60,33 +60,33 @@ function CompanyPair({ pair, onMerge, onDismiss }) {
 
 function PairCard({ pair, fields, labelA, labelB, onMerge, onDismiss }) {
   return (
-    <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+    <div className="border border-[var(--border)] overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between gap-3">
+      <div className="px-3 py-2 bg-surface-50 dark:bg-surface-100 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <AlertTriangle size={14} className="text-amber-500 flex-shrink-0" />
-          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">
+          <AlertTriangle size={12} className="text-amber-500 flex-shrink-0" />
+          <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">
             {labelA} · {labelB}
           </span>
           <ConfidenceBadge confidence={pair.confidence} />
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {pair.reasons.map(r => (
-            <span key={r} className="badge text-[10px] bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">{r}</span>
+            <span key={r} className="v-badge bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">{r}</span>
           ))}
         </div>
       </div>
 
       {/* Side-by-side fields */}
-      <table className="w-full text-xs">
+      <table className="v-table text-[11px]">
         <thead>
-          <tr className="border-b border-slate-100 dark:border-slate-700/60">
-            <th className="px-3 py-1.5 text-left font-medium text-slate-400 dark:text-slate-500 w-1/5">Field</th>
-            <th className="px-3 py-1.5 text-left font-medium text-slate-500 dark:text-slate-400 w-[40%]">{labelA}</th>
-            <th className="px-3 py-1.5 text-left font-medium text-slate-500 dark:text-slate-400 w-[40%]">{labelB}</th>
+          <tr>
+            <th className="w-1/5">Field</th>
+            <th className="w-[40%]">{labelA}</th>
+            <th className="w-[40%]">{labelB}</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-50 dark:divide-slate-700/30">
+        <tbody>
           {fields.filter(f => f.aVal || f.bVal).map(({ label, aVal, bVal }) => {
             const diff = (aVal || '') !== (bVal || '')
             return (
@@ -103,7 +103,7 @@ function PairCard({ pair, fields, labelA, labelB, onMerge, onDismiss }) {
       </table>
 
       {/* Actions */}
-      <div className="px-4 py-3 bg-slate-50/60 dark:bg-slate-800/40 flex gap-2 border-t border-slate-100 dark:border-slate-700/60">
+      <div className="px-3 py-2 bg-surface-50 dark:bg-surface-100 flex gap-2 border-t border-[var(--border)]">
         <button
           onClick={() => onMerge(pair, 'a')}
           className="v-btn text-2xs bg-brand-600 text-white hover:bg-brand-700 flex items-center gap-1"
@@ -180,14 +180,14 @@ export default function DuplicateScanModal({ entityType, pairs, onClose }) {
     >
       <div className="space-y-4">
         {/* Summary bar */}
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-          <Zap size={15} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
-          <p className="text-sm text-amber-800 dark:text-amber-300 flex-1">
+        <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+          <Zap size={13} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          <p className="text-[12px] text-amber-800 dark:text-amber-300 flex-1">
             Found <strong>{pairs.length}</strong> potential duplicate pair{pairs.length !== 1 ? 's' : ''}.
             {doneCount > 0 && <span className="ml-1 text-amber-600 dark:text-amber-400">{doneCount} resolved.</span>}
           </p>
           {doneCount > 0 && (
-            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium font-mono">
               {visible.length} remaining
             </span>
           )}
@@ -196,11 +196,11 @@ export default function DuplicateScanModal({ entityType, pairs, onClose }) {
         {visible.length === 0 ? (
           <div className="py-10 text-center">
             <CheckCircle2 size={32} className="mx-auto text-emerald-400 mb-3" />
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">All resolved!</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+            <p className="text-[12px] font-semibold text-slate-700 dark:text-slate-200">All resolved!</p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
               Merged {merged.size} pair{merged.size !== 1 ? 's' : ''}. Dismissed {dismissed.size}.
             </p>
-            <button onClick={onClose} className="btn-primary mt-4 text-sm">Done</button>
+            <button onClick={onClose} className="v-btn-primary mt-4">Done</button>
           </div>
         ) : (
           <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">

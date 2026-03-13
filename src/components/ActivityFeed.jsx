@@ -84,23 +84,23 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
   return (
     <div className="card overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <Clock size={15} className="text-brand-500" />
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Activity Log</h3>
+      <div className="os-zone-header">
+        <div className="flex items-center gap-1.5">
+          <Clock size={12} className="text-slate-400 dark:text-slate-500" />
+          <span className="os-zone-title">Activity Log</span>
           {items.length > 0 && (
-            <span className="text-xs text-slate-400 dark:text-slate-500">{manualItems.length} logged{emailItems.length > 0 ? ` · ${emailItems.length} emails` : ''}</span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{manualItems.length} logged{emailItems.length > 0 ? ` · ${emailItems.length} emails` : ''}</span>
           )}
         </div>
         <button onClick={openForm}
-          className={clsx('p-1.5 rounded-md transition-colors', showForm ? 'text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/20' : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300')}>
-          <Plus size={14} />
+          className={clsx('p-1 transition-colors', showForm ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300')}>
+          <Plus size={12} />
         </button>
       </div>
 
       {/* Log form */}
       {showForm && (
-        <form onSubmit={submit} className="px-5 py-4 bg-slate-50/60 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700">
+        <form onSubmit={submit} className="px-3 py-3 bg-surface-50 dark:bg-surface-100 border-b border-[var(--border)]">
           {/* Type picker pills */}
           <div className="flex flex-wrap gap-1.5 mb-3">
             {ACTIVITY_TYPES.map(t => {
@@ -119,13 +119,13 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
           </div>
           <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Description <span className="text-red-500">*</span></label>
           <textarea autoFocus value={text} onChange={e => setText(e.target.value)}
-            placeholder="What happened?" rows={3} className="input text-sm resize-y" />
+            placeholder="What happened?" rows={3} className="v-input text-sm resize-y" />
           <div className="flex items-center gap-2 mt-2">
-            <input type="date" value={activityDate} onChange={e => setActivityDate(e.target.value)} className="input text-xs py-1.5 w-36" />
-            <input type="time" value={activityTime} onChange={e => setActivityTime(e.target.value)} className="input text-xs py-1.5 w-28" />
+            <input type="date" value={activityDate} onChange={e => setActivityDate(e.target.value)} className="v-input text-xs py-1.5 w-36" />
+            <input type="time" value={activityTime} onChange={e => setActivityTime(e.target.value)} className="v-input text-xs py-1.5 w-28" />
             <div className="flex-1" />
-            <button type="submit" className="btn-primary text-xs py-1.5">Save</button>
-            <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-xs py-1.5">Cancel</button>
+            <button type="submit" className="v-btn-primary text-xs py-1.5">Save</button>
+            <button type="button" onClick={() => setShowForm(false)} className="v-btn-secondary text-xs py-1.5">Cancel</button>
           </div>
         </form>
       )}
@@ -151,7 +151,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
                   <div className="absolute left-[13px] top-8 bottom-0 w-px bg-slate-100 dark:bg-slate-700/60" />
                 )}
                 {/* Icon circle */}
-                <div className={clsx('w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 relative z-10',
+                <div className={clsx('w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 relative z-10',
                   a.isEmail
                     ? 'bg-blue-50 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400'
                     : TYPE_COLORS[a.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
@@ -181,17 +181,17 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
                   ) : editingId === a.id ? (
                     <form onSubmit={saveEdit} className="bg-brand-50/30 dark:bg-brand-900/10 rounded-lg p-3 space-y-2">
                       <div className="flex gap-2">
-                        <select value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className="input text-xs py-1.5 flex-1">
+                        <select value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className="v-input text-xs py-1.5 flex-1">
                           {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
                         </select>
-                        <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} className="input text-xs py-1.5 w-36" />
-                        <input type="time" value={editForm.time} onChange={e => setEditForm(f => ({ ...f, time: e.target.value }))} className="input text-xs py-1.5 w-28" />
+                        <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} className="v-input text-xs py-1.5 w-36" />
+                        <input type="time" value={editForm.time} onChange={e => setEditForm(f => ({ ...f, time: e.target.value }))} className="v-input text-xs py-1.5 w-28" />
                       </div>
                       <textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
-                        className="input text-sm resize-y" rows={2} />
+                        className="v-input text-sm resize-y" rows={2} />
                       <div className="flex gap-2">
-                        <button type="submit" className="btn-primary text-xs py-1.5">Save</button>
-                        <button type="button" onClick={() => setEditingId(null)} className="btn-secondary text-xs py-1.5">Cancel</button>
+                        <button type="submit" className="v-btn-primary text-xs py-1.5">Save</button>
+                        <button type="button" onClick={() => setEditingId(null)} className="v-btn-secondary text-xs py-1.5">Cancel</button>
                       </div>
                     </form>
                   ) : (

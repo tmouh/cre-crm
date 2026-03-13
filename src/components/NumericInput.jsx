@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react'
 //   onChange   – called with raw numeric string (no commas)
 //   decimals   – if true, formats to 2 decimal places on blur
 //   className, placeholder, inputMode
-export default function NumericInput({ value, onChange, decimals = false, className = 'input', placeholder = '0', inputMode }) {
+export default function NumericInput({ value, onChange, decimals = false, className = 'v-input', placeholder = '0', inputMode }) {
   const [display, setDisplay] = useState('')
   const [focused, setFocused] = useState(false)
 

@@ -61,7 +61,7 @@ export default function GlobalSearch() {
   if (!open) {
     return (
       <button onClick={() => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 50) }}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700">
+        className="flex items-center gap-2 px-2.5 py-1 text-[11px] text-slate-400 dark:text-slate-500 bg-surface-50 dark:bg-surface-100 hover:bg-surface-100 dark:hover:bg-surface-200 transition-colors border border-[var(--border)]">
         <Search size={14} />
         <span className="hidden sm:inline">Search...</span>
         <kbd className="hidden sm:inline text-[10px] px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-slate-400 dark:text-slate-500 font-mono">Ctrl+K</kbd>
@@ -72,7 +72,7 @@ export default function GlobalSearch() {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]" onClick={() => { setOpen(false); setQuery('') }}>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="relative w-full max-w-lg bg-white dark:bg-surface-100 shadow-elevated border border-[var(--border)] overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
           <Search size={16} className="text-slate-400 flex-shrink-0" />
           <input

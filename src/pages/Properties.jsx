@@ -730,39 +730,37 @@ export default function Properties() {
 
   return (
     <div className="h-full flex flex-col animate-fade-in">
-      <PageHeader
-        title="Deals"
-        subtitle={`${properties.length} deal${properties.length !== 1 ? 's' : ''}`}
-        actions={
-          <div className="flex gap-2">
-            <button onClick={() => setShowImport(true)} className="btn-secondary"><Upload size={15} /> Import CSV</button>
-            <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Deal</button>
-          </div>
-        }
-      />
-
-      <div className="flex gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search deals..." className="input pl-9" />
+      {/* Toolbar */}
+      <div className="os-toolbar flex-shrink-0">
+        <div className="relative flex-1 max-w-xs">
+          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search deals..." className="v-input pl-7 text-[11px]" />
         </div>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-44">
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="v-select w-36 text-[11px]">
           <option value="">All types</option>
           {[...DEAL_TYPES].sort((a, b) => formatDealType(a).localeCompare(formatDealType(b))).map(t => <option key={t} value={t}>{formatDealType(t)}</option>)}
         </select>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input w-44">
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="v-select w-36 text-[11px]">
           <option value="">All statuses</option>
           {DEAL_STATUSES.map(s => <option key={s} value={s}>{formatDealStatus(s)}</option>)}
         </select>
+        <div className="flex-1" />
+        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">{filtered.length} / {properties.length}</span>
+        <div className="flex gap-1">
+          <button onClick={() => setShowImport(true)} className="v-btn-secondary text-[10px]"><Upload size={11} /> CSV</button>
+          <button onClick={() => setShowAdd(true)} className="v-btn-primary text-[10px]"><Plus size={11} /> NEW</button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={Briefcase} title="No deals found" action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Deal</button>} />
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState icon={Briefcase} title="No deals found" action={<button onClick={() => setShowAdd(true)} className="v-btn-primary"><Plus size={12} /> Add Deal</button>} />
+        </div>
       ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+        <div className="flex-1 overflow-auto">
+          <table className="v-table">
+            <thead className="sticky top-0 z-10">
+              <tr>
                 {[
                   { field: 'name', label: 'Deal' },
                   { field: 'dealType', label: 'Type' },
@@ -771,67 +769,61 @@ export default function Properties() {
                   { field: 'company', label: 'Company' },
                   { field: null, label: 'Key Contact' },
                   { field: null, label: 'Next Step' },
-                  { field: null, label: 'Tags', className: 'pr-6' },
-                ].map(({ field, label, className = '' }) => (
+                  { field: null, label: 'Tags' },
+                ].map(({ field, label }) => (
                   <th key={label}
                     onClick={field ? () => handleSort(field) : undefined}
-                    className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200', className)}>
-                    {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
+                    className={clsx(field && 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200')}>
+                    {label} {sortField === field && <span className="text-brand-500">{sortDir === 'asc' ? '↑' : '↓'}</span>}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+            <tbody>
               {filtered.map(p => {
                 const owner = getCompany(p.ownerCompanyId)
                 const firstContact = (p.contactIds || []).length > 0 ? getContact(p.contactIds[0]) : null
                 return (
-                  <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                    <td className="px-4 py-3">
+                  <tr key={p.id}>
+                    <td>
                       <Link to={`/properties/${p.id}`} className="block min-w-0">
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-brand-600 dark:hover:text-brand-400 truncate">{p.name || p.address}</p>
-                        {p.name && p.address && <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate mt-0.5">{p.address}</p>}
+                        <span className="text-[12px] font-medium text-slate-800 dark:text-slate-100 hover:text-brand-600 dark:hover:text-brand-400 truncate block">{p.name || p.address}</span>
+                        {p.name && p.address && <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate block">{p.address}</span>}
                       </Link>
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {p.dealType ? (
-                        <span className={clsx('badge text-[11px]', DEAL_TYPE_COLORS[p.dealType] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{formatDealType(p.dealType)}</span>
-                      ) : (
-                        <span className="text-slate-300 dark:text-slate-600">—</span>
-                      )}
+                        <span className={clsx('v-badge', DEAL_TYPE_COLORS[p.dealType] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{formatDealType(p.dealType)}</span>
+                      ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={clsx('badge text-[11px]', DEAL_STATUS_COLORS[p.status] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{formatDealStatus(p.status)}</span>
+                    <td>
+                      <span className={clsx('v-badge', DEAL_STATUS_COLORS[p.status] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{formatDealStatus(p.status)}</span>
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-                      {p.dealValue ? formatCurrency(p.dealValue) : <span className="text-slate-300 dark:text-slate-600 font-normal">—</span>}
+                    <td>
+                      <span className="text-[12px] font-medium font-mono tabular-nums text-slate-800 dark:text-slate-100">
+                        {p.dealValue ? formatCurrency(p.dealValue) : <span className="text-slate-300 dark:text-slate-600 font-normal">—</span>}
+                      </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {owner ? (
-                        <Link to={`/companies/${owner.id}`} className="text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 truncate block">{owner.name}</Link>
-                      ) : (
-                        <span className="text-slate-300 dark:text-slate-600">—</span>
-                      )}
+                        <Link to={`/companies/${owner.id}`} className="text-[12px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 truncate block">{owner.name}</Link>
+                      ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {firstContact ? (
-                        <Link to={`/contacts/${firstContact.id}`} className="text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 truncate block">{fullName(firstContact)}</Link>
-                      ) : (
-                        <span className="text-slate-300 dark:text-slate-600">—</span>
-                      )}
+                        <Link to={`/contacts/${firstContact.id}`} className="text-[12px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 truncate block">{fullName(firstContact)}</Link>
+                      ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       <NextStepCell dealId={p.id} />
                     </td>
-                    <td className="px-4 pr-6 py-3">
+                    <td>
                       {p.tags?.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {p.tags.slice(0, 3).map(t => <span key={t} className="badge text-[11px] bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
-                          {p.tags.length > 3 && <span className="text-[11px] text-slate-400 dark:text-slate-500">+{p.tags.length - 3}</span>}
+                        <div className="flex flex-wrap gap-0.5">
+                          {p.tags.slice(0, 3).map(t => <span key={t} className="v-badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
+                          {p.tags.length > 3 && <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">+{p.tags.length - 3}</span>}
                         </div>
-                      ) : (
-                        <span className="text-slate-300 dark:text-slate-600">—</span>
-                      )}
+                      ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
                     </td>
                   </tr>
                 )
@@ -840,6 +832,13 @@ export default function Properties() {
           </table>
         </div>
       )}
+
+      {/* Status bar */}
+      <div className="os-status-bar flex-shrink-0">
+        <span>{filtered.length} deals</span>
+        {filterType && <span>filtered by type</span>}
+        {filterStatus && <span>filtered by status</span>}
+      </div>
 
       {showAdd && (
         <Modal title="Add Deal" onClose={() => setShowAdd(false)} size="lg" disableBackdropClose>

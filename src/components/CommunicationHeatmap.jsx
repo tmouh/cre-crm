@@ -141,13 +141,13 @@ export default function CommunicationHeatmap({ contactId }) {
   }, [weeks])
 
   return (
-    <div className="card p-5 space-y-5">
+    <div className="card overflow-hidden">
       {/* Heatmap */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Activity size={14} className="text-brand-500" />
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Communication Activity</h3>
-          <span className="text-xs text-slate-400 dark:text-slate-500 ml-auto">
+      <div className="p-3">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Activity size={12} className="text-slate-400 dark:text-slate-500" />
+          <span className="os-zone-title">Communication Activity</span>
+          <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-auto font-mono">
             {totalInteractions} total · {activeWeeks} active weeks
           </span>
         </div>
@@ -203,21 +203,21 @@ export default function CommunicationHeatmap({ contactId }) {
 
       {/* Who knows this contact */}
       {whoKnows.length > 0 && (
-        <div className="border-t border-slate-100 dark:border-slate-700 pt-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Users size={14} className="text-brand-500" />
-            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Who Knows This Contact</h3>
+        <div className="border-t border-[var(--border)] px-3 py-2">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Users size={12} className="text-slate-400 dark:text-slate-500" />
+            <span className="os-zone-title">Who Knows This Contact</span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {whoKnows.map(({ member, via, viaId }, i) => (
-              <div key={i} className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-bold text-brand-700 dark:text-brand-300">
+              <div key={i} className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-brand-600 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[8px] font-bold text-white font-mono">
                     {(member.displayName || member.email || '?')[0].toUpperCase()}
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
+                  <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate">
                     {member.displayName || member.email}
                   </p>
                   {via && (

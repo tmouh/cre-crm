@@ -111,7 +111,7 @@ export default function CompanyTypeCombobox({ value, onChange, disabled }) {
               e.target.blur()
             }
           }}
-          className="input pr-8"
+          className="v-input pr-8"
           placeholder="Search or create type..."
           disabled={disabled}
         />
@@ -122,7 +122,7 @@ export default function CompanyTypeCombobox({ value, onChange, disabled }) {
       </div>
 
       {open && !disabled && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-surface-100 border border-[var(--border)] overflow-hidden max-h-48 overflow-y-auto">
           {filtered.length === 0 && !showCreate && (
             <p className="px-3 py-2.5 text-sm text-slate-400 dark:text-slate-500">No types found</p>
           )}
@@ -134,7 +134,7 @@ export default function CompanyTypeCombobox({ value, onChange, disabled }) {
               onClick={() => handleSelect(t)}
               className="w-full text-left px-3 py-2 text-sm text-slate-800 dark:text-slate-200 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:text-brand-300 flex items-center gap-2"
             >
-              <span className={clsx('badge text-[10px]', COMPANY_TYPE_COLORS[t] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
+              <span className={clsx('v-badge text-[10px]', COMPANY_TYPE_COLORS[t] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                 {capitalize(t)}
               </span>
             </button>
@@ -144,7 +144,7 @@ export default function CompanyTypeCombobox({ value, onChange, disabled }) {
               type="button"
               onMouseDown={e => e.preventDefault()}
               onClick={handleCreate}
-              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-slate-100 dark:border-slate-700"
+              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-[var(--border)]"
             >
               <Plus size={13} /> Create "{normalizedNew}"
             </button>

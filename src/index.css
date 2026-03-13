@@ -5,207 +5,267 @@
 /* ── CSS Variables ────────────────────────────────────────────────────────── */
 :root {
   --surface-0:   #ffffff;
-  --surface-50:  #f8fafc;
-  --surface-100: #f1f5f9;
-  --surface-200: #e2e8f0;
-  --surface-300: #cbd5e1;
-  --sidebar-bg:  #ffffff;
-  --sidebar-border: #e2e8f0;
+  --surface-50:  #fafbfc;
+  --surface-100: #f3f4f6;
+  --surface-200: #e5e7eb;
+  --surface-300: #d1d5db;
+  --sidebar-bg:  #fafbfc;
+  --sidebar-border: #e5e7eb;
+  --border:      #e5e7eb;
+  --border-subtle: #f0f1f3;
+  --accent-green:  #10b981;
+  --accent-red:    #ef4444;
+  --accent-amber:  #f59e0b;
+  --accent-cyan:   #06b6d4;
+  --accent-blue:   #3b82f6;
 }
 
 .dark {
-  --surface-0:   #0b0f1a;
-  --surface-50:  #111627;
-  --surface-100: #171c30;
-  --surface-200: #1e2440;
-  --surface-300: #2a3154;
-  --sidebar-bg:  #080c15;
+  --surface-0:   #0a0d14;
+  --surface-50:  #0f1219;
+  --surface-100: #141820;
+  --surface-200: #1a1f2b;
+  --surface-300: #252b3a;
+  --sidebar-bg:  #090c12;
   --sidebar-border: rgba(255, 255, 255, 0.06);
+  --border:      rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --accent-green:  #34d399;
+  --accent-red:    #f87171;
+  --accent-amber:  #fbbf24;
+  --accent-cyan:   #22d3ee;
+  --accent-blue:   #60a5fa;
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */
 @layer base {
   html {
-    font-family: Verdana, Geneva, sans-serif;
+    font-family: Inter, system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
   body {
-    @apply bg-surface-0 text-slate-900 dark:text-slate-100;
+    @apply bg-surface-0 text-slate-800 dark:text-slate-200;
+    font-size: 13px;
+    line-height: 1.5;
   }
 
   * {
     @apply focus:ring-offset-white dark:focus:ring-offset-surface-0;
   }
 
-  /* Custom scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  /* Structural scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.3);
-    border-radius: 3px;
+    background: rgba(148, 163, 184, 0.2);
+    border-radius: 0;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(148, 163, 184, 0.5);
+    background: rgba(148, 163, 184, 0.4);
   }
   .dark ::-webkit-scrollbar-thumb {
-    background: rgba(100, 116, 139, 0.2);
+    background: rgba(100, 116, 139, 0.15);
   }
   .dark ::-webkit-scrollbar-thumb:hover {
-    background: rgba(100, 116, 139, 0.4);
+    background: rgba(100, 116, 139, 0.3);
   }
 }
 
 /* ── Component layer ──────────────────────────────────────────────────────── */
 @layer components {
-  /* Buttons */
+
+  /* ─ Zone: flat bordered surface (replaces floating cards) ─ */
+  .os-zone {
+    @apply bg-white border border-[var(--border)]
+           dark:bg-surface-50 dark:border-[var(--border)];
+  }
+  .os-zone-flush {
+    @apply bg-white border-b border-[var(--border)]
+           dark:bg-surface-50 dark:border-[var(--border)];
+  }
+  .os-zone-inset {
+    @apply bg-surface-50 border border-[var(--border-subtle)]
+           dark:bg-surface-100 dark:border-[var(--border)];
+  }
+
+  /* ─ Zone header (sticky capable) ─ */
+  .os-zone-header {
+    @apply px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]
+           flex items-center justify-between gap-2
+           bg-surface-50 dark:bg-surface-100;
+  }
+  .os-zone-title {
+    @apply text-[11px] font-semibold uppercase tracking-wider
+           text-slate-500 dark:text-slate-400
+           font-mono;
+  }
+
+  /* ─ Buttons: flat, structural ─ */
   .v-btn {
-    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5
-           text-xs font-semibold rounded-md
-           transition-all duration-150
-           focus:outline-none focus:ring-2 focus:ring-offset-1
-           disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-1.5 px-2.5 py-1
+           text-[11px] font-medium
+           transition-all duration-100
+           focus:outline-none focus:ring-1 focus:ring-offset-1
+           disabled:opacity-40 disabled:pointer-events-none;
   }
   .v-btn-primary {
     @apply v-btn
            bg-brand-600 text-white
            hover:bg-brand-500 active:bg-brand-700
-           focus:ring-brand-500
-           shadow-sm;
+           focus:ring-brand-500;
   }
   .v-btn-secondary {
     @apply v-btn
-           bg-slate-100 text-slate-700 border border-slate-200
-           hover:bg-slate-200 hover:border-slate-300
+           bg-surface-100 text-slate-600 border border-[var(--border)]
+           hover:bg-surface-200 hover:text-slate-800
            focus:ring-brand-500
-           dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700
-           dark:hover:bg-slate-700;
+           dark:bg-surface-200 dark:text-slate-300 dark:border-[var(--border)]
+           dark:hover:bg-surface-300 dark:hover:text-slate-100;
   }
   .v-btn-ghost {
     @apply v-btn
-           text-slate-500 hover:bg-slate-100 hover:text-slate-700
+           text-slate-500 hover:bg-surface-100 hover:text-slate-700
            focus:ring-slate-400
-           dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200;
+           dark:text-slate-400 dark:hover:bg-surface-200 dark:hover:text-slate-200;
   }
   .v-btn-danger {
     @apply v-btn
            bg-red-600 text-white
            hover:bg-red-500 active:bg-red-700
-           focus:ring-red-500
-           shadow-sm;
+           focus:ring-red-500;
   }
   .v-btn-success {
     @apply v-btn
            bg-emerald-600 text-white
            hover:bg-emerald-500 active:bg-emerald-700
-           focus:ring-emerald-500
-           shadow-sm;
+           focus:ring-emerald-500;
   }
 
-  /* Cards */
-  .v-card {
-    @apply bg-white rounded-lg border border-slate-200/80
-           dark:bg-surface-50 dark:border-slate-700/40;
-  }
-  .v-card-elevated {
-    @apply v-card shadow-elevated dark:shadow-none;
-  }
-
-  /* Inputs */
+  /* ─ Inputs: tight, structural ─ */
   .v-input {
-    @apply w-full px-2.5 py-1.5 text-xs
-           border border-slate-200 rounded-md
-           bg-white transition-colors
-           focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500
+    @apply w-full px-2 py-1 text-[12px]
+           border border-[var(--border)] bg-white
+           transition-colors
+           focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500
            placeholder-slate-400
-           dark:bg-surface-100 dark:border-slate-700/60
+           dark:bg-surface-100 dark:border-[var(--border)]
            dark:text-slate-100 dark:placeholder-slate-500
            dark:focus:ring-brand-500/30 dark:focus:border-brand-500;
   }
   .v-select {
-    @apply v-input appearance-none cursor-pointer pr-7;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
+    @apply v-input appearance-none cursor-pointer pr-6;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 8px center;
+    background-position: right 6px center;
   }
   .v-label {
-    @apply block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider;
+    @apply block text-[10px] font-semibold text-slate-500 dark:text-slate-400
+           mb-0.5 uppercase tracking-wider font-mono;
   }
   .v-textarea {
-    @apply v-input resize-none min-h-[60px];
+    @apply v-input resize-none min-h-[52px];
   }
 
-  /* Badges */
+  /* ─ Badges: compact, monospace data ─ */
   .v-badge {
-    @apply inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-bold uppercase tracking-wide;
+    @apply inline-flex items-center px-1.5 py-0.5 text-2xs font-semibold
+           uppercase tracking-wide font-mono;
   }
 
-  /* Data table */
+  /* ─ Data table: dense, structural ─ */
   .v-table {
-    @apply w-full text-xs;
+    @apply w-full text-[12px];
   }
   .v-table thead {
-    @apply border-b border-slate-200 dark:border-slate-700/40;
+    @apply border-b border-[var(--border)] dark:border-[var(--border)];
   }
   .v-table th {
-    @apply px-3 py-2 text-left text-2xs font-bold uppercase tracking-wider
-           text-slate-400 dark:text-slate-500 whitespace-nowrap;
+    @apply px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider
+           text-slate-400 dark:text-slate-500 whitespace-nowrap font-mono
+           bg-surface-50 dark:bg-surface-100;
   }
   .v-table tbody tr {
-    @apply border-b border-slate-100 dark:border-slate-800/50
-           hover:bg-slate-50 dark:hover:bg-surface-100
-           transition-colors cursor-pointer;
+    @apply border-b border-[var(--border-subtle)] dark:border-[var(--border)]
+           hover:bg-surface-50 dark:hover:bg-surface-100
+           transition-colors;
   }
   .v-table td {
-    @apply px-3 py-2.5 whitespace-nowrap;
+    @apply px-3 py-2 whitespace-nowrap;
   }
 
-  /* Stat card */
+  /* ─ Stat module: dense data readout ─ */
   .v-stat {
-    @apply v-card p-4;
+    @apply os-zone px-3 py-2.5;
   }
   .v-stat-label {
-    @apply text-2xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500;
+    @apply text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono;
   }
   .v-stat-value {
-    @apply text-xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums;
+    @apply text-lg font-bold text-slate-900 dark:text-white mt-0.5 tabular-nums font-mono;
   }
 
-  /* Section header */
+  /* ─ Section title ─ */
   .v-section-title {
-    @apply text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500;
+    @apply text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono;
   }
 
-  /* Panel */
+  /* ─ Panel (zone with header) ─ */
   .v-panel {
-    @apply bg-white dark:bg-surface-50 border border-slate-200/80 dark:border-slate-700/40 rounded-lg overflow-hidden;
+    @apply bg-white dark:bg-surface-50 border border-[var(--border)] dark:border-[var(--border)] overflow-hidden;
   }
   .v-panel-header {
-    @apply px-4 py-3 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between;
+    @apply px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]
+           flex items-center justify-between
+           bg-surface-50 dark:bg-surface-100;
   }
 
-  /* Status dot */
+  /* ─ Status dot ─ */
   .v-dot {
-    @apply w-2 h-2 rounded-full flex-shrink-0;
+    @apply w-1.5 h-1.5 rounded-full flex-shrink-0;
   }
 
-  /* Keep legacy classes working during migration */
+  /* ─ Legacy aliases ─ */
   .btn { @apply v-btn; }
   .btn-primary { @apply v-btn-primary; }
   .btn-secondary { @apply v-btn-secondary; }
   .btn-danger { @apply v-btn-danger; }
   .btn-ghost { @apply v-btn-ghost; }
-  .card { @apply v-card; }
+  .card { @apply os-zone; }
   .input { @apply v-input; }
   .label { @apply v-label; }
   .badge { @apply v-badge; }
+
+  /* ─ Workspace layout primitives ─ */
+  .os-workspace {
+    @apply flex h-full overflow-hidden;
+  }
+  .os-master {
+    @apply flex-1 min-w-0 overflow-auto border-r border-[var(--border)] dark:border-[var(--border)];
+  }
+  .os-detail {
+    @apply overflow-auto bg-white dark:bg-surface-50;
+  }
+  .os-toolbar {
+    @apply flex items-center gap-2 px-3 py-1.5
+           border-b border-[var(--border)] dark:border-[var(--border)]
+           bg-surface-50 dark:bg-surface-100
+           sticky top-0 z-10;
+  }
+  .os-status-bar {
+    @apply flex items-center gap-3 px-3 py-1
+           border-t border-[var(--border)] dark:border-[var(--border)]
+           bg-surface-50 dark:bg-surface-100
+           text-[10px] font-mono text-slate-400 dark:text-slate-500;
+  }
 }
 
 /* ── Leaflet dark mode ────────────────────────────────────────────────────── */
 .dark .leaflet-popup-content-wrapper,
 .dark .leaflet-popup-tip {
-  background-color: #171c30;
+  background-color: #141820;
   color: #e2e8f0;
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -234,10 +294,33 @@
 
 /* Glass morphism overlay */
 .v-glass {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 .dark .v-glass {
-  background: rgba(11, 15, 26, 0.8);
+  background: rgba(10, 13, 20, 0.9);
+}
+
+/* ── Console-style data highlights ────────────────────────────────────────── */
+.os-data {
+  @apply font-mono tabular-nums text-slate-900 dark:text-slate-100;
+}
+.os-data-muted {
+  @apply font-mono tabular-nums text-slate-400 dark:text-slate-500;
+}
+.os-data-accent {
+  @apply font-mono tabular-nums text-brand-600 dark:text-brand-400;
+}
+.os-signal-up {
+  color: var(--accent-green);
+}
+.os-signal-down {
+  color: var(--accent-red);
+}
+.os-signal-warn {
+  color: var(--accent-amber);
+}
+.os-signal-info {
+  color: var(--accent-cyan);
 }

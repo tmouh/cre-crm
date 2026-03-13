@@ -282,11 +282,11 @@ export default function ImportModal({ entity, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-800 w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
           <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Import {ENTITY_LABELS[entity]}</h2>
-          <button onClick={onClose} className="btn-ghost p-1.5"><X size={16} /></button>
+          <button onClick={onClose} className="v-btn-ghost p-1.5"><X size={16} /></button>
         </div>
 
         <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
@@ -327,7 +327,7 @@ export default function ImportModal({ entity, onClose }) {
               <textarea
                 value={rawText}
                 onChange={e => setRawText(e.target.value)}
-                className="input resize-none font-mono text-xs"
+                className="v-input resize-none font-mono text-xs"
                 rows={8}
                 placeholder={`firstName,lastName,email\nJane,Smith,jane@example.com`}
               />
@@ -336,7 +336,7 @@ export default function ImportModal({ entity, onClose }) {
                 <button
                   type="button"
                   onClick={() => fileRef.current.click()}
-                  className="btn-secondary text-sm flex items-center gap-1.5"
+                  className="v-btn-secondary text-sm flex items-center gap-1.5"
                 >
                   <FileText size={14} /> Upload .csv file
                 </button>
@@ -353,11 +353,11 @@ export default function ImportModal({ entity, onClose }) {
                 <span className="font-medium">{parsed.rows.length} rows</span> ready to import. Preview of first 5:
               </p>
               <div className="overflow-x-auto">
-                <table className="w-full text-xs border border-slate-200 dark:border-slate-600 rounded-lg overflow-hidden">
+                <table className="w-full text-xs border border-[var(--border)] overflow-hidden">
                   <thead className="bg-slate-50 dark:bg-slate-700">
                     <tr>
                       {parsed.headers.map(h => (
-                        <th key={h} className="px-3 py-2 text-left text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-600">{h}</th>
+                        <th key={h} className="px-3 py-2 text-left text-slate-500 dark:text-slate-400 font-medium border-b border-[var(--border)]">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -407,14 +407,14 @@ export default function ImportModal({ entity, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-2">
+        <div className="px-6 py-4 border-t border-[var(--border)] flex justify-end gap-2">
           {phase === 'idle' && (
             <>
-              <button onClick={onClose} className="btn-secondary">Cancel</button>
+              <button onClick={onClose} className="v-btn-secondary">Cancel</button>
               <button
                 onClick={handlePreview}
                 disabled={!rawText.trim()}
-                className="btn-primary"
+                className="v-btn-primary"
               >
                 <Upload size={14} /> Preview Import
               </button>
@@ -422,14 +422,14 @@ export default function ImportModal({ entity, onClose }) {
           )}
           {phase === 'preview' && (
             <>
-              <button onClick={() => setPhase('idle')} className="btn-secondary">Back</button>
-              <button onClick={handleImport} className="btn-primary">
+              <button onClick={() => setPhase('idle')} className="v-btn-secondary">Back</button>
+              <button onClick={handleImport} className="v-btn-primary">
                 Import {parsed.rows.length} rows
               </button>
             </>
           )}
           {phase === 'done' && (
-            <button onClick={onClose} className="btn-primary">Done</button>
+            <button onClick={onClose} className="v-btn-primary">Done</button>
           )}
         </div>
       </div>

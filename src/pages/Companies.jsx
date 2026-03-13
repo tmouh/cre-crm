@@ -47,22 +47,22 @@ function TypeCombobox({ value, onChange, disabled, allTypes }) {
           onChange={e => { setInputText(e.target.value); setIsEditing(true); setOpen(true) }}
           onFocus={() => { setOpen(true); setIsEditing(true) }}
           onBlur={() => setTimeout(() => setIsEditing(false), 200)}
-          className="input pr-8" placeholder="Search or create type..." disabled={disabled} />
+          className="v-input pr-8" placeholder="Search or create type..." disabled={disabled} />
         <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
       </div>
       {open && !disabled && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 overflow-hidden max-h-48 overflow-y-auto">
-          {filtered.length === 0 && !showCreate && <p className="px-3 py-2.5 text-sm text-slate-400 dark:text-slate-500">No types found</p>}
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-surface-100 border border-[var(--border)] overflow-hidden max-h-48 overflow-y-auto">
+          {filtered.length === 0 && !showCreate && <p className="px-3 py-2 text-[11px] text-slate-400 dark:text-slate-500">No types found</p>}
           {filtered.map(t => (
             <button key={t} type="button" onMouseDown={e => e.preventDefault()} onClick={() => select(t)}
-              className="w-full text-left px-3 py-2 text-sm text-slate-800 dark:text-slate-200 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:text-brand-300 flex items-center gap-2">
-              <span className={clsx('badge text-[10px]', COMPANY_TYPE_COLORS[t] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{capitalize(t)}</span>
+              className="w-full text-left px-2.5 py-1.5 text-[11px] text-slate-800 dark:text-slate-200 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:text-brand-300 flex items-center gap-2">
+              <span className={clsx('v-badge', COMPANY_TYPE_COLORS[t] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{capitalize(t)}</span>
             </button>
           ))}
           {showCreate && (
             <button type="button" onMouseDown={e => e.preventDefault()} onClick={create}
-              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-slate-100 dark:border-slate-700">
-              <Plus size={13} /> Create &ldquo;{normalizedNew}&rdquo;
+              className="w-full text-left px-2.5 py-1.5 text-[11px] text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-[var(--border)]">
+              <Plus size={12} /> Create &ldquo;{normalizedNew}&rdquo;
             </button>
           )}
         </div>
@@ -88,62 +88,62 @@ export function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
   })
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-4">
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-3">
       <div>
-        <label className="label">Company name <span className="text-red-500">*</span></label>
-        <input value={form.name} onChange={f('name')} className="input" required placeholder="Acme Properties LLC" />
+        <label className="v-label">Company name <span className="text-red-500">*</span></label>
+        <input value={form.name} onChange={f('name')} className="v-input" required placeholder="Acme Properties LLC" />
       </div>
       <div>
-        <label className="label">Type</label>
+        <label className="v-label">Type</label>
         <TypeCombobox value={form.type} onChange={(val) => setForm(p => ({ ...p, type: val }))} allTypes={allTypes} />
       </div>
       <div>
-        <label className="label">Address</label>
-        <input value={form.address} onChange={f('address')} className="input" placeholder="123 Main St, City, ST 00000" />
+        <label className="v-label">Address</label>
+        <input value={form.address} onChange={f('address')} className="v-input" placeholder="123 Main St, City, ST 00000" />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="label">Phone</label>
-          <input value={form.phone} onChange={f('phone')} className="input" placeholder="212-555-0100" />
+          <label className="v-label">Phone</label>
+          <input value={form.phone} onChange={f('phone')} className="v-input" placeholder="212-555-0100" />
         </div>
         <div>
-          <label className="label">Email</label>
-          <input type="email" value={form.email} onChange={f('email')} className="input" placeholder="info@company.com" />
+          <label className="v-label">Email</label>
+          <input type="email" value={form.email} onChange={f('email')} className="v-input" placeholder="info@company.com" />
         </div>
       </div>
       <div>
-        <label className="label">Website</label>
-        <input value={form.website} onChange={f('website')} className="input" placeholder="company.com" />
+        <label className="v-label">Website</label>
+        <input value={form.website} onChange={f('website')} className="v-input" placeholder="company.com" />
       </div>
       <div>
-        <label className="label">Tags</label>
+        <label className="v-label">Tags</label>
         <TagInput tags={form.tags || []} onChange={(tags) => setForm(p => ({ ...p, tags }))} />
       </div>
       <div>
-        <label className="label">Notes</label>
-        <textarea value={form.notes} onChange={f('notes')} rows={3} className="input resize-y" placeholder="Background, relationship notes..." />
+        <label className="v-label">Notes</label>
+        <textarea value={form.notes} onChange={f('notes')} rows={3} className="v-input resize-y" placeholder="Background, relationship notes..." />
       </div>
 
       {/* Investment Profile — only when type is 'investor' */}
       {form.type === 'investor' && (
-        <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-2 space-y-4">
-          <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">Investment Profile</p>
+        <div className="border-t border-[var(--border)] pt-3 mt-2 space-y-3">
+          <p className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide font-mono">Investment Profile</p>
 
           <div>
-            <label className="label">Capital Type</label>
-            <select value={form.capitalType} onChange={f('capitalType')} className="input">
+            <label className="v-label">Capital Type</label>
+            <select value={form.capitalType} onChange={f('capitalType')} className="v-select">
               <option value="">Select…</option>
               {CAPITAL_TYPES.map(t => <option key={t} value={t}>{formatCapitalType(t)}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="label">Target Property Types</label>
-            <div className="flex flex-wrap gap-1.5 mt-1">
+            <label className="v-label">Target Property Types</label>
+            <div className="flex flex-wrap gap-1 mt-1">
               {ASSET_TYPES.map(t => (
                 <button key={t} type="button"
                   onClick={() => setForm(p => ({ ...p, propertyTypes: toggleArrayItem(p.propertyTypes || [], t) }))}
-                  className={clsx('badge cursor-pointer transition-colors',
+                  className={clsx('v-badge cursor-pointer transition-colors',
                     (form.propertyTypes || []).includes(t)
                       ? 'bg-brand-600 text-white dark:bg-brand-500'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
@@ -154,37 +154,37 @@ export function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="label">Min Deal Size ($)</label>
+              <label className="v-label">Min Deal Size ($)</label>
               <NumericInput value={form.minDealSize} onChange={v => setForm(p => ({ ...p, minDealSize: v }))} placeholder="1,000,000" />
             </div>
             <div>
-              <label className="label">Max Deal Size ($)</label>
+              <label className="v-label">Max Deal Size ($)</label>
               <NumericInput value={form.maxDealSize} onChange={v => setForm(p => ({ ...p, maxDealSize: v }))} placeholder="50,000,000" />
             </div>
           </div>
 
           <div>
-            <label className="label">Target Markets</label>
+            <label className="v-label">Target Markets</label>
             <TagInput tags={form.targetMarkets || []} onChange={(tags) => setForm(p => ({ ...p, targetMarkets: tags }))} placeholder="Add market (e.g. NYC, Dallas)…" />
           </div>
 
           <div>
-            <label className="label">Target Returns</label>
-            <input value={form.targetReturns} onChange={f('targetReturns')} className="input" placeholder="e.g. 15-20% IRR, 8% cash-on-cash" />
+            <label className="v-label">Target Returns</label>
+            <input value={form.targetReturns} onChange={f('targetReturns')} className="v-input" placeholder="e.g. 15-20% IRR, 8% cash-on-cash" />
           </div>
 
           <div>
-            <label className="label">Investment Criteria</label>
-            <textarea value={form.investmentCriteria} onChange={f('investmentCriteria')} rows={3} className="input resize-y" placeholder="Detailed investment parameters, preferences, restrictions..." />
+            <label className="v-label">Investment Criteria</label>
+            <textarea value={form.investmentCriteria} onChange={f('investmentCriteria')} rows={3} className="v-input resize-y" placeholder="Detailed investment parameters, preferences, restrictions..." />
           </div>
         </div>
       )}
 
-      <div className="flex gap-2 pt-2">
-        <button type="submit" className="btn-primary flex-1">Save Company</button>
-        <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
+      <div className="flex gap-2 pt-1">
+        <button type="submit" className="v-btn-primary flex-1">Save Company</button>
+        <button type="button" onClick={onCancel} className="v-btn-secondary">Cancel</button>
       </div>
     </form>
   )
@@ -196,17 +196,17 @@ function DetailRow({ icon: Icon, label, value, href, external }) {
   const text = value || '—'
   const content = href && !empty ? (
     <a href={href} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-      className="text-sm text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors flex items-center gap-1">
-      {text} {external && <ExternalLink size={10} className="text-slate-400 dark:text-slate-500" />}
+      className="text-[11px] text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors flex items-center gap-1">
+      {text} {external && <ExternalLink size={9} className="text-slate-400" />}
     </a>
   ) : (
-    <span className={empty ? 'text-sm text-slate-300 dark:text-slate-600 italic' : 'text-sm text-slate-700 dark:text-slate-300'}>{text}</span>
+    <span className={empty ? 'text-[11px] text-slate-300 dark:text-slate-600' : 'text-[11px] text-slate-600 dark:text-slate-300'}>{text}</span>
   )
   return (
-    <div className="flex items-center gap-3 py-2.5">
-      <Icon size={14} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+    <div className="flex items-center gap-2 py-1.5">
+      <Icon size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide">{label}</p>
+        <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-wide">{label}</p>
         {content}
       </div>
     </div>
@@ -221,7 +221,7 @@ function CompanyDetail() {
   const [editing, setEditing] = useState(false)
 
   const company = getCompany(id)
-  if (!company) return <div className="p-8 text-slate-400 dark:text-slate-500">Company not found.</div>
+  if (!company) return <div className="p-4 text-slate-400 dark:text-slate-500 font-mono text-[11px]">COMPANY NOT FOUND</div>
 
   const relatedContacts  = contacts.filter(c => c.companyId === id)
   const ownedProperties  = properties.filter(p => p.ownerCompanyId === id)
@@ -234,89 +234,92 @@ function CompanyDetail() {
 
   return (
     <div className="h-full flex flex-col animate-fade-in">
-      {/* Page header */}
-      <Link to="/companies" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-5">
-        <ArrowLeft size={15} /> Companies
-      </Link>
-
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
-            <span className="text-sm font-bold text-brand-700 dark:text-brand-300">{companyInitials(company)}</span>
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{company.name}</h2>
+      {/* ─ Company command header ─ */}
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--border)] bg-surface-0 flex-shrink-0">
+        <Link to="/companies" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+          <ArrowLeft size={14} />
+        </Link>
+        <div className="w-8 h-8 bg-brand-600 flex items-center justify-center flex-shrink-0">
+          <span className="text-[11px] font-bold text-white font-mono">{companyInitials(company)}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-[13px] font-bold text-slate-900 dark:text-white truncate">{company.name}</h2>
+          <div className="flex items-center gap-2">
             {company.type && (
-              <span className={clsx('badge mt-0.5', COMPANY_TYPE_COLORS[company.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
+              <span className={clsx('v-badge', COMPANY_TYPE_COLORS[company.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                 {company.type}
               </span>
             )}
           </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setEditing(true)} className="btn-secondary"><Edit2 size={14} /> Edit</button>
-          <button onClick={handleDelete} className="btn-secondary hover:text-red-500 hover:border-red-200 dark:hover:border-red-800"><Trash2 size={14} /> Delete</button>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setEditing(true)} className="v-btn-ghost p-1.5"><Edit2 size={13} /></button>
+          <button onClick={handleDelete} className="v-btn-ghost p-1.5 hover:text-red-500"><Trash2 size={13} /></button>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-5">
-        <div className="col-span-1 space-y-5">
-          {/* Company info — always-visible fields */}
-          <div className="card p-5">
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Details</p>
-            <div className="divide-y divide-slate-50 dark:divide-slate-700/40">
-              <DetailRow icon={MapPin} label="Address" value={company.address} />
-              <DetailRow icon={Mail} label="Email" value={company.email} href={company.email ? `mailto:${company.email}` : null} />
-              <DetailRow icon={Phone} label="Phone" value={company.phone} href={company.phone ? `tel:${company.phone}` : null} />
-              <DetailRow icon={Globe} label="Website" value={company.website} href={company.website ? `https://${company.website}` : null} external />
-            </div>
+      {/* ─ Two-zone workspace ─ */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: company info + intel */}
+        <div className="w-[280px] flex-shrink-0 border-r border-[var(--border)] overflow-auto bg-surface-0">
+          {/* Company details */}
+          <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)] space-y-0.5">
+            <DetailRow icon={MapPin} label="Address" value={company.address} />
+            <DetailRow icon={Mail} label="Email" value={company.email} href={company.email ? `mailto:${company.email}` : null} />
+            <DetailRow icon={Phone} label="Phone" value={company.phone} href={company.phone ? `tel:${company.phone}` : null} />
+            <DetailRow icon={Globe} label="Website" value={company.website} href={company.website ? `https://${company.website}` : null} external />
+          </div>
 
-            {/* Tags — always visible */}
-            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-              <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Tags</p>
-              {company.tags?.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {company.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-300 dark:text-slate-600 italic">No tags</p>
-              )}
-            </div>
-
-            {/* Notes — always visible */}
-            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-              <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Notes</p>
-              {company.notes ? (
-                <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{company.notes}</p>
-              ) : (
-                <p className="text-sm text-slate-300 dark:text-slate-600 italic">No notes</p>
-              )}
+          {/* Metadata */}
+          <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)] space-y-1 text-[10px]">
+            <div className="flex justify-between">
+              <span className="text-slate-400 dark:text-slate-500 font-mono">ADDED</span>
+              <span className="text-slate-600 dark:text-slate-300 font-mono">{formatDate(company.createdAt)}</span>
             </div>
           </div>
 
+          {/* Tags */}
+          {company.tags?.length > 0 && (
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <div className="flex flex-wrap gap-1">
+                {company.tags.map(t => (
+                  <span key={t} className="v-badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Notes */}
+          {company.notes && (
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1 font-mono uppercase">Notes</p>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{company.notes}</p>
+            </div>
+          )}
+
           {/* Investment Profile — only for investor companies */}
           {company.type === 'investor' && (company.capitalType || (company.propertyTypes || []).length > 0 || company.minDealSize || company.maxDealSize || (company.targetMarkets || []).length > 0 || company.targetReturns || company.investmentCriteria) && (
-            <div className="card p-5">
-              <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-3 uppercase tracking-wide">Investment Profile</p>
-              <div className="space-y-3">
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <p className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 mb-1.5 font-mono uppercase">Investment Profile</p>
+              <div className="space-y-2">
                 {company.capitalType && (
                   <div>
-                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Capital Type</p>
-                    <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{formatCapitalType(company.capitalType)}</span>
+                    <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase">Capital Type</p>
+                    <span className="v-badge bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{formatCapitalType(company.capitalType)}</span>
                   </div>
                 )}
                 {(company.propertyTypes || []).length > 0 && (
                   <div>
-                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Property Types</p>
+                    <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase">Property Types</p>
                     <div className="flex flex-wrap gap-1">
-                      {company.propertyTypes.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{formatAssetType(t)}</span>)}
+                      {company.propertyTypes.map(t => <span key={t} className="v-badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{formatAssetType(t)}</span>)}
                     </div>
                   </div>
                 )}
                 {(company.minDealSize || company.maxDealSize) && (
                   <div>
-                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Deal Size Range</p>
-                    <p className="text-sm text-slate-700 dark:text-slate-300">
+                    <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase">Deal Size</p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 font-mono tabular-nums">
                       {company.minDealSize ? `$${Number(company.minDealSize).toLocaleString()}` : '—'}
                       {' — '}
                       {company.maxDealSize ? `$${Number(company.maxDealSize).toLocaleString()}` : '—'}
@@ -325,72 +328,63 @@ function CompanyDetail() {
                 )}
                 {(company.targetMarkets || []).length > 0 && (
                   <div>
-                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Target Markets</p>
+                    <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase">Markets</p>
                     <div className="flex flex-wrap gap-1">
-                      {company.targetMarkets.map(m => <span key={m} className="badge bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300">{m}</span>)}
+                      {company.targetMarkets.map(m => <span key={m} className="v-badge bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300">{m}</span>)}
                     </div>
                   </div>
                 )}
                 {company.targetReturns && (
                   <div>
-                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Target Returns</p>
-                    <p className="text-sm text-slate-700 dark:text-slate-300">{company.targetReturns}</p>
+                    <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase">Returns</p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300">{company.targetReturns}</p>
                   </div>
                 )}
                 {company.investmentCriteria && (
                   <div>
-                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Investment Criteria</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{company.investmentCriteria}</p>
+                    <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase">Criteria</p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{company.investmentCriteria}</p>
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* Contacts — always visible */}
-          <div className="card p-4">
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">Contacts ({relatedContacts.length})</p>
+          {/* Contacts */}
+          <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1.5 font-mono uppercase">Contacts ({relatedContacts.length})</p>
             {relatedContacts.length > 0 ? (
-              <div className="space-y-2.5">
+              <div className="space-y-1.5">
                 {relatedContacts.map(c => {
-                  const owners = (c.ownerIds || []).map(oid => teamMembers.find(m => m.id === oid)).filter(Boolean)
                   const ini = `${(c.firstName || '')[0] || ''}${(c.lastName || '')[0] || ''}`
                   return (
-                    <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 group">
-                      <div className="w-7 h-7 bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{ini}</span>
+                    <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-1.5 group">
+                      <div className="w-5 h-5 bg-brand-600 flex items-center justify-center flex-shrink-0">
+                        <span className="text-[8px] font-bold text-white font-mono">{ini}</span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-slate-800 dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">{fullName(c)}</p>
-                        <div className="flex items-center gap-1.5">
-                          {c.title && <span className="text-xs text-slate-400 dark:text-slate-500">{c.title}</span>}
-                          {c.title && owners.length > 0 && <span className="text-xs text-slate-300 dark:text-slate-600">·</span>}
-                          {owners.length > 0 && (
-                            <span className="text-xs text-slate-400 dark:text-slate-500">
-                              Owner: {owners.map(o => o.name || o.email).join(', ')}
-                            </span>
-                          )}
-                        </div>
+                        <p className="text-[11px] text-slate-700 dark:text-slate-300 group-hover:text-brand-600 dark:group-hover:text-brand-400">{fullName(c)}</p>
+                        {c.title && <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{c.title}</p>}
                       </div>
                     </Link>
                   )
                 })}
               </div>
             ) : (
-              <p className="text-sm text-slate-400 dark:text-slate-500">No contacts linked to this company.</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">No contacts linked.</p>
             )}
           </div>
 
-          {/* Properties — always visible */}
-          <div className="card p-4">
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">Properties ({ownedProperties.length + tenantProperties.length})</p>
+          {/* Properties */}
+          <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1.5 font-mono uppercase">Properties ({ownedProperties.length + tenantProperties.length})</p>
             {ownedProperties.length > 0 && (
               <>
-                <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5">Owns ({ownedProperties.length})</p>
-                <div className="space-y-1.5 mb-3">
+                <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">Owns ({ownedProperties.length})</p>
+                <div className="space-y-1 mb-2">
                   {ownedProperties.map(p => (
-                    <Link key={p.id} to={`/deals/${p.id}`} className="flex items-center gap-2 text-sm text-slate-700 hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-400">
-                      <MapPin size={12} className="text-slate-400 dark:text-slate-500" /><span className="truncate">{p.name}</span>
+                    <Link key={p.id} to={`/deals/${p.id}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                      <MapPin size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /><span className="truncate">{p.name}</span>
                     </Link>
                   ))}
                 </div>
@@ -398,25 +392,28 @@ function CompanyDetail() {
             )}
             {tenantProperties.length > 0 && (
               <>
-                <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5">Tenancy ({tenantProperties.length})</p>
-                <div className="space-y-1.5">
+                <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">Tenancy ({tenantProperties.length})</p>
+                <div className="space-y-1">
                   {tenantProperties.map(p => (
-                    <Link key={p.id} to={`/deals/${p.id}`} className="flex items-center gap-2 text-sm text-slate-700 hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-400">
-                      <MapPin size={12} className="text-slate-400 dark:text-slate-500" /><span className="truncate">{p.name}</span>
+                    <Link key={p.id} to={`/deals/${p.id}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                      <MapPin size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /><span className="truncate">{p.name}</span>
                     </Link>
                   ))}
                 </div>
               </>
             )}
             {ownedProperties.length === 0 && tenantProperties.length === 0 && (
-              <p className="text-sm text-slate-400 dark:text-slate-500">No properties linked.</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">No properties linked.</p>
             )}
           </div>
         </div>
 
-        <div className="col-span-2 space-y-5">
-          <ReminderList companyId={id} />
-          <ActivityFeed companyId={id} />
+        {/* Right: activity + reminders workspace */}
+        <div className="flex-1 overflow-auto bg-surface-50">
+          <div className="p-4 space-y-3">
+            <ReminderList companyId={id} />
+            <ActivityFeed companyId={id} />
+          </div>
         </div>
       </div>
 
@@ -463,14 +460,14 @@ function BulkEditModal({ selected, onClose, onSave }) {
     return (
       <Modal title="Bulk Edit" onClose={onClose} size="md" disableBackdropClose>
         <div className="flex flex-col items-center justify-center py-8 space-y-3">
-          <div className="w-14 h-14 bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-            <svg className="w-7 h-7 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+            <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Completed!</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400">{selected.size} compan{selected.size !== 1 ? 'ies were' : 'y was'} updated successfully.</p>
-          <button onClick={onClose} className="btn-primary mt-2 px-6">Done</button>
+          <p className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">Completed</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">{selected.size} compan{selected.size !== 1 ? 'ies were' : 'y was'} updated.</p>
+          <button onClick={onClose} className="v-btn-primary mt-2 px-6">Done</button>
         </div>
       </Modal>
     )
@@ -478,10 +475,10 @@ function BulkEditModal({ selected, onClose, onSave }) {
 
   return (
     <Modal title={`Bulk Edit — ${selected.size} compan${selected.size !== 1 ? 'ies' : 'y'}`} onClose={onClose} size="md" disableBackdropClose>
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div>
-          <label className="label">Field to edit</label>
-          <select value={field} onChange={e => setField(e.target.value)} className="input" disabled={status === 'saving'}>
+          <label className="v-label">Field to edit</label>
+          <select value={field} onChange={e => setField(e.target.value)} className="v-select" disabled={status === 'saving'}>
             <option value="">Select a field…</option>
             {EDITABLE_FIELDS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
           </select>
@@ -489,7 +486,7 @@ function BulkEditModal({ selected, onClose, onSave }) {
 
         {field === 'type' && (
           <div>
-            <label className="label">New type</label>
+            <label className="v-label">New type</label>
             <TypeCombobox value={typeVal} onChange={setTypeVal} disabled={status === 'saving'} allTypes={[...new Set([...COMPANY_TYPES])]} />
           </div>
         )}
@@ -497,20 +494,20 @@ function BulkEditModal({ selected, onClose, onSave }) {
         {field === 'tags' && (
           <>
             <div>
-              <label className="label">Tag mode</label>
+              <label className="v-label">Tag mode</label>
               <div className="flex gap-3">
-                <label className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer">
                   <input type="radio" name="tagMode" checked={tagMode === 'add'} onChange={() => setTagMode('add')} className="accent-brand-600" disabled={status === 'saving'} />
                   Add to existing
                 </label>
-                <label className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer">
                   <input type="radio" name="tagMode" checked={tagMode === 'replace'} onChange={() => setTagMode('replace')} className="accent-brand-600" disabled={status === 'saving'} />
                   Replace all
                 </label>
               </div>
             </div>
             <div>
-              <label className="label">Tags</label>
+              <label className="v-label">Tags</label>
               <TagInput tags={tagsVal} onChange={setTagsVal} />
             </div>
           </>
@@ -518,20 +515,20 @@ function BulkEditModal({ selected, onClose, onSave }) {
 
         {field && field !== 'type' && field !== 'tags' && (
           <div>
-            <label className="label">New value</label>
+            <label className="v-label">New value</label>
             {field === 'notes' ? (
-              <textarea value={textVal} onChange={e => setTextVal(e.target.value)} rows={3} className="input resize-y" placeholder="Enter new value…" disabled={status === 'saving'} />
+              <textarea value={textVal} onChange={e => setTextVal(e.target.value)} rows={3} className="v-input resize-y" placeholder="Enter new value…" disabled={status === 'saving'} />
             ) : (
-              <input value={textVal} onChange={e => setTextVal(e.target.value)} className="input" placeholder="Enter new value…" disabled={status === 'saving'} />
+              <input value={textVal} onChange={e => setTextVal(e.target.value)} className="v-input" placeholder="Enter new value…" disabled={status === 'saving'} />
             )}
           </div>
         )}
 
-        <div className="flex gap-2 pt-2">
-          <button onClick={handleApply} disabled={!field || status === 'saving'} className="btn-primary flex-1 disabled:opacity-40 disabled:cursor-not-allowed">
+        <div className="flex gap-2 pt-1">
+          <button onClick={handleApply} disabled={!field || status === 'saving'} className="v-btn-primary flex-1 disabled:opacity-40 disabled:cursor-not-allowed">
             {status === 'saving' ? 'Applying…' : `Apply to ${selected.size} compan${selected.size !== 1 ? 'ies' : 'y'}`}
           </button>
-          <button onClick={onClose} className="btn-secondary" disabled={status === 'saving'}>Cancel</button>
+          <button onClick={onClose} className="v-btn-secondary" disabled={status === 'saving'}>Cancel</button>
         </div>
       </div>
     </Modal>
@@ -666,154 +663,142 @@ export default function Companies() {
 
   return (
     <div className="h-full flex flex-col animate-fade-in">
-      <PageHeader
-        title="Companies"
-        subtitle={`${companies.length} compan${companies.length !== 1 ? 'ies' : 'y'}`}
-        actions={
-          <div className="flex gap-2">
-            <button onClick={() => setShowImport(true)} className="btn-secondary"><Upload size={15} /> Import CSV</button>
-            {companyDuplicates.length > 0 && (
-              <button onClick={() => setShowDupScan(true)} className="btn-secondary flex items-center gap-1.5 relative">
-                <AlertTriangle size={14} className="text-amber-500" />
-                Duplicates
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">
-                  {companyDuplicates.length}
-                </span>
-              </button>
-            )}
-            <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Company</button>
-          </div>
-        }
-      />
-
-      <div className="flex gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search companies..." className="input pl-9" />
+      {/* Toolbar */}
+      <div className="os-toolbar flex-shrink-0">
+        <div className="relative flex-1 max-w-xs">
+          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search companies..." className="v-input pl-7 text-[11px]" />
         </div>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-40">
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="v-select w-36 text-[11px]">
           <option value="">All types</option>
           {[...new Set([...COMPANY_TYPES, ...companies.map(c => c.type).filter(Boolean)])].sort((a, b) => { if (a === 'other') return 1; if (b === 'other') return -1; return a.localeCompare(b) }).map(t => (
             <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
           ))}
         </select>
+        <div className="flex-1" />
+        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">{filtered.length} / {companies.length}</span>
+        <div className="flex gap-1">
+          <button onClick={() => setShowImport(true)} className="v-btn-secondary text-[10px]"><Upload size={11} /> CSV</button>
+          {companyDuplicates.length > 0 && (
+            <button onClick={() => setShowDupScan(true)} className="v-btn-secondary text-[10px] relative">
+              <AlertTriangle size={11} className="text-amber-500" />
+              Dups
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 text-white text-[8px] font-bold font-mono flex items-center justify-center">
+                {companyDuplicates.length}
+              </span>
+            </button>
+          )}
+          <button onClick={() => setShowAdd(true)} className="v-btn-primary text-[10px]"><Plus size={11} /> NEW</button>
+        </div>
       </div>
 
-      {/* Bulk action bar — inline, with fixed clone when scrolled past */}
+      {/* Bulk action bar */}
       {selected.size > 0 && (
-        <div ref={barSentinelRef} className="mb-4 flex items-center gap-3 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 px-5 py-3 shadow-sm">
-          <CheckSquare size={16} className="text-brand-600 dark:text-brand-400" />
-          <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{selected.size} selected</span>
+        <div ref={barSentinelRef} className="flex items-center gap-2 px-3 py-1.5 border-b border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/20 flex-shrink-0">
+          <CheckSquare size={12} className="text-brand-600 dark:text-brand-400" />
+          <span className="text-[11px] font-medium text-brand-700 dark:text-brand-300 font-mono">{selected.size} selected</span>
           <div className="flex-1" />
-          <button onClick={() => setShowBulkEdit(true)} className="btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5">
-            <Edit2 size={13} /> Edit
+          <button onClick={() => setShowBulkEdit(true)} className="v-btn-secondary text-[10px]">
+            <Edit2 size={11} /> Edit
           </button>
-          <button onClick={handleBulkDelete} className="btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5 text-red-600 hover:bg-red-50 hover:border-red-200 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:border-red-800">
-            <Trash2 size={13} /> Delete
+          <button onClick={handleBulkDelete} className="v-btn-secondary text-[10px] text-red-600 dark:text-red-400">
+            <Trash2 size={11} /> Delete
           </button>
-          <button onClick={clearSelection} className="btn-ghost p-1.5 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
-            <X size={15} />
+          <button onClick={clearSelection} className="v-btn-ghost p-1 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
+            <X size={12} />
           </button>
         </div>
       )}
       {selected.size > 0 && barStuck && (
-        <div className="fixed top-4 left-[220px] right-0 z-50 px-8 pointer-events-none">
-          <div className="flex items-center gap-3 rounded-xl bg-white dark:bg-slate-800 border border-brand-200 dark:border-brand-700 px-5 py-3 pointer-events-auto">
-            <CheckSquare size={16} className="text-brand-600 dark:text-brand-400" />
-            <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{selected.size} selected</span>
+        <div className="fixed top-[40px] left-[200px] right-0 z-50 pointer-events-none">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-surface-50 border-b border-brand-200 dark:border-brand-700 pointer-events-auto">
+            <CheckSquare size={12} className="text-brand-600 dark:text-brand-400" />
+            <span className="text-[11px] font-medium text-brand-700 dark:text-brand-300 font-mono">{selected.size} selected</span>
             <div className="flex-1" />
-            <button onClick={() => setShowBulkEdit(true)} className="btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5">
-              <Edit2 size={13} /> Edit
+            <button onClick={() => setShowBulkEdit(true)} className="v-btn-secondary text-[10px]">
+              <Edit2 size={11} /> Edit
             </button>
-            <button onClick={handleBulkDelete} className="btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5 text-red-600 hover:bg-red-50 hover:border-red-200 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:border-red-800">
-              <Trash2 size={13} /> Delete
+            <button onClick={handleBulkDelete} className="v-btn-secondary text-[10px] text-red-600 dark:text-red-400">
+              <Trash2 size={11} /> Delete
             </button>
-            <button onClick={clearSelection} className="btn-ghost p-1.5 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
-              <X size={15} />
+            <button onClick={clearSelection} className="v-btn-ghost p-1">
+              <X size={12} />
             </button>
           </div>
         </div>
       )}
 
       {filtered.length === 0 ? (
-        <EmptyState icon={Building2} title="No companies found" action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Company</button>} />
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState icon={Building2} title="No companies found" action={<button onClick={() => setShowAdd(true)} className="v-btn-primary"><Plus size={12} /> Add Company</button>} />
+        </div>
       ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200/80 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/60">
-                <th className="px-3 py-3 w-10">
-                  <input
-                    type="checkbox"
-                    checked={allVisibleSelected}
-                    onChange={toggleAll}
-                    className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600"
-                  />
+        <div className="flex-1 overflow-auto">
+          <table className="v-table">
+            <thead className="sticky top-0 z-10">
+              <tr>
+                <th className="w-8">
+                  <input type="checkbox" checked={allVisibleSelected} onChange={toggleAll}
+                    className="w-3.5 h-3.5 border-slate-300 text-brand-600 cursor-pointer accent-brand-600" />
                 </th>
                 {[
-                  { field: 'name', label: 'Company', className: 'px-5' },
+                  { field: 'name', label: 'Company' },
                   { field: 'type', label: 'Type' },
                   { field: null, label: 'Description' },
                   { field: 'contacts', label: 'Contacts' },
-                  { field: null, label: 'Tags', className: 'pr-6' },
-                ].map(({ field, label, className = '' }) => (
+                  { field: null, label: 'Tags' },
+                ].map(({ field, label }) => (
                   <th key={label}
                     onClick={field ? () => handleSort(field) : undefined}
-                    className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200', className)}>
-                    {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
+                    className={clsx(field && 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200')}>
+                    {label} {sortField === field && <span className="text-brand-500">{sortDir === 'asc' ? '↑' : '↓'}</span>}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
+            <tbody>
               {filtered.map(c => {
                 const compContacts = contacts.filter(ct => ct.companyId === c.id)
                 const isSelected = selected.has(c.id)
                 return (
-                  <tr key={c.id} className={clsx('transition-colors', isSelected ? 'bg-brand-50/50 dark:bg-brand-900/10' : 'hover:bg-slate-50/70 dark:hover:bg-slate-700/50')}>
-                    <td className="px-3 py-3.5">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleOne(c.id)}
-                        className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600"
-                      />
+                  <tr key={c.id} className={clsx(isSelected && '!bg-brand-50/50 dark:!bg-brand-900/10')}>
+                    <td>
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleOne(c.id)}
+                        className="w-3.5 h-3.5 border-slate-300 text-brand-600 cursor-pointer accent-brand-600" />
                     </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <Link to={`/companies/${c.id}`} onClick={() => { const m = document.querySelector('main'); if (m) sessionStorage.setItem('companies-scroll', m.scrollTop) }} className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-bold text-brand-700 dark:text-brand-300">{companyInitials(c)}</span>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <Link to={`/companies/${c.id}`} onClick={() => { const m = document.querySelector('main'); if (m) sessionStorage.setItem('companies-scroll', m.scrollTop) }} className="flex items-center gap-2 min-w-0">
+                          <div className="w-6 h-6 bg-brand-600 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[9px] font-bold text-white font-mono">{companyInitials(c)}</span>
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-brand-600 dark:hover:text-brand-400">{c.name}</p>
-                            {c.address && <p className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-[200px]">{c.address}</p>}
+                            <span className="text-[12px] font-medium text-slate-800 dark:text-slate-100 hover:text-brand-600 dark:hover:text-brand-400">{c.name}</span>
+                            {c.address && <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate block max-w-[180px]">{c.address}</span>}
                           </div>
                         </Link>
                         {c.website && (
                           <a href={`https://${c.website}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400 flex-shrink-0" title={c.website}>
-                            <Globe size={14} />
+                            <Globe size={12} />
                           </a>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3.5">
-                      <span className={clsx('badge', COMPANY_TYPE_COLORS[c.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{c.type}</span>
+                    <td>
+                      <span className={clsx('v-badge', COMPANY_TYPE_COLORS[c.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{c.type}</span>
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td>
                       {c.notes ? (
-                        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-[250px] line-clamp-3">{c.notes}</p>
-                      ) : (
-                        <span className="text-xs text-slate-300 dark:text-slate-600">—</span>
-                      )}
+                        <p className="text-[12px] text-slate-600 dark:text-slate-400 max-w-[220px] line-clamp-2">{c.notes}</p>
+                      ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
                     </td>
-                    <td className="px-4 py-3.5">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">{compContacts.length}</span>
+                    <td>
+                      <span className="text-[12px] text-slate-600 dark:text-slate-400 font-mono tabular-nums">{compContacts.length}</span>
                     </td>
-                    <td className="px-4 pr-6 py-3.5">
-                      <div className="flex flex-wrap gap-1">
-                        {(c.tags || []).slice(0, 3).map(t => <span key={t} className="badge bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">{t}</span>)}
-                        {(c.tags || []).length > 3 && <span className="badge bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">+{c.tags.length - 3}</span>}
+                    <td>
+                      <div className="flex flex-wrap gap-0.5">
+                        {(c.tags || []).slice(0, 3).map(t => <span key={t} className="v-badge bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">{t}</span>)}
+                        {(c.tags || []).length > 3 && <span className="v-badge bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">+{c.tags.length - 3}</span>}
                       </div>
                     </td>
                   </tr>
@@ -823,6 +808,13 @@ export default function Companies() {
           </table>
         </div>
       )}
+
+      {/* Status bar */}
+      <div className="os-status-bar flex-shrink-0">
+        <span>{filtered.length} companies</span>
+        {filterType && <span>type: {filterType}</span>}
+        {selected.size > 0 && <span>{selected.size} selected</span>}
+      </div>
 
       {showAdd && (
         <Modal title="Add Company" onClose={() => setShowAdd(false)} size="lg" disableBackdropClose>

@@ -98,12 +98,12 @@ export default function OutlookMessages({ email, contactId }) {
 
   return (
     <div className="card overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
-        <div className="flex items-center gap-2">
-          <Mail size={15} className="text-blue-500" />
-          <h3 className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Outlook Messages</h3>
+      <div className="os-zone-header">
+        <div className="flex items-center gap-1.5">
+          <Mail size={12} className="text-slate-400 dark:text-slate-500" />
+          <span className="os-zone-title">Outlook Messages</span>
           {messages.length > 0 && (
-            <span className="text-[11px] text-slate-400 dark:text-slate-500">({messages.length})</span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">({messages.length})</span>
           )}
         </div>
       </div>

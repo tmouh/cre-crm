@@ -65,7 +65,7 @@ export default function CompanyCombobox({ value, onChange, onCreateAndSelect }) 
           onChange={e => { setInputText(e.target.value); setOpen(true); if (!e.target.value) handleClear() }}
           onFocus={() => setOpen(true)}
           onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); e.target.blur() } }}
-          className="input pr-8"
+          className="v-input pr-8"
           placeholder="Search or create company..."
         />
         <ChevronDown
@@ -75,7 +75,7 @@ export default function CompanyCombobox({ value, onChange, onCreateAndSelect }) 
       </div>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden">
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-surface-100 border border-[var(--border)] overflow-hidden">
           {filtered.length === 0 && !showCreate && (
             <p className="px-3 py-2.5 text-sm text-slate-400 dark:text-slate-500">No companies found</p>
           )}
@@ -94,7 +94,7 @@ export default function CompanyCombobox({ value, onChange, onCreateAndSelect }) 
               type="button"
               onClick={handleCreate}
               disabled={creating}
-              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-slate-100 dark:border-slate-700"
+              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-[var(--border)]"
             >
               {creating
                 ? <><Loader2 size={13} className="animate-spin" /> Creating…</>

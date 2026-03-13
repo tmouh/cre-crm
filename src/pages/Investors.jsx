@@ -6,7 +6,6 @@ import { useCRM } from '../context/CRMContext'
 import { CAPITAL_TYPES, formatAssetType, formatCapitalType, formatCurrency, fullName, companyInitials } from '../utils/helpers'
 import Modal from '../components/Modal'
 import EmptyState from '../components/EmptyState'
-import PageHeader from '../components/PageHeader'
 import ReminderList from '../components/ReminderList'
 import ActivityFeed from '../components/ActivityFeed'
 import { CompanyForm } from './Companies'
@@ -21,115 +20,117 @@ function InvestorDetail() {
   const [editing, setEditing] = useState(false)
 
   const company = getCompany(id)
-  if (!company) return <div className="p-8 text-slate-400">Investor not found.</div>
+  if (!company) return <div className="p-4 text-slate-400 dark:text-slate-500 font-mono text-[11px]">INVESTOR NOT FOUND</div>
 
   const relatedContacts = contacts.filter(c => c.companyId === id)
   const dealLinks = dealInvestors.filter(di => di.companyId === id)
   const linkedDeals = dealLinks.map(di => ({ ...di, deal: properties.find(p => p.id === di.propertyId) })).filter(d => d.deal)
 
   return (
-    <div className="px-8 py-8">
-      <Link to="/investors" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-6">
-        <ArrowLeft size={15} /> LP Investors
-      </Link>
+    <div className="h-full flex flex-col animate-fade-in">
+      {/* ─ Command header bar ─ */}
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--border)] bg-surface-0 flex-shrink-0">
+        <Link to="/investors" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+          <ArrowLeft size={14} />
+        </Link>
+        <div className="w-8 h-8 bg-purple-600 flex items-center justify-center flex-shrink-0">
+          <span className="text-[11px] font-bold text-white font-mono">{companyInitials(company)}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-[13px] font-bold text-slate-900 dark:text-white truncate">{company.name}</h2>
+          <span className="text-[10px] text-purple-600 dark:text-purple-400 font-mono uppercase">Investor</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setEditing(true)} className="v-btn-ghost p-1.5"><Edit2 size={13} /></button>
+          <button onClick={async () => { if (confirm(`Delete ${company.name}?`)) { await deleteCompany(id); navigate('/investors') } }} className="v-btn-ghost p-1.5 hover:text-red-500"><Trash2 size={13} /></button>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      {/* ─ Two-zone workspace ─ */}
+      <div className="flex-1 flex overflow-hidden">
         {/* Left panel — company info + investment profile */}
-        <div className="col-span-1 space-y-4">
-          <div className="card p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <span className="text-xl font-bold text-purple-700 dark:text-purple-300">{companyInitials(company)}</span>
-              </div>
-              <div className="flex gap-1">
-                <button onClick={() => setEditing(true)} className="btn-ghost p-2"><Edit2 size={14} /></button>
-                <button onClick={async () => { if (confirm(`Delete ${company.name}?`)) { await deleteCompany(id); navigate('/investors') } }} className="btn-ghost p-2 hover:text-red-500"><Trash2 size={14} /></button>
-              </div>
-            </div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{company.name}</h2>
-            <span className="badge mt-1 inline-block bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">Investor</span>
-
-            <div className="mt-4 space-y-2 border-t border-slate-100 dark:border-slate-700 pt-4">
-              {company.address && <p className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400"><Building2 size={14} className="text-slate-400 dark:text-slate-500" /> {company.address}</p>}
-              {company.email && <a href={`mailto:${company.email}`} className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400"><Mail size={14} className="text-slate-400 dark:text-slate-500" /> {company.email}</a>}
-              {company.phone && <a href={`tel:${company.phone}`} className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400"><Phone size={14} className="text-slate-400 dark:text-slate-500" /> {company.phone}</a>}
-              {company.website && <a href={`https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400"><Globe size={14} className="text-slate-400 dark:text-slate-500" /> {company.website} <ExternalLink size={10} className="text-slate-400 dark:text-slate-500" /></a>}
-            </div>
-
-            {/* Investment Profile */}
-            {(company.capitalType || company.propertyTypes?.length || company.minDealSize || company.targetMarkets?.length || company.targetReturns || company.investmentCriteria) && (
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-3">
-                <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Investment Profile</p>
-                {company.capitalType && (
-                  <div>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Capital type</p>
-                    <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{formatCapitalType(company.capitalType)}</span>
-                  </div>
-                )}
-                {company.propertyTypes?.length > 0 && (
-                  <div>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Target property types</p>
-                    <div className="flex flex-wrap gap-1">{company.propertyTypes.map(t => <span key={t} className="badge bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{formatAssetType(t)}</span>)}</div>
-                  </div>
-                )}
-                {(company.minDealSize || company.maxDealSize) && (
-                  <div>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Deal size range</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{formatCurrency(company.minDealSize)} – {formatCurrency(company.maxDealSize)}</p>
-                  </div>
-                )}
-                {company.targetMarkets?.length > 0 && (
-                  <div>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Target markets</p>
-                    <div className="flex flex-wrap gap-1">{company.targetMarkets.map(m => <span key={m} className="badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">{m}</span>)}</div>
-                  </div>
-                )}
-                {company.targetReturns && (
-                  <div>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Target returns</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-300">{company.targetReturns}</p>
-                  </div>
-                )}
-                {company.investmentCriteria && (
-                  <div>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Investment criteria</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{company.investmentCriteria}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {company.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                {company.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
-              </div>
-            )}
-
-            {company.notes && (
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Notes</p>
-                <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{company.notes}</p>
-              </div>
-            )}
-
-            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 text-xs text-slate-400 dark:text-slate-500">
-              <Link to={`/companies/${company.id}`} className="text-brand-600 hover:underline dark:text-brand-400">View full company profile →</Link>
-            </div>
+        <div className="w-[280px] flex-shrink-0 border-r border-[var(--border)] overflow-auto bg-surface-0">
+          {/* Contact info */}
+          <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)] space-y-1.5">
+            {company.address && <p className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400"><Building2 size={12} className="text-slate-400 dark:text-slate-500" /> {company.address}</p>}
+            {company.email && <a href={`mailto:${company.email}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400"><Mail size={12} className="text-slate-400 dark:text-slate-500" /> {company.email}</a>}
+            {company.phone && <a href={`tel:${company.phone}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400"><Phone size={12} className="text-slate-400 dark:text-slate-500" /> {company.phone}</a>}
+            {company.website && <a href={`https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400"><Globe size={12} className="text-slate-400 dark:text-slate-500" /> {company.website} <ExternalLink size={10} className="text-slate-400 dark:text-slate-500" /></a>}
           </div>
+
+          {/* Investment Profile */}
+          {(company.capitalType || company.propertyTypes?.length || company.minDealSize || company.targetMarkets?.length || company.targetReturns || company.investmentCriteria) && (
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)] space-y-2">
+              <p className="text-[10px] font-semibold font-mono uppercase text-purple-600 dark:text-purple-400 tracking-wider">Investment Profile</p>
+              {company.capitalType && (
+                <div>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-0.5">Capital type</p>
+                  <span className="v-badge bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{formatCapitalType(company.capitalType)}</span>
+                </div>
+              )}
+              {company.propertyTypes?.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-0.5">Target property types</p>
+                  <div className="flex flex-wrap gap-1">{company.propertyTypes.map(t => <span key={t} className="v-badge bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{formatAssetType(t)}</span>)}</div>
+                </div>
+              )}
+              {(company.minDealSize || company.maxDealSize) && (
+                <div>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-0.5">Deal size range</p>
+                  <p className="text-[12px] font-medium font-mono tabular-nums text-slate-900 dark:text-slate-100">{formatCurrency(company.minDealSize)} – {formatCurrency(company.maxDealSize)}</p>
+                </div>
+              )}
+              {company.targetMarkets?.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-0.5">Target markets</p>
+                  <div className="flex flex-wrap gap-1">{company.targetMarkets.map(m => <span key={m} className="v-badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">{m}</span>)}</div>
+                </div>
+              )}
+              {company.targetReturns && (
+                <div>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-0.5">Target returns</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300">{company.targetReturns}</p>
+                </div>
+              )}
+              {company.investmentCriteria && (
+                <div>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-0.5">Investment criteria</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{company.investmentCriteria}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tags */}
+          {company.tags?.length > 0 && (
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <div className="flex flex-wrap gap-1">
+                {company.tags.map(t => <span key={t} className="v-badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
+              </div>
+            </div>
+          )}
+
+          {/* Notes */}
+          {company.notes && (
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <p className="text-[10px] font-semibold font-mono uppercase text-slate-500 dark:text-slate-400 mb-1">Notes</p>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{company.notes}</p>
+            </div>
+          )}
 
           {/* Contacts at this company */}
           {relatedContacts.length > 0 && (
-            <div className="card p-5">
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">Contacts ({relatedContacts.length})</p>
-              <div className="space-y-2">
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <p className="text-[10px] font-semibold font-mono uppercase text-slate-500 dark:text-slate-400 mb-1.5">Contacts ({relatedContacts.length})</p>
+              <div className="space-y-1.5">
                 {relatedContacts.map(c => (
                   <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 group">
-                    <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{`${(c.firstName || '')[0] || ''}${(c.lastName || '')[0] || ''}`}</span>
+                    <div className="w-6 h-6 bg-brand-600 flex items-center justify-center flex-shrink-0">
+                      <span className="text-[9px] font-bold text-white font-mono">{`${(c.firstName || '')[0] || ''}${(c.lastName || '')[0] || ''}`}</span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-slate-800 dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">{fullName(c)}</p>
-                      {c.title && <p className="text-xs text-slate-400 dark:text-slate-500">{c.title}</p>}
+                      <p className="text-[11px] text-slate-800 dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">{fullName(c)}</p>
+                      {c.title && <p className="text-[10px] text-slate-400 dark:text-slate-500">{c.title}</p>}
                     </div>
                   </Link>
                 ))}
@@ -139,23 +140,27 @@ function InvestorDetail() {
 
           {/* Deal activity */}
           {linkedDeals.length > 0 && (
-            <div className="card p-5">
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Deal Activity ({linkedDeals.length})</p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2">Deals this investor is linked to or participating in.</p>
-              <div className="space-y-2">
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <p className="text-[10px] font-semibold font-mono uppercase text-slate-500 dark:text-slate-400 mb-1">Deal Activity ({linkedDeals.length})</p>
+              <div className="space-y-1.5">
                 {linkedDeals.map(d => (
                   <div key={d.id} className="flex items-center justify-between">
-                    <Link to={`/deals/${d.deal.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400 truncate">{d.deal.name || d.deal.address}</Link>
-                    <span className="badge text-[11px] bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 flex-shrink-0 ml-2">{d.status}</span>
+                    <Link to={`/deals/${d.deal.id}`} className="text-[11px] text-brand-600 hover:underline dark:text-brand-400 truncate">{d.deal.name || d.deal.address}</Link>
+                    <span className="v-badge text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 flex-shrink-0 ml-2">{d.status}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
+
+          {/* Link to full profile */}
+          <div className="px-3 py-2 text-[10px] text-slate-400 dark:text-slate-500">
+            <Link to={`/companies/${company.id}`} className="text-brand-600 hover:underline dark:text-brand-400 font-mono">View full company profile →</Link>
+          </div>
         </div>
 
         {/* Right panel */}
-        <div className="col-span-2 space-y-4">
+        <div className="flex-1 overflow-auto bg-surface-50 dark:bg-surface-100 p-4 space-y-4">
           <ReminderList companyId={id} />
           <ActivityFeed companyId={id} />
         </div>
@@ -192,32 +197,32 @@ function InvestorMatchPanel({ properties, investorCompanies }) {
   }, [deal, investorCompanies])
 
   return (
-    <div className="card p-5">
+    <div className="card p-3">
       <div className="flex items-center gap-2 mb-1">
-        <Target size={15} className="text-brand-500" />
-        <h3 className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Investor Matching</h3>
+        <Target size={13} className="text-brand-500" />
+        <h3 className="text-[10px] font-semibold font-mono uppercase text-slate-800 dark:text-slate-200">Investor Matching</h3>
       </div>
-      <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-3">Select a deal to find investor companies whose criteria (property type, deal size, target markets) align with it. Green dots show match strength.</p>
-      <select value={selectedDeal} onChange={e => setSelectedDeal(e.target.value)} className="input mb-3">
+      <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-2">Select a deal to find matching investors by criteria.</p>
+      <select value={selectedDeal} onChange={e => setSelectedDeal(e.target.value)} className="v-input mb-2 text-[11px]">
         <option value="">Select a deal to match...</option>
         {properties.filter(p => p.status !== 'dead' && p.status !== 'closed').map(p => (
           <option key={p.id} value={p.id}>{p.name || p.address} ({formatCurrency(p.dealValue)})</option>
         ))}
       </select>
-      {deal && matches.length === 0 && <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">No matching investors found</p>}
+      {deal && matches.length === 0 && <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center py-3 font-mono">No matching investors found</p>}
       {matches.length > 0 && (
-        <div className="space-y-2 max-h-64 overflow-y-auto">
+        <div className="space-y-0.5 max-h-64 overflow-y-auto">
           {matches.map(c => (
-            <Link key={c.id} to={`/investors/${c.id}`} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+            <Link key={c.id} to={`/investors/${c.id}`} className="flex items-center justify-between p-1.5 hover:bg-surface-50 dark:hover:bg-surface-100 transition-colors">
               <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{c.name}</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                <p className="text-[11px] font-medium text-slate-900 dark:text-slate-100">{c.name}</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500">
                   {[c.capitalType && formatCapitalType(c.capitalType), c.targetReturns].filter(Boolean).join(' · ')}
                 </p>
               </div>
               <div className="flex items-center gap-1">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className={clsx('w-2 h-2 rounded-full', i <= c.score ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-600')} />
+                  <div key={i} className={clsx('w-2 h-2', i <= c.score ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-600')} />
                 ))}
               </div>
             </Link>
@@ -264,105 +269,108 @@ export default function Investors() {
   })
 
   return (
-    <div className="px-8 py-8">
-      <PageHeader
-        title="LP Investors"
-        subtitle={`${investorCompanies.length} investor compan${investorCompanies.length !== 1 ? 'ies' : 'y'}`}
-        actions={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add LP Investor</button>}
-      />
-
-      <p className="text-sm text-slate-500 dark:text-slate-400 -mt-3 mb-6">
-        This page shows companies whose type is set to "Investor." To add one here, create a company with the Investor type — or use the button above. Investment criteria like capital type, target markets, and deal size are stored on the company and used to match investors to deals.
-      </p>
-
-      <div className="flex gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search investors..." className="input pl-9" />
+    <div className="h-full flex flex-col animate-fade-in">
+      {/* ─ Toolbar ─ */}
+      <div className="os-toolbar flex-shrink-0">
+        <div className="relative flex-1 max-w-xs">
+          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search investors..." className="v-input pl-7 text-[11px]" />
         </div>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-40">
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="v-input w-36 text-[11px]">
           <option value="">All types</option>
           {CAPITAL_TYPES.map(t => <option key={t} value={t}>{formatCapitalType(t)}</option>)}
         </select>
+        <div className="flex-1" />
+        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">{filtered.length} / {investorCompanies.length}</span>
+        <button onClick={() => setShowAdd(true)} className="v-btn-primary text-[10px]"><Plus size={11} /> NEW</button>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2">
+      {/* ─ Content ─ */}
+      <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 overflow-auto">
           {filtered.length === 0 ? (
-            <EmptyState icon={Users2} title="No LP investors found" description="Add a company with the Investor type to get started." action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add LP Investor</button>} />
-          ) : (
-            <div className="card overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
-                    {[
-                      { field: 'name', label: 'Company' },
-                      { field: 'capitalType', label: 'Capital Type' },
-                      { field: null, label: 'Property Types' },
-                      { field: 'minDealSize', label: 'Deal Size' },
-                      { field: 'markets', label: 'Markets' },
-                      { field: null, label: 'Contact' },
-                    ].map(({ field, label }) => (
-                      <th key={label}
-                        onClick={field ? () => handleSort(field) : undefined}
-                        className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200')}>
-                        {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                  {filtered.map(c => (
-                    <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                      <td className="px-4 py-3">
-                        <Link to={`/investors/${c.id}`} className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                            <span className="text-[10px] font-bold text-purple-700 dark:text-purple-300">{companyInitials(c)}</span>
-                          </div>
-                          <span className="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-brand-600 dark:hover:text-brand-400">{c.name}</span>
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3">
-                        {c.capitalType ? (
-                          <span className="badge text-[11px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{formatCapitalType(c.capitalType)}</span>
-                        ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {c.propertyTypes?.slice(0, 3).map(t => <span key={t} className="badge text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{formatAssetType(t)}</span>)}
-                          {(c.propertyTypes?.length || 0) > 3 && <span className="text-[10px] text-slate-400">+{c.propertyTypes.length - 3}</span>}
-                          {!c.propertyTypes?.length && <span className="text-slate-300 dark:text-slate-600">—</span>}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                        {(c.minDealSize || c.maxDealSize) ? (
-                          <>{formatCurrency(c.minDealSize)} – {formatCurrency(c.maxDealSize)}</>
-                        ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {c.targetMarkets?.slice(0, 2).map(m => <span key={m} className="badge text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">{m}</span>)}
-                          {(c.targetMarkets?.length || 0) > 2 && <span className="text-[10px] text-slate-400">+{c.targetMarkets.length - 2}</span>}
-                          {!c.targetMarkets?.length && <span className="text-slate-300 dark:text-slate-600">—</span>}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          {c.email && <a href={`mailto:${c.email}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Mail size={14} /></a>}
-                          {c.phone && <a href={`tel:${c.phone}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Phone size={14} /></a>}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex-1 flex items-center justify-center h-full">
+              <EmptyState icon={Users2} title="No LP investors found" description="Add a company with the Investor type to get started." action={<button onClick={() => setShowAdd(true)} className="v-btn-primary text-[10px]"><Plus size={11} /> Add LP Investor</button>} />
             </div>
+          ) : (
+            <table className="v-table">
+              <thead className="sticky top-0 z-10">
+                <tr>
+                  {[
+                    { field: 'name', label: 'Company' },
+                    { field: 'capitalType', label: 'Capital Type' },
+                    { field: null, label: 'Property Types' },
+                    { field: 'minDealSize', label: 'Deal Size' },
+                    { field: 'markets', label: 'Markets' },
+                    { field: null, label: 'Contact' },
+                  ].map(({ field, label }) => (
+                    <th key={label}
+                      onClick={field ? () => handleSort(field) : undefined}
+                      className={clsx('text-left px-3 py-2 text-[10px] font-semibold font-mono uppercase text-slate-500 dark:text-slate-400 tracking-wider select-none', field && 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200')}>
+                      {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(c => (
+                  <tr key={c.id} className="border-t border-[var(--border)] hover:bg-surface-50 dark:hover:bg-surface-100 transition-colors">
+                    <td className="px-3 py-2">
+                      <Link to={`/investors/${c.id}`} className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-purple-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-[9px] font-bold text-white font-mono">{companyInitials(c)}</span>
+                        </div>
+                        <span className="text-[12px] font-medium text-slate-900 dark:text-slate-100 hover:text-brand-600 dark:hover:text-brand-400">{c.name}</span>
+                      </Link>
+                    </td>
+                    <td className="px-3 py-2">
+                      {c.capitalType ? (
+                        <span className="v-badge text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{formatCapitalType(c.capitalType)}</span>
+                      ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {c.propertyTypes?.slice(0, 3).map(t => <span key={t} className="v-badge text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{formatAssetType(t)}</span>)}
+                        {(c.propertyTypes?.length || 0) > 3 && <span className="text-[10px] text-slate-400">+{c.propertyTypes.length - 3}</span>}
+                        {!c.propertyTypes?.length && <span className="text-slate-300 dark:text-slate-600">—</span>}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 text-[12px] font-mono tabular-nums text-slate-600 dark:text-slate-400">
+                      {(c.minDealSize || c.maxDealSize) ? (
+                        <>{formatCurrency(c.minDealSize)} – {formatCurrency(c.maxDealSize)}</>
+                      ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {c.targetMarkets?.slice(0, 2).map(m => <span key={m} className="v-badge text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">{m}</span>)}
+                        {(c.targetMarkets?.length || 0) > 2 && <span className="text-[10px] text-slate-400">+{c.targetMarkets.length - 2}</span>}
+                        {!c.targetMarkets?.length && <span className="text-slate-300 dark:text-slate-600">—</span>}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex gap-2">
+                        {c.email && <a href={`mailto:${c.email}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Mail size={12} /></a>}
+                        {c.phone && <a href={`tel:${c.phone}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Phone size={12} /></a>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
 
-        <div>
+        {/* Sidebar: match panel */}
+        <div className="w-[260px] flex-shrink-0 border-l border-[var(--border)] overflow-auto bg-surface-0 p-2">
           <InvestorMatchPanel properties={properties} investorCompanies={investorCompanies} />
         </div>
+      </div>
+
+      {/* ─ Status bar ─ */}
+      <div className="os-status-bar flex-shrink-0">
+        <span>{filtered.length} investor{filtered.length !== 1 ? 's' : ''}</span>
+        {filterType && <span>filtered by {formatCapitalType(filterType)}</span>}
+        <span>Companies with type "Investor" — investment criteria used for deal matching</span>
       </div>
 
       {showAdd && (

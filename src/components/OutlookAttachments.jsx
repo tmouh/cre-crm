@@ -75,14 +75,12 @@ export default function OutlookAttachments({ email }) {
 
   return (
     <div className="card overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
-        <div className="flex items-center gap-2">
-          <Paperclip size={15} className="text-amber-500" />
-          <h3 className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Attachments</h3>
-          {attachments.length > 0 && (
-            <span className="text-[11px] text-slate-400 dark:text-slate-500">({attachments.length})</span>
-          )}
-        </div>
+      <div className="os-zone-header">
+        <Paperclip size={13} className="text-amber-500" />
+        <h3 className="os-zone-title">Attachments</h3>
+        {attachments.length > 0 && (
+          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">({attachments.length})</span>
+        )}
       </div>
 
       <div className="divide-y divide-slate-50 dark:divide-slate-700/30">
@@ -97,7 +95,7 @@ export default function OutlookAttachments({ email }) {
           </div>
         ) : !account ? (
           <div className="px-5 py-8 text-center">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-3">
+            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-3">
               <svg viewBox="0 0 21 21" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
                 <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
                 <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
@@ -106,7 +104,7 @@ export default function OutlookAttachments({ email }) {
               </svg>
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Connect Microsoft to see attachments</p>
-            <button onClick={handleConnect} className="btn-secondary text-xs">
+            <button onClick={handleConnect} className="v-btn-secondary text-[11px]">
               <Paperclip size={13} /> Sign in with Microsoft
             </button>
           </div>
@@ -128,7 +126,7 @@ export default function OutlookAttachments({ email }) {
         ) : (
           <>
             {(showAll ? attachments : attachments.slice(0, INITIAL_SHOW)).map(att => (
-              <div key={`${att.messageId}-${att.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+              <div key={`${att.messageId}-${att.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-surface-50 dark:hover:bg-surface-100 transition-colors">
                 <FileIcon contentType={att.contentType} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{att.name}</p>

@@ -45,180 +45,203 @@ export default function Dashboard() {
   )
 
   return (
-    <div className="p-6 space-y-6 max-w-[1400px] mx-auto animate-fade-in">
-      {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        <StatCard label="Contacts" value={contacts.length} icon={Users} color="brand" to="/contacts" />
-        <StatCard label="Companies" value={companies.length} icon={Building2} color="blue" to="/companies" />
-        <StatCard label="Active Deals" value={activeDeals.length} icon={Briefcase} color="emerald" to="/deals" />
-        <StatCard label="Pipeline" value={formatCurrency(pipelineStats.totalValue)} icon={TrendingUp} color="violet" to="/pipeline" isText />
-        <StatCard label="Overdue" value={overdueCount} icon={AlertTriangle} color={overdueCount > 0 ? 'red' : 'slate'} to="/reminders" />
-        <StatCard label="Due Today" value={todayCount} icon={Clock} color={todayCount > 0 ? 'amber' : 'slate'} to="/reminders" />
+    <div className="animate-fade-in h-full flex flex-col">
+      {/* ─ Status strip ─ */}
+      <div className="flex items-center border-b border-[var(--border)] bg-surface-0 px-4 py-1.5 gap-6 flex-shrink-0">
+        <StatusMetric label="CONTACTS" value={contacts.length} to="/contacts" />
+        <StatusMetric label="COMPANIES" value={companies.length} to="/companies" />
+        <StatusMetric label="ACTIVE DEALS" value={activeDeals.length} to="/deals" accent />
+        <StatusMetric label="PIPELINE" value={formatCurrency(pipelineStats.totalValue)} to="/pipeline" />
+        <div className="w-px h-4 bg-[var(--border)]" />
+        <StatusMetric label="OVERDUE" value={overdueCount} to="/reminders" warn={overdueCount > 0} />
+        <StatusMetric label="DUE TODAY" value={todayCount} to="/reminders" warn={todayCount > 0} />
+        <div className="flex-1" />
+        <PipelineBar stats={pipelineStats} />
       </div>
 
-      {/* Pipeline bar */}
-      <PipelineBar stats={pipelineStats} />
-
-      {/* 3-column grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Col 1: Tasks */}
-        <div className="space-y-4">
-          <Panel title="Priority Tasks" icon={Bell} badge={overdueCount + todayCount} badgeColor="red" to="/reminders">
-            {pendingReminders.length === 0 ? (
-              <EmptyPanel text="All caught up" icon={CheckCircle2} />
-            ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                {pendingReminders.slice(0, 6).map(r => (
-                  <ReminderRow key={r.id} reminder={r} contacts={contacts} />
-                ))}
-              </div>
-            )}
-          </Panel>
-
-          {suggestedFollowUps.length > 0 && (
-            <Panel title="Suggested Follow-ups" icon={Zap}>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                {suggestedFollowUps.slice(0, 5).map((s, i) => (
-                  <Link key={i} to={s.entityType === 'contact' ? `/contacts/${s.entity.id}` : `/deals/${s.entity.id}`}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-surface-100 transition-colors">
-                    <div className={clsx('v-dot', s.priority === 'high' ? 'bg-red-500' : 'bg-amber-500')} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
-                        {s.entityType === 'contact' ? fullName(s.entity) : s.entity.name || s.entity.address}
-                      </p>
-                      <p className="text-2xs text-slate-400 dark:text-slate-500">{s.reason}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </Panel>
-          )}
-        </div>
-
-        {/* Col 2: Deals */}
-        <div className="space-y-4">
-          <Panel title="Hot Deals" icon={Flame} to="/deals">
-            {hotDeals.length === 0 ? (
-              <EmptyPanel text="No hot deals" icon={Briefcase} />
-            ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                {hotDeals.slice(0, 5).map(d => <DealRow key={d.id} deal={d} />)}
-              </div>
-            )}
-          </Panel>
-
-          {stalledDeals.length > 0 && (
-            <Panel title="Needs Attention" icon={AlertTriangle} to="/deals">
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                {stalledDeals.slice(0, 4).map(d => <DealRow key={d.id} deal={d} showMomentum />)}
-              </div>
-            </Panel>
-          )}
-
-          <Panel title="Activity (30d)" icon={Activity}>
-            <div className="px-4 py-3 grid grid-cols-3 gap-3">
-              {Object.entries(communicationStats.byType).map(([type, count]) => (
-                <div key={type} className="text-center">
-                  <p className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">{count}</p>
-                  <p className="text-2xs text-slate-400 dark:text-slate-500 capitalize">{type}s</p>
-                </div>
-              ))}
-              {Object.keys(communicationStats.byType).length === 0 && (
-                <div className="col-span-3 text-center py-2">
-                  <p className="text-2xs text-slate-400 dark:text-slate-500">No activity yet</p>
+      {/* ─ Main grid ─ */}
+      <div className="flex-1 overflow-auto">
+        <div className="grid grid-cols-3 h-full" style={{ gridTemplateRows: '1fr 1fr' }}>
+          {/* ─ Zone 1: Tasks ─ */}
+          <div className="border-r border-b border-[var(--border)] flex flex-col overflow-hidden">
+            <ZoneHeader title="Priority Tasks" icon={Bell} badge={overdueCount + todayCount} to="/reminders" />
+            <div className="flex-1 overflow-auto">
+              {pendingReminders.length === 0 ? (
+                <EmptyZone text="All caught up" icon={CheckCircle2} />
+              ) : (
+                <div className="divide-y divide-[var(--border-subtle)] dark:divide-[var(--border)]">
+                  {pendingReminders.slice(0, 8).map(r => (
+                    <ReminderRow key={r.id} reminder={r} contacts={contacts} />
+                  ))}
                 </div>
               )}
             </div>
-          </Panel>
-        </div>
+          </div>
 
-        {/* Col 3: Relationships & Microsoft */}
-        <div className="space-y-4">
-          <Panel title="Cooling Relationships" icon={Snowflake} to="/contacts">
-            {staleContacts.length === 0 ? (
-              <EmptyPanel text="All relationships healthy" icon={Users} />
-            ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                {staleContacts.slice(0, 5).map(c => (
-                  <Link key={c.id} to={`/contacts/${c.id}`}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-surface-100 transition-colors">
-                    <HealthDot score={c.healthScore} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{fullName(c)}</p>
-                      <p className="text-2xs text-slate-400 dark:text-slate-500">{c.title || 'No title'}</p>
-                    </div>
-                    <span className="text-2xs text-slate-400 dark:text-slate-500">
-                      {c.lastContacted ? formatDate(c.lastContacted) : 'Never'}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </Panel>
-
-          {isConnected && upcomingEvents.length > 0 && (
-            <Panel title="Upcoming Meetings" icon={Calendar}>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                {upcomingEvents.slice(0, 5).map(evt => {
-                  const joinUrl = evt.onlineMeeting?.joinUrl
-                  const inner = (
-                    <div className="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                      <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{evt.subject}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-2xs text-slate-400 dark:text-slate-500 flex-1">
-                          {evt.start?.dateTime ? formatDate(evt.start.dateTime) : ''}
-                          {evt.location?.displayName ? ` · ${evt.location.displayName}` : ''}
-                        </p>
-                        {joinUrl && (
-                          <a
-                            href={joinUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={e => e.stopPropagation()}
-                            className="text-2xs font-medium text-brand-600 dark:text-brand-400 hover:underline flex-shrink-0"
-                          >
-                            Join
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  )
-                  return evt.webLink ? (
-                    <a key={evt.id} href={evt.webLink} target="_blank" rel="noopener noreferrer" className="block">
-                      {inner}
-                    </a>
-                  ) : (
-                    <div key={evt.id}>{inner}</div>
-                  )
-                })}
-              </div>
-            </Panel>
-          )}
-
-          <Panel title="Recent Activity" icon={Activity} to="/inbox">
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-              {recentActivities.length === 0 ? (
-                <EmptyPanel text="No activity yet" icon={Activity} />
-              ) : recentActivities.slice(0, 5).map(a => (
-                <div key={a.id} className="px-4 py-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className={clsx('v-badge', TYPE_COLORS[a.type] || TYPE_COLORS.other)}>{a.type}</span>
-                    <span className="text-2xs text-slate-400 dark:text-slate-500">{formatDate(a.date || a.createdAt)}</span>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-1">{a.description}</p>
+          {/* ─ Zone 2: Deals ─ */}
+          <div className="border-r border-b border-[var(--border)] flex flex-col overflow-hidden">
+            <ZoneHeader title="Hot Deals" icon={Flame} to="/deals" />
+            <div className="flex-1 overflow-auto">
+              {hotDeals.length === 0 ? (
+                <EmptyZone text="No hot deals" icon={Briefcase} />
+              ) : (
+                <div className="divide-y divide-[var(--border-subtle)] dark:divide-[var(--border)]">
+                  {hotDeals.slice(0, 6).map(d => <DealRow key={d.id} deal={d} />)}
                 </div>
-              ))}
+              )}
+              {stalledDeals.length > 0 && (
+                <>
+                  <div className="os-zone-header border-t border-[var(--border)]">
+                    <div className="flex items-center gap-1.5">
+                      <AlertTriangle size={11} className="text-amber-500" />
+                      <span className="os-zone-title text-[10px]">Needs Attention</span>
+                    </div>
+                  </div>
+                  <div className="divide-y divide-[var(--border-subtle)] dark:divide-[var(--border)]">
+                    {stalledDeals.slice(0, 4).map(d => <DealRow key={d.id} deal={d} showMomentum />)}
+                  </div>
+                </>
+              )}
             </div>
-          </Panel>
+          </div>
 
-          {!isConnected && (
-            <div className="v-card p-4 text-center">
-              <Activity size={20} className="text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-              <p className="text-xs font-medium text-slate-600 dark:text-slate-300">Connect Microsoft 365</p>
-              <p className="text-2xs text-slate-400 dark:text-slate-500 mt-1">Sync emails, calendar, contacts & files</p>
-              <Link to="/settings" className="v-btn-primary mt-3 text-2xs">Connect</Link>
+          {/* ─ Zone 3: Relationships ─ */}
+          <div className="border-b border-[var(--border)] flex flex-col overflow-hidden">
+            <ZoneHeader title="Cooling Relationships" icon={Snowflake} to="/contacts" />
+            <div className="flex-1 overflow-auto">
+              {staleContacts.length === 0 ? (
+                <EmptyZone text="All relationships healthy" icon={Users} />
+              ) : (
+                <div className="divide-y divide-[var(--border-subtle)] dark:divide-[var(--border)]">
+                  {staleContacts.slice(0, 8).map(c => (
+                    <Link key={c.id} to={`/contacts/${c.id}`}
+                      className="flex items-center gap-2.5 px-3 py-2 hover:bg-surface-50 dark:hover:bg-surface-100 transition-colors">
+                      <HealthDot score={c.healthScore} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-medium text-slate-700 dark:text-slate-200 truncate">{fullName(c)}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{c.title || '—'}</p>
+                      </div>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">
+                        {c.lastContacted ? formatDate(c.lastContacted) : 'Never'}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* ─ Zone 4: Follow-ups + Activity stats ─ */}
+          <div className="border-r border-[var(--border)] flex flex-col overflow-hidden">
+            {suggestedFollowUps.length > 0 ? (
+              <>
+                <ZoneHeader title="Suggested Follow-ups" icon={Zap} />
+                <div className="flex-1 overflow-auto divide-y divide-[var(--border-subtle)] dark:divide-[var(--border)]">
+                  {suggestedFollowUps.slice(0, 6).map((s, i) => (
+                    <Link key={i} to={s.entityType === 'contact' ? `/contacts/${s.entity.id}` : `/deals/${s.entity.id}`}
+                      className="flex items-center gap-2.5 px-3 py-2 hover:bg-surface-50 dark:hover:bg-surface-100 transition-colors">
+                      <div className={clsx('v-dot', s.priority === 'high' ? 'bg-red-500' : 'bg-amber-500')} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-medium text-slate-700 dark:text-slate-200 truncate">
+                          {s.entityType === 'contact' ? fullName(s.entity) : s.entity.name || s.entity.address}
+                        </p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500">{s.reason}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <ZoneHeader title="Activity (30d)" icon={Activity} />
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="grid grid-cols-3 gap-4 px-4">
+                    {Object.entries(communicationStats.byType).map(([type, count]) => (
+                      <div key={type} className="text-center">
+                        <p className="text-xl font-bold text-slate-900 dark:text-white tabular-nums font-mono">{count}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 capitalize font-mono">{type}s</p>
+                      </div>
+                    ))}
+                    {Object.keys(communicationStats.byType).length === 0 && (
+                      <div className="col-span-3 text-center">
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">NO ACTIVITY</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* ─ Zone 5: Calendar ─ */}
+          <div className="border-r border-[var(--border)] flex flex-col overflow-hidden">
+            <ZoneHeader title="Upcoming Meetings" icon={Calendar} />
+            <div className="flex-1 overflow-auto">
+              {isConnected && upcomingEvents.length > 0 ? (
+                <div className="divide-y divide-[var(--border-subtle)] dark:divide-[var(--border)]">
+                  {upcomingEvents.slice(0, 6).map(evt => {
+                    const joinUrl = evt.onlineMeeting?.joinUrl
+                    const inner = (
+                      <div className="px-3 py-2 hover:bg-surface-50 dark:hover:bg-surface-100 transition-colors">
+                        <p className="text-[12px] font-medium text-slate-700 dark:text-slate-200 truncate">{evt.subject}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 flex-1 font-mono">
+                            {evt.start?.dateTime ? formatDate(evt.start.dateTime) : ''}
+                            {evt.location?.displayName ? ` · ${evt.location.displayName}` : ''}
+                          </p>
+                          {joinUrl && (
+                            <a href={joinUrl} target="_blank" rel="noopener noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              className="text-[10px] font-semibold text-brand-600 dark:text-brand-400 hover:underline flex-shrink-0 font-mono uppercase">
+                              Join
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )
+                    return evt.webLink ? (
+                      <a key={evt.id} href={evt.webLink} target="_blank" rel="noopener noreferrer" className="block">
+                        {inner}
+                      </a>
+                    ) : (
+                      <div key={evt.id}>{inner}</div>
+                    )
+                  })}
+                </div>
+              ) : !isConnected ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-4">
+                  <Activity size={16} className="text-slate-300 dark:text-slate-600 mb-2" />
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Connect Microsoft 365</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Sync emails, calendar & files</p>
+                  <Link to="/settings" className="v-btn-primary mt-2 text-[10px]">Connect</Link>
+                </div>
+              ) : (
+                <EmptyZone text="No upcoming meetings" icon={Calendar} />
+              )}
+            </div>
+          </div>
+
+          {/* ─ Zone 6: Recent activity feed ─ */}
+          <div className="flex flex-col overflow-hidden">
+            <ZoneHeader title="Recent Activity" icon={Activity} to="/inbox" />
+            <div className="flex-1 overflow-auto">
+              {recentActivities.length === 0 ? (
+                <EmptyZone text="No activity yet" icon={Activity} />
+              ) : (
+                <div className="divide-y divide-[var(--border-subtle)] dark:divide-[var(--border)]">
+                  {recentActivities.slice(0, 8).map(a => (
+                    <div key={a.id} className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className={clsx('v-badge', TYPE_COLORS[a.type] || TYPE_COLORS.other)}>{a.type}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{formatDate(a.date || a.createdAt)}</span>
+                      </div>
+                      <p className="text-[12px] text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-1">{a.description}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -227,56 +250,44 @@ export default function Dashboard() {
 
 /* ── Sub-components ──────────────────────────────────────────────────────────── */
 
-function StatCard({ label, value, icon: Icon, color, to, isText }) {
-  const colors = {
-    brand: 'text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-950/30',
-    blue: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/30',
-    emerald: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/30',
-    violet: 'text-violet-600 bg-violet-50 dark:text-violet-400 dark:bg-violet-950/30',
-    red: 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950/30',
-    amber: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/30',
-    slate: 'text-slate-400 bg-slate-100 dark:text-slate-500 dark:bg-slate-800',
-  }
+function StatusMetric({ label, value, to, accent, warn }) {
   return (
-    <Link to={to} className="v-card p-3 hover:border-brand-300 dark:hover:border-brand-700 transition-colors">
-      <div className={clsx('w-6 h-6 rounded flex items-center justify-center mb-2', colors[color])}>
-        <Icon size={13} />
-      </div>
-      <p className={clsx('font-bold text-slate-900 dark:text-white tabular-nums', isText ? 'text-sm' : 'text-lg')}>{value}</p>
-      <p className="text-2xs text-slate-400 dark:text-slate-500 mt-0.5">{label}</p>
+    <Link to={to} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+      <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono">{label}</span>
+      <span className={clsx(
+        'text-[13px] font-bold tabular-nums font-mono',
+        warn ? 'text-red-500' : accent ? 'text-brand-600 dark:text-brand-400' : 'text-slate-800 dark:text-white'
+      )}>{value}</span>
     </Link>
   )
 }
 
-function Panel({ title, icon: Icon, children, badge, badgeColor, to }) {
+function ZoneHeader({ title, icon: Icon, badge, to }) {
   return (
-    <div className="v-panel">
-      <div className="v-panel-header">
-        <div className="flex items-center gap-2">
-          {Icon && <Icon size={14} className="text-slate-400 dark:text-slate-500" />}
-          <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200">{title}</h3>
-          {badge > 0 && (
-            <span className={clsx('min-w-[16px] h-[16px] px-1 rounded-full text-2xs font-bold flex items-center justify-center text-white', badgeColor === 'red' ? 'bg-red-500' : 'bg-brand-500')}>
-              {badge}
-            </span>
-          )}
-        </div>
-        {to && (
-          <Link to={to} className="text-2xs text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
-            View all <ArrowRight size={10} />
-          </Link>
+    <div className="os-zone-header flex-shrink-0">
+      <div className="flex items-center gap-1.5">
+        {Icon && <Icon size={12} className="text-slate-400 dark:text-slate-500" />}
+        <span className="os-zone-title">{title}</span>
+        {badge > 0 && (
+          <span className="min-w-[14px] h-[14px] px-0.5 bg-red-500 text-white text-[9px] font-bold font-mono flex items-center justify-center">
+            {badge}
+          </span>
         )}
       </div>
-      {children}
+      {to && (
+        <Link to={to} className="text-[10px] text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-0.5 font-mono uppercase">
+          All <ArrowRight size={9} />
+        </Link>
+      )}
     </div>
   )
 }
 
-function EmptyPanel({ text, icon: Icon }) {
+function EmptyZone({ text, icon: Icon }) {
   return (
-    <div className="px-4 py-6 text-center">
-      <Icon size={18} className="text-slate-200 dark:text-slate-700 mx-auto mb-2" />
-      <p className="text-2xs text-slate-400 dark:text-slate-500">{text}</p>
+    <div className="flex-1 flex flex-col items-center justify-center py-6">
+      <Icon size={16} className="text-slate-200 dark:text-slate-700 mb-1.5" />
+      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase">{text}</p>
     </div>
   )
 }
@@ -286,11 +297,11 @@ function ReminderRow({ reminder, contacts }) {
   const overdue = isOverdue(reminder.dueDate)
   const today = isDueToday(reminder.dueDate)
   return (
-    <Link to="/reminders" className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-surface-100 transition-colors">
+    <Link to="/reminders" className="flex items-center gap-2.5 px-3 py-2 hover:bg-surface-50 dark:hover:bg-surface-100 transition-colors">
       <div className={clsx('v-dot', overdue ? 'bg-red-500' : today ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600')} />
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{reminder.title}</p>
-        <p className="text-2xs text-slate-400 dark:text-slate-500 truncate">
+        <p className="text-[12px] font-medium text-slate-700 dark:text-slate-200 truncate">{reminder.title}</p>
+        <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate font-mono">
           {contact ? fullName(contact) : ''}{contact && reminder.dueDate ? ' · ' : ''}{reminder.dueDate ? formatDate(reminder.dueDate) : ''}
         </p>
       </div>
@@ -301,14 +312,14 @@ function ReminderRow({ reminder, contacts }) {
 
 function DealRow({ deal, showMomentum }) {
   return (
-    <Link to={`/deals/${deal.id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-surface-100 transition-colors">
+    <Link to={`/deals/${deal.id}`} className="flex items-center gap-2.5 px-3 py-2 hover:bg-surface-50 dark:hover:bg-surface-100 transition-colors">
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{deal.name || deal.address}</p>
-        <p className="text-2xs text-slate-400 dark:text-slate-500">{formatDealType(deal.dealType)} · {formatCurrency(deal.dealValue)}</p>
+        <p className="text-[12px] font-medium text-slate-700 dark:text-slate-200 truncate">{deal.name || deal.address}</p>
+        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{formatDealType(deal.dealType)} · {formatCurrency(deal.dealValue)}</p>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-1.5 flex-shrink-0">
         {showMomentum && deal.momentumScore != null && (
-          <span className={clsx('text-2xs font-bold tabular-nums', deal.momentumScore >= 50 ? 'text-emerald-500' : deal.momentumScore >= 25 ? 'text-amber-500' : 'text-red-500')}>
+          <span className={clsx('text-[10px] font-bold tabular-nums font-mono', deal.momentumScore >= 50 ? 'text-emerald-500' : deal.momentumScore >= 25 ? 'text-amber-500' : 'text-red-500')}>
             {deal.momentumScore}
           </span>
         )}
@@ -320,33 +331,23 @@ function DealRow({ deal, showMomentum }) {
 
 function PipelineBar({ stats }) {
   const stages = ['prospect', 'engaged', 'under-loi', 'under-contract', 'due-diligence']
-  const colors = { prospect: 'bg-slate-400 dark:bg-slate-600', engaged: 'bg-blue-500', 'under-loi': 'bg-indigo-500', 'under-contract': 'bg-amber-500', 'due-diligence': 'bg-purple-500' }
+  const colors = { prospect: 'bg-slate-400 dark:bg-slate-500', engaged: 'bg-blue-500', 'under-loi': 'bg-indigo-500', 'under-contract': 'bg-amber-500', 'due-diligence': 'bg-purple-500' }
   const total = stages.reduce((s, st) => s + (stats.byStage[st]?.count || 0), 0) || 1
   return (
-    <div className="v-card p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <p className="text-2xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Pipeline</p>
-        <p className="text-2xs text-slate-400 dark:text-slate-500">{stats.activeDeals} active · {formatCurrency(stats.totalValue)} total</p>
-      </div>
-      <div className="flex h-2 rounded-full overflow-hidden bg-slate-100 dark:bg-surface-200 gap-px">
+    <div className="flex items-center gap-2">
+      <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono">PIPELINE</span>
+      <div className="flex h-1.5 w-32 overflow-hidden bg-surface-200 gap-px">
         {stages.map(st => {
           const pct = ((stats.byStage[st]?.count || 0) / total) * 100
           if (pct === 0) return null
-          return <div key={st} className={clsx('h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full', colors[st])} style={{ width: `${pct}%` }} title={`${formatDealStatus(st)}: ${stats.byStage[st]?.count || 0}`} />
+          return <div key={st} className={clsx('h-full', colors[st])} style={{ width: `${pct}%` }} title={`${formatDealStatus(st)}: ${stats.byStage[st]?.count || 0}`} />
         })}
       </div>
-      <div className="flex items-center gap-3 mt-2 flex-wrap">
-        {stages.map(st => stats.byStage[st] ? (
-          <div key={st} className="flex items-center gap-1.5">
-            <div className={clsx('w-2 h-2 rounded-full', colors[st])} />
-            <span className="text-2xs text-slate-500 dark:text-slate-400">{formatDealStatus(st)} ({stats.byStage[st].count})</span>
-          </div>
-        ) : null)}
-      </div>
+      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">{stats.activeDeals}</span>
     </div>
   )
 }
 
 function HealthDot({ score }) {
-  return <div className={clsx('w-2.5 h-2.5 rounded-full flex-shrink-0', score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-blue-500' : score >= 25 ? 'bg-amber-500' : 'bg-red-500')} />
+  return <div className={clsx('w-2 h-2 flex-shrink-0', score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-blue-500' : score >= 25 ? 'bg-amber-500' : 'bg-red-500')} />
 }

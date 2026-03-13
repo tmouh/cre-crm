@@ -23,7 +23,6 @@ import LinkedInProfile from '../components/LinkedInProfile'
 import CommunicationHeatmap from '../components/CommunicationHeatmap'
 import { useDuplicates } from '../hooks/useDuplicates'
 
-// Prevents a LinkedIn section crash from taking down the whole contact page
 class LinkedInErrorBoundary extends Component {
   state = { crashed: false }
   static getDerivedStateFromError() { return { crashed: true } }
@@ -39,7 +38,6 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
   const { addCompany, teamMembers } = useCRM()
   const { user } = useAuth()
 
-  // Default ownerIds to [current user] when creating a new contact
   const defaultOwnerIds = initial === BLANK ? (user ? [user.id] : []) : (initial.ownerIds || [])
   const [form, setForm] = useState({ ...BLANK, ...initial, ownerIds: defaultOwnerIds })
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
@@ -54,32 +52,32 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
   }
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="label">First name <span className="text-red-500">*</span></label>
-          <input value={form.firstName} onChange={f('firstName')} className="input" required />
+          <label className="v-label">First name <span className="text-red-500">*</span></label>
+          <input value={form.firstName} onChange={f('firstName')} className="v-input" required />
         </div>
         <div>
-          <label className="label">Last name <span className="text-red-500">*</span></label>
-          <input value={form.lastName} onChange={f('lastName')} className="input" required />
+          <label className="v-label">Last name <span className="text-red-500">*</span></label>
+          <input value={form.lastName} onChange={f('lastName')} className="v-input" required />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="label">Title / Role</label>
-          <input value={form.title} onChange={f('title')} className="input" placeholder="e.g. VP Real Estate" />
+          <label className="v-label">Title / Role</label>
+          <input value={form.title} onChange={f('title')} className="v-input" placeholder="e.g. VP Real Estate" />
         </div>
         <div>
-          <label className="label">Function</label>
-          <select value={form.contactFunction || ''} onChange={f('contactFunction')} className="input">
+          <label className="v-label">Function</label>
+          <select value={form.contactFunction || ''} onChange={f('contactFunction')} className="v-select">
             <option value="">— Select —</option>
             {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
           </select>
         </div>
       </div>
       <div>
-        <label className="label">Company</label>
+        <label className="v-label">Company</label>
         <CompanyCombobox
           value={form.companyId}
           onChange={(id) => setForm(p => ({ ...p, companyId: id }))}
@@ -89,42 +87,40 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
           }}
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="label">Email</label>
-          <input type="email" value={form.email} onChange={f('email')} className="input" placeholder="name@company.com" />
+          <label className="v-label">Email</label>
+          <input type="email" value={form.email} onChange={f('email')} className="v-input" placeholder="name@company.com" />
         </div>
         <div>
-          <label className="label">Phone</label>
-          <input value={form.phone} onChange={f('phone')} className="input" placeholder="212-555-0100" />
+          <label className="v-label">Phone</label>
+          <input value={form.phone} onChange={f('phone')} className="v-input" placeholder="212-555-0100" />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="label">Mobile</label>
-          <input value={form.mobile} onChange={f('mobile')} className="input" placeholder="917-555-0100" />
+          <label className="v-label">Mobile</label>
+          <input value={form.mobile} onChange={f('mobile')} className="v-input" placeholder="917-555-0100" />
         </div>
         <div>
-          <label className="label">LinkedIn</label>
-          <input value={form.linkedIn} onChange={f('linkedIn')} className="input" placeholder="linkedin.com/in/..." />
+          <label className="v-label">LinkedIn</label>
+          <input value={form.linkedIn} onChange={f('linkedIn')} className="v-input" placeholder="linkedin.com/in/..." />
         </div>
       </div>
 
-      {/* Owner assignment */}
       {teamMembers.length > 0 && (
         <div>
-          <label className="label">Owners</label>
-          <div className="border border-slate-200 dark:border-slate-600 rounded-lg p-2 space-y-1 max-h-28 overflow-y-auto">
+          <label className="v-label">Owners</label>
+          <div className="border border-[var(--border)] p-1.5 space-y-0.5 max-h-24 overflow-y-auto">
             {teamMembers.map(m => (
-              <label key={m.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 px-2 py-1 rounded">
+              <label key={m.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-100 px-1.5 py-0.5">
                 <input
                   type="checkbox"
                   checked={form.ownerIds.includes(m.id)}
                   onChange={() => toggleOwner(m.id)}
-                  className="rounded"
                 />
                 <span className="text-slate-700 dark:text-slate-300">{m.displayName || m.email}</span>
-                {m.id === user?.id && <span className="text-xs text-slate-400 dark:text-slate-500">(you)</span>}
+                {m.id === user?.id && <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">(you)</span>}
               </label>
             ))}
           </div>
@@ -132,23 +128,23 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
       )}
 
       <div>
-        <label className="label">Tags</label>
+        <label className="v-label">Tags</label>
         <TagInput tags={form.tags || []} onChange={(tags) => setForm(p => ({ ...p, tags }))} />
       </div>
       <div>
-        <label className="label">Notes</label>
-        <textarea value={form.notes} onChange={f('notes')} rows={3} className="input resize-y" placeholder="Background, preferences, how you met..." />
+        <label className="v-label">Notes</label>
+        <textarea value={form.notes} onChange={f('notes')} rows={3} className="v-input resize-y" placeholder="Background, preferences, how you met..." />
       </div>
 
-      <div className="flex gap-2 pt-2">
-        <button type="submit" className="btn-primary flex-1">Save Contact</button>
-        <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
+      <div className="flex gap-2 pt-1">
+        <button type="submit" className="v-btn-primary flex-1">Save Contact</button>
+        <button type="button" onClick={onCancel} className="v-btn-secondary">Cancel</button>
       </div>
     </form>
   )
 }
 
-// ---- Detail ----
+// ── Detail ──
 function ContactDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -156,12 +152,11 @@ function ContactDetail() {
   const [editing, setEditing] = useState(false)
 
   const contact = getContact(id)
-  if (!contact) return <div className="p-8 text-slate-400 dark:text-slate-500">Contact not found.</div>
+  if (!contact) return <div className="p-4 text-slate-400 dark:text-slate-500 font-mono text-[11px]">CONTACT NOT FOUND</div>
 
   const company = getCompany(contact.companyId)
   const relatedProps = properties.filter(p => p.contactIds?.includes(id))
 
-  // Find the type of the most recent touch (activity or completed reminder)
   const lastTouchItems = [
     ...activities.filter(a => a.contactId === id).map(a => ({ date: a.date || a.createdAt, type: a.type })),
     ...reminders.filter(r => r.contactId === id && r.status === 'done').map(r => ({ date: r.completedAt || r.dueDate, type: r.type })),
@@ -184,112 +179,122 @@ function ContactDetail() {
   }
 
   return (
-    <div className="px-8 py-8">
-      <Link to="/contacts" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-6">
-        <ArrowLeft size={15} /> Contacts
-      </Link>
+    <div className="h-full flex flex-col animate-fade-in">
+      {/* ─ Contact command header ─ */}
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--border)] bg-surface-0 flex-shrink-0">
+        <Link to="/contacts" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+          <ArrowLeft size={14} />
+        </Link>
+        <div className="w-8 h-8 bg-brand-600 flex items-center justify-center flex-shrink-0">
+          <span className="text-[11px] font-bold text-white font-mono">{initials(contact)}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-[13px] font-bold text-slate-900 dark:text-white truncate">{fullName(contact)}</h2>
+          <div className="flex items-center gap-2">
+            {contact.title && <span className="text-[10px] text-slate-500 dark:text-slate-400">{contact.title}</span>}
+            {company && (
+              <>
+                <span className="text-slate-300 dark:text-slate-600 text-[10px]">·</span>
+                <Link to={`/companies/${company.id}`} className="text-[10px] text-brand-600 dark:text-brand-400 hover:underline">{company.name}</Link>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setEditing(true)} className="v-btn-ghost p-1.5"><Edit2 size={13} /></button>
+          <button onClick={handleDelete} className="v-btn-ghost p-1.5 hover:text-red-500"><Trash2 size={13} /></button>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        {/* Left panel */}
-        <div className="col-span-1 space-y-4">
-          <div className="card p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-14 h-14 rounded-2xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
-                <span className="text-xl font-bold text-brand-700 dark:text-brand-300">{initials(contact)}</span>
-              </div>
-              <div className="flex gap-1">
-                <button onClick={() => setEditing(true)} className="btn-ghost p-2"><Edit2 size={14} /></button>
-                <button onClick={handleDelete} className="btn-ghost p-2 hover:text-red-500"><Trash2 size={14} /></button>
-              </div>
-            </div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{fullName(contact)}</h2>
-            {contact.title && <p className="text-sm text-slate-500 dark:text-slate-400">{contact.title}</p>}
+      {/* ─ Two-zone workspace ─ */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: profile + intel */}
+        <div className="w-[280px] flex-shrink-0 border-r border-[var(--border)] overflow-auto bg-surface-0">
+          {/* Contact info */}
+          <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)] space-y-1.5">
             {contact.contactFunction && (
-              <span className={clsx('badge mt-1 inline-block', contact.contactFunction === 'lp-investor' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
+              <span className={clsx('v-badge', contact.contactFunction === 'lp-investor' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                 {formatContactFunction(contact.contactFunction)}
               </span>
             )}
-            {company && (
-              <Link to={`/companies/${company.id}`} className="flex items-center gap-1.5 mt-2 text-sm text-brand-600 hover:underline dark:text-brand-400">
-                <Building2 size={13} /> {company.name}
-              </Link>
+            {contact.email && (
+              <a href={`mailto:${contact.email}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                <Mail size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> <span className="truncate">{contact.email}</span>
+              </a>
             )}
-
-            <div className="mt-4 space-y-2.5 border-t border-slate-100 dark:border-slate-700 pt-4">
-              {contact.email && (
-                <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
-                  <Mail size={14} className="text-slate-400 dark:text-slate-500" /> {contact.email}
-                </a>
-              )}
-              {contact.phone && (
-                <a href={`tel:${contact.phone}`} className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
-                  <Phone size={14} className="text-slate-400 dark:text-slate-500" /> {contact.phone}
-                </a>
-              )}
-              {contact.mobile && (
-                <a href={`tel:${contact.mobile}`} className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
-                  <Phone size={14} className="text-slate-400 dark:text-slate-500" /> {contact.mobile} <span className="text-xs text-slate-400 dark:text-slate-500">mobile</span>
-                </a>
-              )}
-              {contact.linkedIn && (
-                <a href={`https://${contact.linkedIn}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
-                  <Linkedin size={14} className="text-slate-400 dark:text-slate-500" /> LinkedIn <ExternalLink size={11} className="text-slate-400 dark:text-slate-500" />
-                </a>
-              )}
-            </div>
-
-            {/* Owners */}
-            {owners.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
-                  <UserCheck size={12} /> Owners
-                </p>
-                <div className="space-y-1">
-                  {owners.map(m => (
-                    <div key={m.id} className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-brand-700 dark:text-brand-300">{m.email[0].toUpperCase()}</span>
-                      </div>
-                      <span className="text-xs text-slate-600 dark:text-slate-400">{m.displayName || m.email}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {contact.phone && (
+              <a href={`tel:${contact.phone}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                <Phone size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {contact.phone}
+              </a>
             )}
-
-            {contact.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                {contact.tags.map(t => (
-                  <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>
-                ))}
-              </div>
+            {contact.mobile && (
+              <a href={`tel:${contact.mobile}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                <Phone size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {contact.mobile} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">MOB</span>
+              </a>
             )}
-
-            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-1.5 text-xs text-slate-400 dark:text-slate-500">
-              <p>Last contacted: <span className="text-slate-600 dark:text-slate-300">{formatDate(contact.lastContacted)}</span>{lastTouchType && <span className="text-slate-400 dark:text-slate-500"> · {lastTouchType}</span>}</p>
-              <p>Added: <span className="text-slate-600 dark:text-slate-300">{formatDate(contact.createdAt)}</span></p>
-            </div>
-
-            {contact.notes && (
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Notes</p>
-                <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{contact.notes}</p>
-              </div>
+            {contact.linkedIn && (
+              <a href={`https://${contact.linkedIn}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                <Linkedin size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> LinkedIn <ExternalLink size={9} className="text-slate-400" />
+              </a>
             )}
-
           </div>
 
-          {/* Relevant Deals */}
-          {relatedProps.length > 0 && (
-            <div className="card p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Building2 size={15} className="text-slate-400 dark:text-slate-500" />
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Relevant Deals</p>
+          {/* Metadata */}
+          <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)] space-y-1 text-[10px]">
+            <div className="flex justify-between">
+              <span className="text-slate-400 dark:text-slate-500 font-mono">LAST CONTACTED</span>
+              <span className="text-slate-600 dark:text-slate-300 font-mono">{formatDate(contact.lastContacted)}{lastTouchType && ` · ${lastTouchType}`}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400 dark:text-slate-500 font-mono">ADDED</span>
+              <span className="text-slate-600 dark:text-slate-300 font-mono">{formatDate(contact.createdAt)}</span>
+            </div>
+          </div>
+
+          {/* Owners */}
+          {owners.length > 0 && (
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1 font-mono uppercase">Owners</p>
+              <div className="space-y-0.5">
+                {owners.map(m => (
+                  <div key={m.id} className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 bg-brand-600 flex items-center justify-center flex-shrink-0">
+                      <span className="text-[8px] font-bold text-white font-mono">{m.email[0].toUpperCase()}</span>
+                    </div>
+                    <span className="text-[11px] text-slate-600 dark:text-slate-400">{m.displayName || m.email}</span>
+                  </div>
+                ))}
               </div>
-              <div className="space-y-2">
+            </div>
+          )}
+
+          {/* Tags */}
+          {contact.tags?.length > 0 && (
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <div className="flex flex-wrap gap-1">
+                {contact.tags.map(t => (
+                  <span key={t} className="v-badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Notes */}
+          {contact.notes && (
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1 font-mono uppercase">Notes</p>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{contact.notes}</p>
+            </div>
+          )}
+
+          {/* Related deals */}
+          {relatedProps.length > 0 && (
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1 font-mono uppercase">Deals</p>
+              <div className="space-y-1">
                 {relatedProps.map(p => (
-                  <Link key={p.id} to={`/deals/${p.id}`} className="flex items-center gap-2 text-sm text-slate-700 hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-400">
-                    <MapPin size={13} className="text-slate-400 dark:text-slate-500" />
+                  <Link key={p.id} to={`/deals/${p.id}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                    <MapPin size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
                     <span className="truncate">{p.name}</span>
                   </Link>
                 ))}
@@ -297,18 +302,21 @@ function ContactDetail() {
             </div>
           )}
 
+          {/* LinkedIn enrichment */}
           <LinkedInErrorBoundary key={contact.id}>
             <LinkedInProfile contact={contact} />
           </LinkedInErrorBoundary>
         </div>
 
-        {/* Right panel */}
-        <div className="col-span-2 space-y-4">
-          <CommunicationHeatmap contactId={id} />
-          <ReminderList contactId={id} />
-          <ActivityFeed contactId={id} />
-          <OutlookMessages email={contact.email} contactId={id} />
-          <OutlookAttachments email={contact.email} />
+        {/* Right: activity + comms workspace */}
+        <div className="flex-1 overflow-auto bg-surface-50">
+          <div className="p-4 space-y-3">
+            <CommunicationHeatmap contactId={id} />
+            <ReminderList contactId={id} />
+            <ActivityFeed contactId={id} />
+            <OutlookMessages email={contact.email} contactId={id} />
+            <OutlookAttachments email={contact.email} />
+          </div>
         </div>
       </div>
 
@@ -321,7 +329,7 @@ function ContactDetail() {
   )
 }
 
-// ---- List ----
+// ── List ──
 export default function Contacts() {
   const { id } = useParams()
   if (id) return <ContactDetail />
@@ -388,85 +396,83 @@ export default function Contacts() {
   }
 
   return (
-    <div className="px-8 py-8">
-      <PageHeader
-        title="Contacts"
-        subtitle={`${contacts.length} contact${contacts.length !== 1 ? 's' : ''}`}
-        actions={
-          <div className="flex gap-2">
-            <button onClick={() => setShowImport(true)} className="btn-secondary"><Upload size={15} /> Import CSV</button>
-            {contactDuplicates.length > 0 && (
-              <button onClick={() => setShowDupScan(true)} className="btn-secondary flex items-center gap-1.5 relative">
-                <AlertTriangle size={14} className="text-amber-500" />
-                Duplicates
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">
-                  {contactDuplicates.length}
-                </span>
-              </button>
-            )}
-            <button onClick={() => setShowOutlookImport(true)} className="btn-secondary flex items-center gap-1.5">
-              <svg viewBox="0 0 21 21" className="w-3.5 h-3.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
-                <rect x="1"  y="1"  width="9" height="9" fill="#f25022"/>
-                <rect x="11" y="1"  width="9" height="9" fill="#7fba00"/>
-                <rect x="1"  y="11" width="9" height="9" fill="#00a4ef"/>
-                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-              </svg>
-              Import from Outlook
-            </button>
-            <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Contact</button>
-          </div>
-        }
-      />
-
-      {/* Filters */}
-      <div className="flex gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search contacts..." className="input pl-9" />
+    <div className="h-full flex flex-col animate-fade-in">
+      {/* ─ Toolbar ─ */}
+      <div className="os-toolbar flex-shrink-0">
+        <div className="relative flex-1 max-w-xs">
+          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search contacts..." className="v-input pl-7 text-[11px]" />
         </div>
-        <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)} className="input w-44">
+        <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)} className="v-select w-36 text-[11px]">
           <option value="">All companies</option>
           {[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <select value={filterOwner} onChange={e => setFilterOwner(e.target.value)} className="input w-40">
+        <select value={filterOwner} onChange={e => setFilterOwner(e.target.value)} className="v-select w-32 text-[11px]">
           <option value="">All owners</option>
           {[...teamMembers].sort((a, b) => (a.displayName || a.email).localeCompare(b.displayName || b.email)).map(m => (
             <option key={m.id} value={m.id}>{m.displayName || m.email}</option>
           ))}
         </select>
-        <select value={filterFunction} onChange={e => setFilterFunction(e.target.value)} className="input w-40">
+        <select value={filterFunction} onChange={e => setFilterFunction(e.target.value)} className="v-select w-32 text-[11px]">
           <option value="">All functions</option>
           {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
         </select>
+        <div className="flex-1" />
+        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">{filtered.length} / {contacts.length}</span>
+        <div className="flex gap-1">
+          <button onClick={() => setShowImport(true)} className="v-btn-secondary text-[10px]"><Upload size={11} /> CSV</button>
+          {contactDuplicates.length > 0 && (
+            <button onClick={() => setShowDupScan(true)} className="v-btn-secondary text-[10px] relative">
+              <AlertTriangle size={11} className="text-amber-500" />
+              Dups
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 text-white text-[8px] font-bold font-mono flex items-center justify-center">
+                {contactDuplicates.length}
+              </span>
+            </button>
+          )}
+          <button onClick={() => setShowOutlookImport(true)} className="v-btn-secondary text-[10px]">
+            <svg viewBox="0 0 21 21" className="w-3 h-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+              <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+              <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+              <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+              <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+            </svg>
+            Outlook
+          </button>
+          <button onClick={() => setShowAdd(true)} className="v-btn-primary text-[10px]"><Plus size={11} /> NEW</button>
+        </div>
       </div>
 
+      {/* ─ Table ─ */}
       {filtered.length === 0 ? (
-        <EmptyState icon={Search} title="No contacts found" description="Add your first contact to get started." action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Contact</button>} />
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState icon={Search} title="No contacts found" description="Add your first contact to get started." action={<button onClick={() => setShowAdd(true)} className="v-btn-primary"><Plus size={12} /> Add Contact</button>} />
+        </div>
       ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200/80 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/60">
+        <div className="flex-1 overflow-auto">
+          <table className="v-table">
+            <thead className="sticky top-0 z-10">
+              <tr>
                 {[
-                  { field: 'name', label: 'Name', className: 'px-5' },
+                  { field: 'name', label: 'Name' },
                   { field: 'company', label: 'Company' },
                   { field: 'title', label: 'Title' },
                   { field: 'function', label: 'Function' },
                   { field: null, label: 'Contact' },
                   { field: null, label: 'Health' },
-                  { field: 'lastTouch', label: 'Last touch' },
+                  { field: 'lastTouch', label: 'Last Touch' },
                   { field: null, label: 'Owners' },
-                  { field: null, label: 'Tags', className: 'pr-6' },
-                ].map(({ field, label, className = '' }) => (
+                  { field: null, label: 'Tags' },
+                ].map(({ field, label }) => (
                   <th key={label}
                     onClick={field ? () => handleSort(field) : undefined}
-                    className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200', className)}>
-                    {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
+                    className={clsx(field && 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200')}>
+                    {label} {sortField === field && <span className="text-brand-500">{sortDir === 'asc' ? '↑' : '↓'}</span>}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
+            <tbody>
               {filtered.map(c => {
                 const company = getCompany(c.companyId)
                 const stale = c.lastContacted && daysDiff(c.lastContacted) >= 90
@@ -477,69 +483,69 @@ export default function Contacts() {
                   .map(oid => teamMembers.find(m => m.id === oid))
                   .filter(Boolean)
                 return (
-                  <tr key={c.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-700/50 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <Link to={`/contacts/${c.id}`} className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{initials(c)}</span>
+                  <tr key={c.id}>
+                    <td>
+                      <Link to={`/contacts/${c.id}`} className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-brand-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-[9px] font-bold text-white font-mono">{initials(c)}</span>
                         </div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-brand-600 dark:hover:text-brand-400">{fullName(c)}</p>
+                        <span className="text-[12px] font-medium text-slate-800 dark:text-slate-100 hover:text-brand-600 dark:hover:text-brand-400">{fullName(c)}</span>
                       </Link>
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td>
                       {company ? (
-                        <Link to={`/companies/${company.id}`} className="text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">{company.name}</Link>
-                      ) : <span className="text-sm text-slate-300 dark:text-slate-600">—</span>}
+                        <Link to={`/companies/${company.id}`} className="text-[12px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">{company.name}</Link>
+                      ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
                     </td>
-                    <td className="px-4 py-3.5">
-                      {c.title ? <span className="text-sm text-slate-600 dark:text-slate-400">{c.title}</span> : <span className="text-sm text-slate-300 dark:text-slate-600">—</span>}
+                    <td>
+                      <span className="text-[12px] text-slate-600 dark:text-slate-400">{c.title || '—'}</span>
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td>
                       {c.contactFunction ? (
-                        <span className={clsx('badge text-[11px]', c.contactFunction === 'lp-investor' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
+                        <span className={clsx('v-badge', c.contactFunction === 'lp-investor' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                           {formatContactFunction(c.contactFunction)}
                         </span>
-                      ) : <span className="text-sm text-slate-300 dark:text-slate-600">—</span>}
+                      ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
                     </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex gap-2">
-                        {c.email && <a href={`mailto:${c.email}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Mail size={14} /></a>}
-                        {(c.phone || c.mobile) && <a href={`tel:${c.phone || c.mobile}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Phone size={14} /></a>}
-                        {c.linkedIn && <a href={`https://${c.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Linkedin size={14} /></a>}
+                    <td>
+                      <div className="flex gap-1.5">
+                        {c.email && <a href={`mailto:${c.email}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Mail size={12} /></a>}
+                        {(c.phone || c.mobile) && <a href={`tel:${c.phone || c.mobile}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Phone size={12} /></a>}
+                        {c.linkedIn && <a href={`https://${c.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Linkedin size={12} /></a>}
                       </div>
                     </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-8 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                    <td>
+                      <div className="flex items-center gap-1">
+                        <div className="w-7 h-1 bg-surface-200 overflow-hidden">
                           <div
-                            className={clsx('h-full rounded-full', healthLbl === 'strong' ? 'bg-emerald-500' : healthLbl === 'healthy' ? 'bg-blue-500' : healthLbl === 'cooling' ? 'bg-amber-500' : 'bg-red-500')}
+                            className={clsx('h-full', healthLbl === 'strong' ? 'bg-emerald-500' : healthLbl === 'healthy' ? 'bg-blue-500' : healthLbl === 'cooling' ? 'bg-amber-500' : 'bg-red-500')}
                             style={{ width: `${healthScore}%` }}
                           />
                         </div>
-                        <span className={clsx('text-2xs font-medium', healthLbl === 'strong' ? 'text-emerald-600 dark:text-emerald-400' : healthLbl === 'healthy' ? 'text-blue-600 dark:text-blue-400' : healthLbl === 'cooling' ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400')}>
+                        <span className={clsx('text-[10px] font-mono tabular-nums', healthLbl === 'strong' ? 'text-emerald-600 dark:text-emerald-400' : healthLbl === 'healthy' ? 'text-blue-600 dark:text-blue-400' : healthLbl === 'cooling' ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400')}>
                           {healthScore}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3.5">
-                      <span className={clsx('text-xs', stale ? 'text-red-500 font-medium' : 'text-slate-400 dark:text-slate-500')}>
-                        {c.lastContacted ? formatDate(c.lastContacted) : 'Never'}
+                    <td>
+                      <span className={clsx('text-[11px] font-mono tabular-nums', stale ? 'text-red-500 font-medium' : 'text-slate-400 dark:text-slate-500')}>
+                        {c.lastContacted ? formatDate(c.lastContacted) : '—'}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex gap-1">
+                    <td>
+                      <div className="flex gap-0.5">
                         {owners.slice(0, 3).map(m => (
-                          <div key={m.id} title={m.displayName || m.email} className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
-                            <span className="text-xs font-bold text-brand-700 dark:text-brand-300">{m.email[0].toUpperCase()}</span>
+                          <div key={m.id} title={m.displayName || m.email} className="w-5 h-5 bg-brand-600 flex items-center justify-center">
+                            <span className="text-[8px] font-bold text-white font-mono">{m.email[0].toUpperCase()}</span>
                           </div>
                         ))}
-                        {owners.length === 0 && <span className="text-xs text-slate-300 dark:text-slate-600">—</span>}
+                        {owners.length === 0 && <span className="text-[11px] text-slate-300 dark:text-slate-600">—</span>}
                       </div>
                     </td>
-                    <td className="px-4 pr-6 py-3.5">
-                      <div className="flex flex-wrap gap-1">
-                        {(c.tags || []).slice(0, 3).map(t => <span key={t} className="badge bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">{t}</span>)}
-                        {(c.tags || []).length > 3 && <span className="badge bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">+{c.tags.length - 3}</span>}
+                    <td>
+                      <div className="flex flex-wrap gap-0.5">
+                        {(c.tags || []).slice(0, 3).map(t => <span key={t} className="v-badge bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">{t}</span>)}
+                        {(c.tags || []).length > 3 && <span className="v-badge bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">+{c.tags.length - 3}</span>}
                       </div>
                     </td>
                   </tr>
@@ -549,6 +555,14 @@ export default function Contacts() {
           </table>
         </div>
       )}
+
+      {/* ─ Status bar ─ */}
+      <div className="os-status-bar flex-shrink-0">
+        <span>{filtered.length} contacts</span>
+        {filterCompany && <span>filtered by company</span>}
+        {filterOwner && <span>filtered by owner</span>}
+        {filterFunction && <span>filtered by function</span>}
+      </div>
 
       {showAdd && (
         <Modal title="Add Contact" onClose={() => setShowAdd(false)} size="lg" disableBackdropClose>

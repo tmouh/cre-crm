@@ -157,7 +157,7 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={() => { if (suggestions.length > 0) setOpen(true) }}
-          className="input pl-8"
+          className="v-input pl-8"
           placeholder={placeholder}
           required={required}
           autoComplete="off"
@@ -169,7 +169,7 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
       </div>
 
       {open && suggestions.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden">
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-surface-100 border border-[var(--border)] overflow-hidden">
           {suggestions.map((item, i) => {
             const { main, secondary } = formatSuggestion(item)
             return (

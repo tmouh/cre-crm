@@ -26,9 +26,7 @@ const PAGE_TITLES = {
 }
 
 function getPageInfo(pathname) {
-  // Exact match first
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]
-  // Check for entity detail pages
   if (pathname.startsWith('/contacts/'))  return { title: 'Contact',  subtitle: 'Detail view' }
   if (pathname.startsWith('/companies/')) return { title: 'Company',  subtitle: 'Detail view' }
   if (pathname.startsWith('/deals/'))     return { title: 'Deal',     subtitle: 'Detail view' }
@@ -51,7 +49,6 @@ export default function AppShell() {
 
   const pageInfo = getPageInfo(location.pathname)
 
-  // Persist sidebar state
   function toggleSidebar() {
     setSidebarCollapsed(prev => {
       const next = !prev
@@ -96,12 +93,10 @@ export default function AppShell() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-surface-0">
-        <div className="flex flex-col items-center gap-3 animate-fade-in">
-          <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center">
-            <img src="/Vtransparent.png" alt="V" className="w-6 h-6 object-contain" />
-          </div>
-          <Loader2 size={18} className="animate-spin text-brand-500" />
-          <p className="text-xs text-slate-400 dark:text-slate-500">Loading workspace...</p>
+        <div className="flex flex-col items-center gap-2 animate-fade-in">
+          <img src="/Vtransparent.png" alt="V" className="w-6 h-6 object-contain" />
+          <Loader2 size={14} className="animate-spin text-brand-500" />
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-wider">Loading workspace</p>
         </div>
       </div>
     )
@@ -110,11 +105,11 @@ export default function AppShell() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen bg-surface-0">
-        <div className="v-card p-8 max-w-sm text-center animate-fade-in">
-          <AlertCircle size={24} className="text-red-400 mx-auto mb-3" />
-          <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">Failed to load data</p>
-          <p className="text-2xs text-slate-400 dark:text-slate-500 mt-1">{error}</p>
-          <button onClick={() => window.location.reload()} className="v-btn-secondary mt-4 text-2xs">
+        <div className="os-zone p-6 max-w-sm text-center animate-fade-in">
+          <AlertCircle size={18} className="text-red-400 mx-auto mb-2" />
+          <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">Failed to load data</p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-mono">{error}</p>
+          <button onClick={() => window.location.reload()} className="v-btn-secondary mt-3 text-[10px]">
             Retry
           </button>
         </div>
@@ -145,25 +140,25 @@ export default function AppShell() {
         onClose={handleCmdPaletteClose}
       />
 
-      {/* Undo toast */}
+      {/* Undo toast — structural, bottom-anchored */}
       {toast && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-lg shadow-elevated-lg bg-slate-900 dark:bg-slate-700 text-white text-xs animate-slide-up">
-          <span className="text-slate-300">
-            <span className="font-semibold text-white capitalize">{toast.label}</span> deleted
+        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 bg-slate-900 dark:bg-slate-700 text-white text-[11px] font-mono animate-slide-up border border-slate-700">
+          <span className="text-slate-400">
+            <span className="font-semibold text-white uppercase">{toast.label}</span> deleted
           </span>
           <button
             onClick={() => { clearTimeout(toastTimerRef.current); undoLastDelete() }}
-            className="flex items-center gap-1.5 px-2 py-1 rounded bg-white/10 hover:bg-white/20 transition-colors font-semibold text-white text-2xs"
+            className="flex items-center gap-1 px-1.5 py-0.5 bg-white/10 hover:bg-white/20 transition-colors font-semibold text-white text-[10px]"
           >
-            <RotateCcw size={11} />
-            Undo
-            <kbd className="text-2xs text-slate-400 ml-0.5 font-mono">Ctrl+Z</kbd>
+            <RotateCcw size={10} />
+            UNDO
+            <kbd className="text-[9px] text-slate-400 ml-0.5 font-mono">^Z</kbd>
           </button>
           <button
             onClick={() => { clearTimeout(toastTimerRef.current); dismissUndo() }}
             className="text-slate-400 hover:text-white transition-colors"
           >
-            <X size={12} />
+            <X size={11} />
           </button>
         </div>
       )}

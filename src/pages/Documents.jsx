@@ -55,11 +55,11 @@ export default function Documents() {
 
   if (!isConnected) {
     return (
-      <div className="p-6 max-w-[800px] mx-auto animate-fade-in">
-        <div className="v-card p-8 text-center">
+      <div className="p-3 max-w-[800px] mx-auto animate-fade-in">
+        <div className="v-card p-6 text-center">
           <FolderOpen size={28} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">Connect Microsoft 365</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
+          <p className="font-mono uppercase tracking-wide text-[12px] font-semibold text-slate-600 dark:text-slate-300">Connect Microsoft 365</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
             Connect your Microsoft account to browse OneDrive files, SharePoint sites, and shared documents directly in Vanadium OS.
           </p>
           <Link to="/settings" className="v-btn-primary mt-4">Connect Microsoft 365</Link>
@@ -71,9 +71,9 @@ export default function Documents() {
   const displayFiles = activeTab === 'search' ? searchResults : activeTab === 'shared' ? sharedFiles : recentFiles
 
   return (
-    <div className="p-6 max-w-[1000px] mx-auto animate-fade-in">
-      {/* Search */}
-      <div className="flex gap-2 mb-4">
+    <div className="p-3 max-w-[1000px] mx-auto animate-fade-in">
+      {/* Search toolbar */}
+      <div className="os-toolbar flex items-center gap-2 mb-3">
         <div className="relative flex-1 max-w-md">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -91,7 +91,7 @@ export default function Documents() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-4 border-b border-slate-200 dark:border-slate-700/40">
+      <div className="flex items-center gap-0.5 mb-3 border-b border-[var(--border)]">
         {[
           { id: 'recent', label: 'Recent', icon: Clock },
           { id: 'shared', label: 'Shared with me', icon: Share2 },
@@ -102,13 +102,13 @@ export default function Documents() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={clsx(
-              'flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors',
+              'flex items-center gap-1 px-2.5 py-1.5 font-mono uppercase tracking-wide text-[11px] font-semibold border-b-2 -mb-px transition-colors',
               activeTab === tab.id
                 ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400'
                 : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
             )}
           >
-            <tab.icon size={12} /> {tab.label}
+            <tab.icon size={11} /> {tab.label}
           </button>
         ))}
       </div>
@@ -117,19 +117,19 @@ export default function Documents() {
       {activeTab === 'sharepoint' ? (
         <div className="space-y-1">
           {sharePointSites.length === 0 ? (
-            <div className="v-card p-8 text-center">
+            <div className="v-card p-6 text-center">
               <Globe size={20} className="text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-              <p className="text-xs text-slate-400 dark:text-slate-500">No SharePoint sites found</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">No SharePoint sites found</p>
             </div>
           ) : sharePointSites.map(site => (
             <a key={site.id} href={site.webUrl} target="_blank" rel="noopener noreferrer"
-              className="v-card p-3 flex items-center gap-3 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
-              <Globe size={16} className="text-brand-500 flex-shrink-0" />
+              className="v-card p-2.5 flex items-center gap-2.5 hover:border-[var(--border)] transition-colors">
+              <Globe size={14} className="text-brand-500 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{site.displayName}</p>
-                {site.description && <p className="text-2xs text-slate-400 dark:text-slate-500 truncate mt-0.5">{site.description}</p>}
+                <p className="font-mono text-[12px] font-medium text-slate-800 dark:text-slate-200 truncate">{site.displayName}</p>
+                {site.description && <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-0.5">{site.description}</p>}
               </div>
-              <ExternalLink size={12} className="text-slate-400 flex-shrink-0" />
+              <ExternalLink size={11} className="text-slate-400 flex-shrink-0" />
             </a>
           ))}
         </div>
@@ -137,14 +137,14 @@ export default function Documents() {
         /* File list */
         <div className="space-y-1">
           {(loadingShared && activeTab === 'shared') ? (
-            <div className="v-card p-8 text-center">
-              <RefreshCw size={16} className="text-slate-400 animate-spin mx-auto mb-2" />
-              <p className="text-xs text-slate-400">Loading...</p>
+            <div className="v-card p-6 text-center">
+              <RefreshCw size={14} className="text-slate-400 animate-spin mx-auto mb-2" />
+              <p className="text-[11px] text-slate-400">Loading...</p>
             </div>
           ) : displayFiles.length === 0 ? (
-            <div className="v-card p-8 text-center">
+            <div className="v-card p-6 text-center">
               <FolderOpen size={20} className="text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-              <p className="text-xs text-slate-400 dark:text-slate-500">
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
                 {activeTab === 'search' ? 'No files match your search' : 'No files found'}
               </p>
             </div>
@@ -152,22 +152,32 @@ export default function Documents() {
             const Icon = fileIcon(file.name)
             return (
               <a key={file.id} href={file.webUrl} target="_blank" rel="noopener noreferrer"
-                className="v-card p-3 flex items-center gap-3 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
-                <Icon size={16} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                className="v-card p-2.5 flex items-center gap-2.5 hover:border-[var(--border)] transition-colors">
+                <Icon size={14} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{file.name}</p>
-                  <div className="flex items-center gap-2 mt-0.5 text-2xs text-slate-400 dark:text-slate-500">
+                  <p className="font-mono text-[12px] font-medium text-slate-800 dark:text-slate-200 truncate">{file.name}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px] font-mono tabular-nums text-slate-400 dark:text-slate-500">
                     {file.lastModifiedDateTime && <span>{formatDate(file.lastModifiedDateTime)}</span>}
                     {file.size && <span>· {formatFileSize(file.size)}</span>}
                     {file.lastModifiedBy?.user?.displayName && <span>· {file.lastModifiedBy.user.displayName}</span>}
                   </div>
                 </div>
-                <ExternalLink size={12} className="text-slate-400 flex-shrink-0" />
+                <ExternalLink size={11} className="text-slate-400 flex-shrink-0" />
               </a>
             )
           })}
         </div>
       )}
+
+      {/* Status bar */}
+      <div className="os-status-bar mt-3 flex items-center justify-between">
+        <span className="font-mono text-[10px] tabular-nums text-slate-400 dark:text-slate-500">
+          {displayFiles.length} {displayFiles.length === 1 ? 'file' : 'files'}
+        </span>
+        <span className="font-mono text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+          {activeTab === 'recent' ? 'Recent' : activeTab === 'shared' ? 'Shared' : activeTab === 'sharepoint' ? 'SharePoint' : 'Search'}
+        </span>
+      </div>
     </div>
   )
 }

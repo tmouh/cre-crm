@@ -30,8 +30,8 @@ function ReminderRow({ reminder, onComplete, onUncomplete, onDelete, onEdit, onS
 
   return (
     <div className={clsx(
-      'flex items-start gap-3 px-5 py-3.5 group transition-colors',
-      !done && 'hover:bg-slate-50/50 dark:hover:bg-slate-700/20'
+      'flex items-start gap-2.5 px-3 py-2 group transition-colors',
+      !done && 'hover:bg-surface-50 dark:hover:bg-surface-100'
     )}>
       {/* Priority dot */}
       <div className={clsx('flex flex-col items-center gap-1 pt-1.5 flex-shrink-0', done && 'opacity-40')}>
@@ -44,14 +44,14 @@ function ReminderRow({ reminder, onComplete, onUncomplete, onDelete, onEdit, onS
           {reminder.title}
         </p>
         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-          <span className={clsx('badge text-[10px]',
+          <span className={clsx('v-badge text-[10px]',
             overdue && !done ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
             today && !done ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' :
             'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
           )}>
             {done ? formatDate(reminder.dueDate) : relativeTimeLabel(reminder.dueDate)}
           </span>
-          <span className={clsx('badge text-[10px]', TYPE_COLORS[reminder.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
+          <span className={clsx('v-badge text-[10px]', TYPE_COLORS[reminder.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
             {capitalize(reminder.type)}
           </span>
         </div>
@@ -72,7 +72,7 @@ function ReminderRow({ reminder, onComplete, onUncomplete, onDelete, onEdit, onS
               <Clock size={13} />
             </button>
             {showSnooze && (
-              <div className="absolute right-0 top-full mt-1 z-30 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg py-1 w-36">
+              <div className="absolute right-0 top-full mt-1 z-30 bg-white dark:bg-surface-100 border border-[var(--border)] py-1 w-36">
                 {SNOOZE_OPTIONS.map(opt => (
                   <button key={opt.days} onClick={() => { onSnooze(reminder.id, opt.days); setShowSnooze(false) }}
                     className="w-full text-left px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
@@ -163,42 +163,42 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
   return (
     <div className="card overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <Bell size={15} className="text-brand-500" />
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Reminders</h3>
+      <div className="os-zone-header">
+        <div className="flex items-center gap-1.5">
+          <Bell size={12} className="text-slate-400 dark:text-slate-500" />
+          <span className="os-zone-title">Reminders</span>
           {pending.length > 0 && (
-            <span className="badge text-[10px] bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">{pending.length}</span>
+            <span className="v-badge bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">{pending.length}</span>
           )}
           {overdueCount > 0 && (
-            <span className="badge text-[10px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">{overdueCount} overdue</span>
+            <span className="v-badge bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">{overdueCount} overdue</span>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button onClick={() => setShowFilters(v => !v)}
-            className={clsx('p-1.5 rounded-md transition-colors', showFilters ? 'text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/20' : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300')}>
-            <Filter size={13} />
+            className={clsx('p-1 transition-colors', showFilters ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300')}>
+            <Filter size={12} />
           </button>
           <button onClick={() => setShowForm(v => !v)}
-            className={clsx('p-1.5 rounded-md transition-colors', showForm ? 'text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/20' : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300')}>
-            <Plus size={14} />
+            className={clsx('p-1 transition-colors', showForm ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300')}>
+            <Plus size={12} />
           </button>
         </div>
       </div>
 
       {/* Filter bar */}
       {showFilters && (
-        <div className="px-5 py-2.5 bg-slate-50/60 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2 flex-wrap">
-          <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input text-[11px] py-1 px-2 w-auto">
+        <div className="px-5 py-2.5 bg-surface-50 dark:bg-surface-100 border-b border-[var(--border)] flex items-center gap-2 flex-wrap">
+          <select value={filterType} onChange={e => setFilterType(e.target.value)} className="v-input text-[11px] py-1 px-2 w-auto">
             <option value="">All types</option>
             {[...REMINDER_TYPES].filter(t => t !== 'other').sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
             {REMINDER_TYPES.includes('other') && <option value="other">Other</option>}
           </select>
-          <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="input text-[11px] py-1 px-2 w-auto">
+          <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="v-input text-[11px] py-1 px-2 w-auto">
             <option value="">All priorities</option>
             {PRIORITIES.map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
           </select>
-          <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="input text-[11px] py-1 px-2 w-auto">
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="v-input text-[11px] py-1 px-2 w-auto">
             <option value="dueDate">Sort by date</option>
             <option value="priority">Sort by priority</option>
             <option value="type">Sort by type</option>
@@ -208,34 +208,34 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
 
       {/* Add form */}
       {showForm && (
-        <form onSubmit={submit} className="px-5 py-4 bg-slate-50/60 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700 space-y-2">
+        <form onSubmit={submit} className="px-5 py-4 bg-surface-50 dark:bg-surface-100 border-b border-[var(--border)] space-y-2">
           <div>
             <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Task <span className="text-red-500">*</span></label>
-            <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="What needs to happen?" className="input text-sm" required />
+            <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="What needs to happen?" className="v-input text-sm" required />
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Type</label>
-              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="input text-xs py-1.5">
+              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="v-input text-xs py-1.5">
                 {[...REMINDER_TYPES].filter(t => t !== 'other').sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
                 {REMINDER_TYPES.includes('other') && <option value="other">Other</option>}
               </select>
             </div>
             <div>
               <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Priority</label>
-              <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="input text-xs py-1.5">
+              <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="v-input text-xs py-1.5">
                 {PRIORITIES.map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
               </select>
             </div>
             <div>
               <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Due date <span className="text-red-500">*</span></label>
-              <input type="date" value={(form.dueDate || '').slice(0, 10)} onChange={e => setForm(f => ({ ...f, dueDate: new Date(e.target.value + 'T09:00:00').toISOString() }))} className="input text-xs py-1.5" required />
+              <input type="date" value={(form.dueDate || '').slice(0, 10)} onChange={e => setForm(f => ({ ...f, dueDate: new Date(e.target.value + 'T09:00:00').toISOString() }))} className="v-input text-xs py-1.5" required />
             </div>
           </div>
-          <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes (optional)" rows={2} className="input text-sm resize-y" />
+          <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes (optional)" rows={2} className="v-input text-sm resize-y" />
           <div className="flex gap-2 pt-1">
-            <button type="submit" className="btn-primary text-xs py-1.5">Save</button>
-            <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-xs py-1.5">Cancel</button>
+            <button type="submit" className="v-btn-primary text-xs py-1.5">Save</button>
+            <button type="button" onClick={() => setShowForm(false)} className="v-btn-secondary text-xs py-1.5">Cancel</button>
           </div>
         </form>
       )}
@@ -256,31 +256,31 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
               <form key={r.id} onSubmit={saveEdit} className="px-5 py-3.5 bg-brand-50/30 dark:bg-brand-900/10 space-y-2">
                 <div>
                   <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Task <span className="text-red-500">*</span></label>
-                  <input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} className="input text-sm" required />
+                  <input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} className="v-input text-sm" required />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Type</label>
-                    <select value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className="input text-xs py-1.5">
+                    <select value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className="v-input text-xs py-1.5">
                       {[...REMINDER_TYPES].filter(t => t !== 'other').sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
                       {REMINDER_TYPES.includes('other') && <option value="other">Other</option>}
                     </select>
                   </div>
                   <div>
                     <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Priority</label>
-                    <select value={editForm.priority} onChange={e => setEditForm(f => ({ ...f, priority: e.target.value }))} className="input text-xs py-1.5">
+                    <select value={editForm.priority} onChange={e => setEditForm(f => ({ ...f, priority: e.target.value }))} className="v-input text-xs py-1.5">
                       {PRIORITIES.map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Due date <span className="text-red-500">*</span></label>
-                    <input type="date" value={(editForm.dueDate || '').slice(0, 10)} onChange={e => setEditForm(f => ({ ...f, dueDate: new Date(e.target.value + 'T09:00:00').toISOString() }))} className="input text-xs py-1.5" required />
+                    <input type="date" value={(editForm.dueDate || '').slice(0, 10)} onChange={e => setEditForm(f => ({ ...f, dueDate: new Date(e.target.value + 'T09:00:00').toISOString() }))} className="v-input text-xs py-1.5" required />
                   </div>
                 </div>
-                <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes" rows={2} className="input text-sm resize-y" />
+                <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes" rows={2} className="v-input text-sm resize-y" />
                 <div className="flex gap-2 pt-1">
-                  <button type="submit" className="btn-primary text-xs py-1.5">Save</button>
-                  <button type="button" onClick={() => setEditingId(null)} className="btn-secondary text-xs py-1.5">Cancel</button>
+                  <button type="submit" className="v-btn-primary text-xs py-1.5">Save</button>
+                  <button type="button" onClick={() => setEditingId(null)} className="v-btn-secondary text-xs py-1.5">Cancel</button>
                 </div>
               </form>
             ) : (
@@ -293,7 +293,7 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
       {/* Completed section */}
       {done.length > 0 && (
         <>
-          <div className="px-5 py-2.5 border-t border-slate-100 dark:border-slate-700">
+          <div className="px-5 py-2.5 border-t border-[var(--border)]">
             <button onClick={() => setShowCompleted(v => !v)} className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 transition-colors">
               {showCompleted ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
               Completed ({done.length})

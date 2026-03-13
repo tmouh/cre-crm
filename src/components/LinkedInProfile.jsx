@@ -258,7 +258,7 @@ export default function LinkedInProfile({ contact }) {
           <button
             onClick={handleEnrich}
             disabled={loading}
-            className="btn-secondary text-xs flex items-center gap-1.5"
+            className="v-btn-secondary text-[10px] flex items-center gap-1"
           >
             {loading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
             {loading ? 'Enriching…' : 'Enrich from LinkedIn'}
@@ -266,7 +266,7 @@ export default function LinkedInProfile({ contact }) {
         </div>
         {error && (
           <div className="px-5 pb-4">
-            <div className="flex items-start gap-2 text-xs text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+            <div className="flex items-start gap-2 text-xs text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2.5">
               <AlertCircle size={13} className="flex-shrink-0 mt-0.5" />
               <div>
                 <p>{error}</p>
@@ -330,7 +330,7 @@ export default function LinkedInProfile({ contact }) {
             onClick={handleEnrich}
             disabled={loading}
             title="Re-enrich from LinkedIn"
-            className="mb-1 p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            className="mb-1 p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-surface-50 dark:hover:bg-surface-100 transition-colors"
           >
             {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           </button>
@@ -465,7 +465,7 @@ export default function LinkedInProfile({ contact }) {
           <Section title="Interests">
             <div className="flex flex-wrap gap-1.5">
               {interests.map((item, i) => (
-                <span key={i} className="text-[11px] bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full px-2.5 py-0.5">
+                <span key={i} className="text-[11px] bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 font-mono">
                   {titleCase(item)}
                 </span>
               ))}

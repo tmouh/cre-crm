@@ -85,7 +85,7 @@ export default function CompanyNameCombobox({ value, onChange, placeholder = 'Se
           onKeyDown={e => {
             if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); e.target.blur() }
           }}
-          className="input pr-8"
+          className="v-input pr-8"
           placeholder={placeholder}
         />
         <ChevronDown
@@ -95,7 +95,7 @@ export default function CompanyNameCombobox({ value, onChange, placeholder = 'Se
       </div>
 
       {open && (filtered.length > 0 || showCreate) && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto">
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-surface-100 border border-[var(--border)] overflow-hidden max-h-56 overflow-y-auto">
           {filtered.map(c => (
             <button
               key={c.id}
@@ -114,7 +114,7 @@ export default function CompanyNameCombobox({ value, onChange, placeholder = 'Se
               onMouseDown={e => e.preventDefault()}
               onClick={handleCreate}
               disabled={creating}
-              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-slate-100 dark:border-slate-700"
+              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-[var(--border)]"
             >
               {creating
                 ? <><Loader2 size={13} className="animate-spin" /> Adding to companies...</>

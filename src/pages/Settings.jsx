@@ -54,7 +54,7 @@ export default function Settings() {
     <div className="p-6 max-w-[800px] mx-auto animate-fade-in space-y-4">
       {/* Microsoft 365 Integration */}
       <section className="v-card overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={clsx(
               'w-8 h-8 rounded-lg flex items-center justify-center',
@@ -101,7 +101,7 @@ export default function Settings() {
 
         {/* Sync status */}
         {isConnected && syncState.lastSync && (
-          <div className="px-5 py-2 bg-slate-50 dark:bg-surface-100 border-b border-slate-100 dark:border-slate-800/50 text-2xs text-slate-400 dark:text-slate-500">
+          <div className="px-5 py-2 bg-slate-50 dark:bg-surface-100 border-b border-[var(--border)] text-2xs text-slate-400 dark:text-slate-500">
             Last synced: {new Date(syncState.lastSync).toLocaleString()}
             {syncState.error && <span className="text-red-500 ml-2">Error: {syncState.error}</span>}
           </div>
@@ -168,10 +168,10 @@ export default function Settings() {
               key={value}
               onClick={() => setTheme(value)}
               className={clsx(
-                'flex-1 flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border-2 transition-all text-xs',
+                'flex-1 flex flex-col items-center gap-1.5 px-3 py-3 border-2 transition-all text-xs',
                 theme === value
                   ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30 text-brand-700 dark:text-brand-400'
-                  : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-500 dark:text-slate-400'
+                  : 'border-[var(--border)] hover:border-slate-300 dark:hover:border-slate-600 text-slate-500 dark:text-slate-400'
               )}
             >
               <Icon size={16} />

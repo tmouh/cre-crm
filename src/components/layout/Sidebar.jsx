@@ -43,7 +43,7 @@ const NAV_SECTIONS = [
       { to: '/documents',  label: 'Documents',  Icon: FolderOpen },
       { to: '/comps',      label: 'Comps',      Icon: Database },
       { to: '/map',        label: 'Map',        Icon: Map },
-      { to: '/reports',    label: 'Reports',    Icon: BarChart3 },
+      { to: '/reports',    label: 'Reports',     Icon: BarChart3 },
     ],
   },
 ]
@@ -80,34 +80,34 @@ export default function Sidebar({ collapsed, onToggle }) {
   return (
     <aside
       className={clsx(
-        'flex-shrink-0 flex flex-col h-screen sticky top-0 transition-all duration-200 z-30',
+        'flex-shrink-0 flex flex-col h-screen sticky top-0 transition-all duration-150 z-30',
         'bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)]',
-        collapsed ? 'w-[56px]' : 'w-[220px]'
+        collapsed ? 'w-[48px]' : 'w-[200px]'
       )}
     >
-      {/* Logo */}
+      {/* Logo bar */}
       <div className={clsx(
-        'flex items-center border-b border-slate-100 dark:border-slate-800/50 h-[52px] flex-shrink-0',
-        collapsed ? 'justify-center px-2' : 'px-4 gap-2.5'
+        'flex items-center border-b border-[var(--border)] h-[40px] flex-shrink-0',
+        collapsed ? 'justify-center px-2' : 'px-3 gap-2'
       )}>
-        <img src="/Vtransparent.png" alt="V" className="w-7 h-7 object-contain flex-shrink-0" />
+        <img src="/Vtransparent.png" alt="V" className="w-5 h-5 object-contain flex-shrink-0" />
         {!collapsed && (
-          <div className="min-w-0">
-            <p className="text-[13px] font-bold text-slate-900 dark:text-white leading-tight tracking-tight truncate">Vanadium OS</p>
-          </div>
+          <span className="text-[11px] font-bold text-slate-800 dark:text-white tracking-tight font-mono uppercase">
+            Vanadium
+          </span>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-2 space-y-4">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-1.5 px-1.5 space-y-3">
         {NAV_SECTIONS.map(section => (
           <div key={section.label}>
             {!collapsed && (
-              <p className="px-2 mb-1.5 text-2xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-600">
+              <p className="px-1.5 mb-1 text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-600 font-mono">
                 {section.label}
               </p>
             )}
-            <div className="space-y-0.5">
+            <div className="space-y-px">
               {section.items.map(item => (
                 <SidebarItem
                   key={item.to}
@@ -125,7 +125,7 @@ export default function Sidebar({ collapsed, onToggle }) {
       </nav>
 
       {/* Bottom section */}
-      <div className="border-t border-slate-100 dark:border-slate-800/50 px-2 py-2 space-y-0.5">
+      <div className="border-t border-[var(--border)] px-1.5 py-1.5 space-y-px">
         {BOTTOM_NAV.map(item => (
           <SidebarLink key={item.to} item={item} collapsed={collapsed} />
         ))}
@@ -135,45 +135,44 @@ export default function Sidebar({ collapsed, onToggle }) {
           onClick={cycleTheme}
           title={`Theme: ${theme}`}
           className={clsx(
-            'flex items-center gap-2.5 w-full rounded-md transition-colors',
-            'text-slate-400 hover:text-slate-600 hover:bg-slate-100',
-            'dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-800',
-            collapsed ? 'justify-center p-2' : 'px-2.5 py-1.5 text-[12px]'
+            'flex items-center gap-2 w-full transition-colors',
+            'text-slate-400 hover:text-slate-600 hover:bg-surface-100',
+            'dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-surface-200',
+            collapsed ? 'justify-center p-1.5' : 'px-2 py-1 text-[11px]'
           )}
         >
-          <ThemeIcon size={15} className="flex-shrink-0" />
-          {!collapsed && <span className="capitalize">{theme}</span>}
+          <ThemeIcon size={14} className="flex-shrink-0" />
+          {!collapsed && <span className="font-mono text-[10px] uppercase">{theme}</span>}
         </button>
 
         {/* Collapse toggle */}
         <button
           onClick={onToggle}
           className={clsx(
-            'flex items-center gap-2.5 w-full rounded-md transition-colors',
-            'text-slate-400 hover:text-slate-600 hover:bg-slate-100',
-            'dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-800',
-            collapsed ? 'justify-center p-2' : 'px-2.5 py-1.5 text-[12px]'
+            'flex items-center gap-2 w-full transition-colors',
+            'text-slate-400 hover:text-slate-600 hover:bg-surface-100',
+            'dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-surface-200',
+            collapsed ? 'justify-center p-1.5' : 'px-2 py-1 text-[11px]'
           )}
         >
-          {collapsed ? <PanelLeft size={15} /> : <PanelLeftClose size={15} />}
-          {!collapsed && <span>Collapse</span>}
+          {collapsed ? <PanelLeft size={14} /> : <PanelLeftClose size={14} />}
+          {!collapsed && <span className="font-mono text-[10px] uppercase">Collapse</span>}
         </button>
       </div>
 
       {/* User */}
       <div className={clsx(
-        'border-t border-slate-100 dark:border-slate-800/50 flex items-center',
-        collapsed ? 'justify-center py-3 px-2' : 'px-3 py-3 gap-2.5'
+        'border-t border-[var(--border)] flex items-center',
+        collapsed ? 'justify-center py-2 px-1.5' : 'px-2.5 py-2 gap-2'
       )}>
-        {/* Avatar */}
-        <div className="w-7 h-7 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0">
-          <span className="text-[10px] font-bold text-white">
+        <div className="w-6 h-6 bg-brand-600 flex items-center justify-center flex-shrink-0">
+          <span className="text-[9px] font-bold text-white font-mono">
             {(user?.user_metadata?.full_name || user?.email || '?')[0].toUpperCase()}
           </span>
         </div>
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate">
+            <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 truncate">
               {user?.user_metadata?.full_name || user?.email}
             </p>
           </div>
@@ -184,7 +183,7 @@ export default function Sidebar({ collapsed, onToggle }) {
             title="Sign out"
             className="text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors flex-shrink-0"
           >
-            <LogOut size={13} />
+            <LogOut size={12} />
           </button>
         )}
       </div>
@@ -196,7 +195,6 @@ function SidebarItem({ item, collapsed, urgentCount, companiesOpen, setCompanies
   const location = useLocation()
 
   if (item.children) {
-    const parentActive = location.pathname === item.to || location.pathname.startsWith(item.to + '/') || childRouteActive
     return (
       <div>
         <div className="flex items-center">
@@ -204,39 +202,39 @@ function SidebarItem({ item, collapsed, urgentCount, companiesOpen, setCompanies
             to={item.to}
             end
             className={({ isActive }) => clsx(
-              'flex items-center gap-2.5 flex-1 min-w-0 rounded-md transition-colors',
-              collapsed ? 'justify-center p-2' : 'px-2.5 py-1.5 text-[12px] font-medium',
+              'flex items-center gap-2 flex-1 min-w-0 transition-colors',
+              collapsed ? 'justify-center p-1.5' : 'px-2 py-1 text-[11px] font-medium',
               (isActive || childRouteActive)
-                ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-400'
-                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+                ? 'text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/30'
+                : 'text-slate-500 hover:bg-surface-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-surface-200 dark:hover:text-slate-200'
             )}
           >
-            <item.Icon size={15} className="flex-shrink-0" />
+            <item.Icon size={14} className="flex-shrink-0" />
             {!collapsed && <span className="truncate">{item.label}</span>}
           </NavLink>
           {!collapsed && (
             <button
               onClick={() => setCompaniesOpen(p => !p)}
-              className="p-1 rounded text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 flex-shrink-0"
+              className="p-1 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 flex-shrink-0"
             >
-              <ChevronDown size={12} className={clsx('transition-transform', !companiesOpen && '-rotate-90')} />
+              <ChevronDown size={10} className={clsx('transition-transform', !companiesOpen && '-rotate-90')} />
             </button>
           )}
         </div>
         {companiesOpen && !collapsed && (
-          <div className="ml-4 mt-0.5 space-y-0.5">
+          <div className="ml-3.5 mt-px space-y-px border-l border-[var(--border)]">
             {item.children.map(child => (
               <NavLink
                 key={child.to}
                 to={child.to}
                 className={({ isActive }) => clsx(
-                  'flex items-center gap-2 pl-3 pr-2 py-1 rounded-md text-[11px] font-medium transition-colors',
+                  'flex items-center gap-1.5 pl-2.5 pr-2 py-0.5 text-[10px] font-medium transition-colors',
                   isActive
                     ? 'text-brand-600 dark:text-brand-400'
                     : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
                 )}
               >
-                <child.Icon size={13} className="flex-shrink-0" />
+                <child.Icon size={12} className="flex-shrink-0" />
                 <span>{child.label}</span>
               </NavLink>
             ))}
@@ -255,19 +253,19 @@ function SidebarLink({ item, collapsed, urgentCount = 0 }) {
       to={item.to}
       end={item.to === '/'}
       className={({ isActive }) => clsx(
-        'flex items-center gap-2.5 rounded-md transition-colors group relative',
-        collapsed ? 'justify-center p-2' : 'px-2.5 py-1.5 text-[12px] font-medium',
+        'flex items-center gap-2 transition-colors group relative',
+        collapsed ? 'justify-center p-1.5' : 'px-2 py-1 text-[11px] font-medium',
         isActive
-          ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-400'
-          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+          ? 'text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/30'
+          : 'text-slate-500 hover:bg-surface-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-surface-200 dark:hover:text-slate-200'
       )}
       title={collapsed ? item.label : undefined}
     >
-      <item.Icon size={15} className="flex-shrink-0" />
+      <item.Icon size={14} className="flex-shrink-0" />
       {!collapsed && <span className="truncate flex-1">{item.label}</span>}
       {urgentCount > 0 && (
         <span className={clsx(
-          'min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-2xs font-bold flex items-center justify-center',
+          'min-w-[14px] h-[14px] px-0.5 bg-red-500 text-white text-[9px] font-bold font-mono flex items-center justify-center',
           collapsed && 'absolute -top-0.5 -right-0.5 scale-75'
         )}>
           {urgentCount}
@@ -275,7 +273,7 @@ function SidebarLink({ item, collapsed, urgentCount = 0 }) {
       )}
       {/* Tooltip on collapse */}
       {collapsed && (
-        <div className="absolute left-full ml-2 px-2 py-1 rounded bg-slate-900 dark:bg-slate-700 text-white text-[11px] font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-lg">
+        <div className="absolute left-full ml-1 px-1.5 py-0.5 bg-slate-900 dark:bg-slate-700 text-white text-[10px] font-mono whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
           {item.label}
         </div>
       )}

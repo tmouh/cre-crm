@@ -15,12 +15,12 @@ export default function TagInput({ tags = [], onChange }) {
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5 p-2 border border-slate-300 dark:border-slate-600 rounded-lg min-h-[42px] focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-transparent">
+    <div className="flex flex-wrap gap-1 p-1.5 border border-[var(--border)] min-h-[34px] focus-within:ring-1 focus-within:ring-brand-500 focus-within:border-transparent bg-white dark:bg-surface-100">
       {tags.map(tag => (
-        <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 text-xs rounded-full">
+        <span key={tag} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 text-[10px] font-mono">
           {tag}
           <button type="button" onClick={() => remove(tag)} className="hover:text-brand-900 dark:hover:text-brand-100">
-            <X size={10} />
+            <X size={9} />
           </button>
         </span>
       ))}
@@ -33,7 +33,7 @@ export default function TagInput({ tags = [], onChange }) {
         }}
         onBlur={() => input && add(input)}
         placeholder={tags.length === 0 ? 'Add tags...' : ''}
-        className="flex-1 min-w-[80px] text-sm outline-none bg-transparent placeholder-slate-400 dark:placeholder-slate-500 dark:text-slate-100"
+        className="flex-1 min-w-[80px] text-[12px] outline-none bg-transparent placeholder-slate-400 dark:placeholder-slate-500 dark:text-slate-100"
       />
     </div>
   )

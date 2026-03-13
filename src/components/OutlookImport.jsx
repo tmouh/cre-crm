@@ -258,10 +258,10 @@ export default function OutlookImport({ onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-800 w-full max-w-2xl max-h-[90vh] flex flex-col">
 
         {/* ── Header ── */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)] flex-shrink-0">
           <div className="flex items-center gap-3">
             {/* Microsoft-style icon */}
             <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
@@ -310,11 +310,11 @@ export default function OutlookImport({ onClose }) {
 
               <div className="flex gap-2">
                 {msAccount && (
-                  <button onClick={doFetch} className="btn-secondary flex items-center gap-2">
+                  <button onClick={doFetch} className="v-btn-secondary flex items-center gap-2">
                     <RefreshCw size={14} /> Fetch Contacts
                   </button>
                 )}
-                <button onClick={handleConnect} className="btn-primary flex items-center gap-2">
+                <button onClick={handleConnect} className="v-btn-primary flex items-center gap-2">
                   <Mail size={14} />
                   {msAccount ? 'Re-authenticate' : 'Sign in with Microsoft'}
                 </button>
@@ -341,7 +341,7 @@ export default function OutlookImport({ onClose }) {
                     value={previewSearch}
                     onChange={e => setPreviewSearch(e.target.value)}
                     placeholder="Search by name, email, or company…"
-                    className="input pl-8 py-1.5 text-sm w-full"
+                    className="v-input pl-8 py-1.5 text-sm w-full"
                   />
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap flex-shrink-0">
@@ -383,9 +383,9 @@ export default function OutlookImport({ onClose }) {
               </label>
 
               {/* Virtualized contact list */}
-              <div className="border border-slate-100 dark:border-slate-700 rounded-xl overflow-hidden">
+              <div className="border border-[var(--border)] overflow-hidden">
                 {/* Sticky header */}
-                <div className="grid grid-cols-[32px_1fr_1fr_1fr_60px] gap-1 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700 px-3 py-2.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <div className="grid grid-cols-[32px_1fr_1fr_1fr_60px] gap-1 bg-slate-50 dark:bg-slate-700/50 border-b border-[var(--border)] px-3 py-2.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
                   <div>
                     <input
                       type="checkbox"
@@ -444,8 +444,8 @@ export default function OutlookImport({ onClose }) {
                           <div className="text-sm text-slate-500 dark:text-slate-400 truncate" title={c.companyName}>{c.companyName || '—'}</div>
                           <div>
                             {exists
-                              ? <span className="badge bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400 text-[10px]">Exists</span>
-                              : <span className="badge bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-300 text-[10px]">New</span>
+                              ? <span className="v-badge bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400 text-[10px]">Exists</span>
+                              : <span className="v-badge bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-300 text-[10px]">New</span>
                             }
                           </div>
                         </div>
@@ -506,22 +506,22 @@ export default function OutlookImport({ onClose }) {
 
         {/* ── Footer ── */}
         {(step === STEP.PREVIEW || step === STEP.DONE) && (
-          <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-700 flex gap-2 flex-shrink-0">
+          <div className="px-6 py-4 border-t border-[var(--border)] flex gap-2 flex-shrink-0">
             {step === STEP.PREVIEW && (
               <>
                 <button
                   onClick={handleImport}
                   disabled={selected.size === 0}
-                  className="btn-primary flex-1 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="v-btn-primary flex-1 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   Import {selected.size} contact{selected.size !== 1 ? 's' : ''}
                   <ChevronRight size={15} />
                 </button>
-                <button onClick={onClose} className="btn-secondary">Cancel</button>
+                <button onClick={onClose} className="v-btn-secondary">Cancel</button>
               </>
             )}
             {step === STEP.DONE && (
-              <button onClick={onClose} className="btn-primary flex-1">Done</button>
+              <button onClick={onClose} className="v-btn-primary flex-1">Done</button>
             )}
           </div>
         )}

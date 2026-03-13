@@ -15,12 +15,12 @@ function daysLeft(deletedAt) {
 function DeletedItem({ icon: Icon, title, subtitle, deletedAt, onRestore, onPurge }) {
   const days = daysLeft(deletedAt)
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-800">
+    <div className="flex items-center gap-3 p-3 border border-[var(--border)] bg-surface-0">
       <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
         <Icon size={14} className="text-slate-400 dark:text-slate-500" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{title}</p>
+        <p className="text-[12px] font-medium text-slate-900 dark:text-slate-100 truncate">{title}</p>
         {subtitle && <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">{subtitle}</p>}
         <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1">
           <Clock size={10} />
@@ -30,13 +30,13 @@ function DeletedItem({ icon: Icon, title, subtitle, deletedAt, onRestore, onPurg
       <div className="flex items-center gap-1 flex-shrink-0">
         <button
           onClick={onRestore}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-brand-600 hover:text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-900/20 rounded-lg transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-brand-600 hover:text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-900/20 transition-colors"
         >
           <RotateCcw size={11} /> Restore
         </button>
         <button
           onClick={onPurge}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
         >
           <Trash2 size={11} /> Delete
         </button>
@@ -87,14 +87,14 @@ export default function RecentlyDeleted() {
   const show = (id) => activeTab === 'all' || activeTab === id
 
   return (
-    <div className="px-8 py-8">
+    <div className="h-full flex flex-col animate-fade-in">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Recently Deleted</h1>
         <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1">Items are permanently deleted after {RETENTION_DAYS} days</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-0 mb-6 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex gap-0 mb-6 border-b border-[var(--border)]">
         {TABS.map(t => {
           const count = t.id === 'all' ? total : counts[t.id]
           return (
@@ -127,7 +127,7 @@ export default function RecentlyDeleted() {
       {total === 0 ? (
         <div className="card p-12 text-center">
           <Trash2 size={28} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-          <p className="text-[13px] text-slate-500 dark:text-slate-400">Nothing in the trash</p>
+          <p className="text-[12px] text-slate-500 dark:text-slate-400">Nothing in the trash</p>
         </div>
       ) : (
         <div className="space-y-8">
