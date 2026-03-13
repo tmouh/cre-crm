@@ -4,7 +4,7 @@
 
 @layer base {
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: Verdana, Geneva, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -12,6 +12,17 @@
 
   /* Consistent focus ring offset for dark mode */
   * { @apply focus:ring-offset-white dark:focus:ring-offset-gray-900; }
+}
+
+/* ── Leaflet popup dark mode ─────────────────────────────────────────────── */
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip {
+  background-color: #1f2937;
+  color: #f3f4f6;
+  border: 1px solid #374151;
+}
+.dark .leaflet-popup-content-wrapper {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
 }
 
 @layer components {

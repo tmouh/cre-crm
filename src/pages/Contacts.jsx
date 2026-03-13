@@ -138,7 +138,7 @@ function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
 function ContactDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getContact, getCompany, updateContact, deleteContact, properties, reminders, teamMembers } = useCRM()
+  const { getContact, getCompany, updateContact, deleteContact, properties, reminders, activities, teamMembers } = useCRM()
   const [editing, setEditing] = useState(false)
 
   const contact = getContact(id)
@@ -146,6 +146,13 @@ function ContactDetail() {
 
   const company = getCompany(contact.companyId)
   const relatedProps = properties.filter(p => p.contactIds?.includes(id))
+
+  // Find the type of the most recent touch (activity or completed reminder)
+  const lastTouchItems = [
+    ...activities.filter(a => a.contactId === id).map(a => ({ date: a.date || a.createdAt, type: a.type })),
+    ...reminders.filter(r => r.contactId === id && r.status === 'done').map(r => ({ date: r.completedAt || r.dueDate, type: r.type })),
+  ].filter(i => i.date).sort((a, b) => b.date.localeCompare(a.date))
+  const lastTouchType = lastTouchItems[0]?.type || null
   const owners = (contact.ownerIds || [])
     .map(oid => teamMembers.find(m => m.id === oid))
     .filter(Boolean)
@@ -240,7 +247,7 @@ function ContactDetail() {
             )}
 
             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-1.5 text-xs text-gray-400 dark:text-gray-500">
-              <p>Last contacted: <span className="text-gray-600 dark:text-gray-300">{formatDate(contact.lastContacted)}</span></p>
+              <p>Last contacted: <span className="text-gray-600 dark:text-gray-300">{formatDate(contact.lastContacted)}</span>{lastTouchType && <span className="text-gray-400 dark:text-gray-500"> · {lastTouchType}</span>}</p>
               <p>Added: <span className="text-gray-600 dark:text-gray-300">{formatDate(contact.createdAt)}</span></p>
             </div>
 
@@ -252,14 +259,13 @@ function ContactDetail() {
             )}
           </div>
 
-          <LinkedInErrorBoundary key={contact.id}>
-            <LinkedInProfile contact={contact} />
-          </LinkedInErrorBoundary>
-
-          {/* Related properties */}
+          {/* Relevant Deals */}
           {relatedProps.length > 0 && (
             <div className="card p-4">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Properties</p>
+              <div className="flex items-center gap-2 mb-3">
+                <Building2 size={15} className="text-gray-400 dark:text-gray-500" />
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Relevant Deals</p>
+              </div>
               <div className="space-y-2">
                 {relatedProps.map(p => (
                   <Link key={p.id} to={`/properties/${p.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400">
@@ -270,6 +276,10 @@ function ContactDetail() {
               </div>
             </div>
           )}
+
+          <LinkedInErrorBoundary key={contact.id}>
+            <LinkedInProfile contact={contact} />
+          </LinkedInErrorBoundary>
         </div>
 
         {/* Right panel */}
@@ -336,7 +346,7 @@ export default function Contacts() {
 
   async function handleAdd(form) {
     const dup = contacts.find(c =>
-      (c.firstName.toLowerCase() === form.firstName.toLowerCase() && c.lastName.toLowerCase() === form.lastName.toLowerCase()) ||
+      ((c.firstName || '').toLowerCase() === form.firstName.toLowerCase() && (c.lastName || '').toLowerCase() === form.lastName.toLowerCase()) ||
       (form.email && c.email && c.email.toLowerCase() === form.email.toLowerCase())
     )
     if (dup) {
@@ -399,13 +409,13 @@ export default function Contacts() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Contact</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Last touch</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Owners</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Tags</th>
+                <th className="text-left px-4 pr-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Tags</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
               {filtered.map(c => {
                 const company = getCompany(c.companyId)
-                const stale = !c.lastContacted || daysDiff(c.lastContacted) > 30
+                const stale = c.lastContacted && daysDiff(c.lastContacted) >= 90
                 const owners = (c.ownerIds || [])
                   .map(oid => teamMembers.find(m => m.id === oid))
                   .filter(Boolean)
@@ -449,7 +459,7 @@ export default function Contacts() {
                         {owners.length === 0 && <span className="text-xs text-gray-300 dark:text-gray-600">—</span>}
                       </div>
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 pr-6 py-3.5">
                       <div className="flex flex-wrap gap-1">
                         {(c.tags || []).slice(0, 3).map(t => <span key={t} className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{t}</span>)}
                         {(c.tags || []).length > 3 && <span className="badge bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">+{c.tags.length - 3}</span>}

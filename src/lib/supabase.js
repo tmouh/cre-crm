@@ -93,16 +93,20 @@ function table(name, { trackDeleted = false } = {}) {
 
 // ─── db API (mirrors old storage.js interface, but async) ─────────────────────
 export const db = {
-  companies:   table('companies',   { trackDeleted: true }),
-  contacts:    table('contacts',    { trackDeleted: true }),
-  properties:  table('properties',  { trackDeleted: true }),
-  reminders:   table('reminders',   { trackDeleted: true }),
-  activities:  table('activities'),
-  teamMembers: table('team_members'),
+  companies:     table('companies',      { trackDeleted: true }),
+  contacts:      table('contacts',       { trackDeleted: true }),
+  properties:    table('properties',     { trackDeleted: true }),
+  reminders:     table('reminders',      { trackDeleted: true }),
+  activities:    table('activities'),
+  teamMembers:   table('team_members'),
+  comps:         table('comps',          { trackDeleted: true }),
+  investors:     table('investors',      { trackDeleted: true }),
+  dealInvestors: table('deal_investors'),
+  automations:   table('automations'),
   config: {
     isSeeded: async () => {
       const { data, error } = await supabase
-        .from('app_config').select('value').eq('key', 'seeded').single()
+        .from('app_config').select('value').eq('key', 'seeded').maybeSingle()
       if (error) throw error
       return data?.value === true
     },

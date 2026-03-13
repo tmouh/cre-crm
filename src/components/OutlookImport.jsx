@@ -171,7 +171,10 @@ export default function OutlookImport({ onClose }) {
 
       setProgress({ current: i + 1, total: toImport.length, label: `Importing ${displayName}...` })
 
-      // Resolve or create company
+      // Skip if already exists in Vanadium CRM by email
+      if (email && existingByEmail[email.toLowerCase()]) continue
+
+      // Resolve or create company (only after we know we'll import this contact)
       let companyId = ''
       if (oc.companyName?.trim()) {
         const key = oc.companyName.trim().toLowerCase()
@@ -186,9 +189,6 @@ export default function OutlookImport({ onClose }) {
           } catch { /* skip on error */ }
         }
       }
-
-      // Skip if already exists in Vanadium CRM by email
-      if (email && existingByEmail[email.toLowerCase()]) continue
 
       // Look up LinkedIn URL from People API
       const linkedIn = email

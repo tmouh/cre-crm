@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import { useEffect, useRef } from 'react'
 import { Loader2, AlertCircle, RotateCcw, X } from 'lucide-react'
 import Sidebar from './Sidebar'
+import GlobalSearch from './GlobalSearch'
 import { useCRM } from '../context/CRMContext'
 
 export default function Layout() {
@@ -64,6 +65,9 @@ export default function Layout() {
     <div className="flex min-h-screen">
       <Sidebar />
       <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+        <div className="flex justify-end px-8 pt-4">
+          <GlobalSearch />
+        </div>
         <Outlet />
       </main>
 

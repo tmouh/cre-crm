@@ -50,11 +50,17 @@ export default async function handler(req, res) {
     }
 
     if (!pdlRes.ok) {
-      const text = await pdlRes.text()
-      return res.status(pdlRes.status).json({ error: `PDL API error: ${text}` })
+      const text = await pdlRes.text().catch(() => `(status ${pdlRes.status})`)
+      return res.status(pdlRes.status).json({ error: `PDL API error ${pdlRes.status}: ${text.slice(0, 300)}` })
     }
 
-    const pdl = await pdlRes.json()
+    let pdl
+    try {
+      pdl = await pdlRes.json()
+    } catch {
+      const raw = await pdlRes.text().catch(() => '')
+      return res.status(500).json({ error: `PDL returned non-JSON response: ${raw.slice(0, 200)}` })
+    }
     const person = pdl.data || pdl
 
     // Build headline from primary experience if PDL doesn't return one
@@ -112,7 +118,7 @@ export default async function handler(req, res) {
     return res.status(200).json(profile)
   } catch (err) {
     console.error('LinkedIn enrichment error:', err)
-    return res.status(500).json({ error: 'Failed to fetch LinkedIn profile. Please try again.' })
+    return res.status(500).json({ error: `LinkedIn enrichment failed: ${err?.message || String(err)}` })
   }
 }
 
@@ -141,7 +147,7 @@ const ACRONYMS = new Set([
 ])
 
 function titleCase(str) {
-  if (!str) return str
+  if (!str || typeof str !== 'string') return str || null
   return str.replace(/\b\w[\w'']*\b/g, (word, offset) => {
     const lower = word.toLowerCase()
     // Known acronyms → all caps

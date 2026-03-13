@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Building2, Briefcase, Bell, LogOut, Settings, Trash2, Map } from 'lucide-react'
+import { LayoutDashboard, Users, Building2, Briefcase, Bell, LogOut, Settings, Trash2, Map, Kanban, Database, Users2, Zap, BarChart3 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
@@ -11,7 +11,12 @@ const NAV = [
   { to: '/contacts',        label: 'Contacts',          Icon: Users },
   { to: '/companies',       label: 'Companies',         Icon: Building2 },
   { to: '/properties',      label: 'Deals',             Icon: Briefcase },
+  { to: '/pipeline',        label: 'Pipeline',          Icon: Kanban },
+  { to: '/comps',           label: 'Comps',             Icon: Database },
+  { to: '/investors',       label: 'Investors',         Icon: Users2 },
   { to: '/map',             label: 'Map',               Icon: Map },
+  { to: '/reports',         label: 'Reports',           Icon: BarChart3 },
+  { to: '/automations',     label: 'Automations',       Icon: Zap },
   { to: '/recently-deleted', label: 'Recently Deleted', Icon: Trash2 },
 ]
 

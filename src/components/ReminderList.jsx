@@ -196,7 +196,7 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
           </select>
           <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="input text-[11px] py-1 px-2 w-auto">
             <option value="">All priorities</option>
-            {[...PRIORITIES].sort((a, b) => a.localeCompare(b)).map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
+            {PRIORITIES.map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
           </select>
           <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="input text-[11px] py-1 px-2 w-auto">
             <option value="dueDate">Sort by date</option>
@@ -221,7 +221,7 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
             <div>
               <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Priority</label>
               <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="input text-xs py-1.5">
-                {[...PRIORITIES].sort((a, b) => a.localeCompare(b)).map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
+                {PRIORITIES.map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
               </select>
             </div>
             <div>
@@ -263,7 +263,7 @@ export default function ReminderList({ contactId, companyId, propertyId }) {
                   <div>
                     <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Priority</label>
                     <select value={editForm.priority} onChange={e => setEditForm(f => ({ ...f, priority: e.target.value }))} className="input text-xs py-1.5">
-                      {[...PRIORITIES].sort((a, b) => a.localeCompare(b)).map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
+                      {PRIORITIES.map(p => <option key={p} value={p}>{capitalize(p)}</option>)}
                     </select>
                   </div>
                   <div>

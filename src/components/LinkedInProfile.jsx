@@ -65,6 +65,59 @@ function cleanDegreeDisplay(degreeStr, fieldStr) {
   return unique.map(d => titleCase(d)).join(', ') || null
 }
 
+// ─── Deduplication helpers ────────────────────────────────────────────────────
+
+// Normalize a string to a bare alphanumeric key for fuzzy comparison
+function normKey(s) {
+  return (s || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+// Remove experience entries that share the same company + title.
+// When duplicates exist, keep the one with more data (description > no description,
+// has start date > no start date). Falls back to first occurrence.
+function dedupeExperiences(exps) {
+  const seen = new Map() // key → index in result
+  const result = []
+  for (const exp of exps) {
+    const key = normKey(exp.company) + '|' + normKey(exp.title)
+    if (!key || key === '|') { result.push(exp); continue }
+    if (!seen.has(key)) {
+      seen.set(key, result.length)
+      result.push(exp)
+    } else {
+      // Replace existing if this one has richer data
+      const idx = seen.get(key)
+      const existing = result[idx]
+      const existingScore = (existing.description ? 2 : 0) + (existing.starts_at ? 1 : 0)
+      const newScore      = (exp.description      ? 2 : 0) + (exp.starts_at      ? 1 : 0)
+      if (newScore > existingScore) result[idx] = exp
+    }
+  }
+  return result
+}
+
+// Remove education entries that share the same school + start year.
+// When duplicates exist, keep the one with more degree/field info.
+function dedupeEducation(edus) {
+  const seen = new Map()
+  const result = []
+  for (const edu of edus) {
+    const key = normKey(edu.school) + '|' + (edu.starts_at?.year ?? '')
+    if (!key || key === '|') { result.push(edu); continue }
+    if (!seen.has(key)) {
+      seen.set(key, result.length)
+      result.push(edu)
+    } else {
+      const idx = seen.get(key)
+      const existing = result[idx]
+      const existingScore = (existing.degree_name ? 2 : 0) + (existing.field_of_study ? 1 : 0)
+      const newScore      = (edu.degree_name      ? 2 : 0) + (edu.field_of_study      ? 1 : 0)
+      if (newScore > existingScore) result[idx] = edu
+    }
+  }
+  return result
+}
+
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -247,14 +300,13 @@ export default function LinkedInProfile({ contact }) {
         ? [titleCase(primaryExp.title), titleCase(primaryExp.company)].filter(Boolean).join(' at ')
         : null)
   const headline = rawHeadline
-    ? rawHeadline.replace(/^([^,]+),\s*.*?\s+at\s+/i, '$1 at ')
+    ? rawHeadline.replace(/^([^,]+?)(?:,|\s+-\s+)\s*.*?\s+at\s+/i, '$1 at ')
     : null
 
-  const experiences    = (data.experiences    || [])
-  const education      = (data.education      || [])
+  const experiences    = dedupeExperiences(data.experiences || [])
+  const education      = dedupeEducation(data.education || [])
   const certifications = (data.certifications || [])
   const languages      = (data.languages      || [])
-  const skills         = (data.skills         || [])
   const interests      = (data.interests      || [])
 
   return (
@@ -383,22 +435,6 @@ export default function LinkedInProfile({ contact }) {
                     </p>
                   )}
                 </div>
-              ))}
-            </div>
-          </Section>
-        </>
-      )}
-
-      {/* ── Skills ── */}
-      {skills.length > 0 && (
-        <>
-          <Divider />
-          <Section title="Skills">
-            <div className="flex flex-wrap gap-1.5">
-              {skills.map((skill, i) => (
-                <span key={i} className="text-[11px] bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full px-2.5 py-0.5">
-                  {titleCase(skill)}
-                </span>
               ))}
             </div>
           </Section>

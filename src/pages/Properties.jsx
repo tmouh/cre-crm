@@ -6,7 +6,7 @@ import AddressAutocomplete from '../components/AddressAutocomplete'
 import NumericInput from '../components/NumericInput'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
-import { DEAL_TYPES, DEAL_STATUSES, DEAL_STATUS_COLORS, DEAL_TYPE_COLORS, formatDealType, formatDealStatus, fullName, formatDate, isOverdue, isDueToday } from '../utils/helpers'
+import { DEAL_TYPES, DEAL_STATUSES, DEAL_STATUS_COLORS, DEAL_TYPE_COLORS, ASSET_TYPES, INVESTOR_STATUSES, INVESTOR_STATUS_COLORS, formatDealType, formatDealStatus, formatAssetType, formatInvestorStatus, formatCurrency, formatPercent, formatPSF, fullName, formatDate, isOverdue, isDueToday } from '../utils/helpers'
 import Modal from '../components/Modal'
 import TagInput from '../components/TagInput'
 import ActivityFeed from '../components/ActivityFeed'
@@ -16,7 +16,7 @@ import PageHeader from '../components/PageHeader'
 import ImportModal from '../components/ImportModal'
 import DuplicateCheckModal from '../components/DuplicateCheckModal'
 
-const BLANK = { name: '', address: '', dealType: '', status: '', size: '', sizeUnit: 'SF', dealValue: '', ownerCompanyId: '', tenantCompanyId: '', lenderCompanyId: '', contactIds: [], notes: '', tags: [] }
+const BLANK = { name: '', address: '', dealType: '', status: '', size: '', sizeUnit: 'SF', dealValue: '', ownerCompanyId: '', tenantCompanyId: '', lenderCompanyId: '', contactIds: [], notes: '', tags: [], capRate: '', noi: '', pricePerSf: '', ltv: '', dscr: '', askingPrice: '', propertyType: '', market: '', submarket: '', yearBuilt: '', seniorDebtAmount: '', seniorDebtRate: '', mezzAmount: '', mezzRate: '', prefEquityAmount: '', prefEquityRate: '', jvEquityAmount: '' }
 
 function ContactSearch({ contacts, selected, onToggle }) {
   const [query, setQuery] = useState('')
@@ -75,7 +75,7 @@ function ContactSearch({ contacts, selected, onToggle }) {
                   className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
                 >
                   <div className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                    <span className="text-[10px] font-semibold text-brand-700 dark:text-brand-300">{c.firstName[0]}{c.lastName[0]}</span>
+                    <span className="text-[10px] font-semibold text-brand-700 dark:text-brand-300">{(c.firstName || '')[0]}{(c.lastName || '')[0]}</span>
                   </div>
                   <div className="min-w-0">
                     <span className="text-gray-700 dark:text-gray-300">{fullName(c)}</span>
@@ -146,7 +146,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
           <label className="label">Status *</label>
           <select value={form.status} onChange={f('status')} required className="input">
             <option value="">— Select —</option>
-            {[...DEAL_STATUSES].sort((a, b) => formatDealStatus(a).localeCompare(formatDealStatus(b))).map(s => <option key={s} value={s}>{formatDealStatus(s)}</option>)}
+            {DEAL_STATUSES.map(s => <option key={s} value={s}>{formatDealStatus(s)}</option>)}
           </select>
         </div>
       </div>
@@ -175,6 +175,103 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
           />
         </div>
       </div>
+      {/* Financial metrics */}
+      <details className="group">
+        <summary className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 py-1">Financial Details</summary>
+        <div className="mt-3 space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="label">Property type</label>
+              <select value={form.propertyType} onChange={f('propertyType')} className="input">
+                <option value="">— Select —</option>
+                {ASSET_TYPES.map(t => <option key={t} value={t}>{formatAssetType(t)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Market</label>
+              <input value={form.market || ''} onChange={f('market')} className="input" placeholder="e.g. NYC Metro" />
+            </div>
+            <div>
+              <label className="label">Submarket</label>
+              <input value={form.submarket || ''} onChange={f('submarket')} className="input" placeholder="e.g. Midtown" />
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="label">Cap rate (%)</label>
+              <NumericInput value={form.capRate} onChange={v => setForm(p => ({ ...p, capRate: v }))} decimals placeholder="0.00" />
+            </div>
+            <div>
+              <label className="label">NOI ($)</label>
+              <NumericInput value={form.noi} onChange={v => setForm(p => ({ ...p, noi: v }))} decimals placeholder="0" />
+            </div>
+            <div>
+              <label className="label">$/SF</label>
+              <NumericInput value={form.pricePerSf} onChange={v => setForm(p => ({ ...p, pricePerSf: v }))} decimals placeholder="0" />
+            </div>
+            <div>
+              <label className="label">Asking price ($)</label>
+              <NumericInput value={form.askingPrice} onChange={v => setForm(p => ({ ...p, askingPrice: v }))} decimals placeholder="0" />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="label">LTV (%)</label>
+              <NumericInput value={form.ltv} onChange={v => setForm(p => ({ ...p, ltv: v }))} decimals placeholder="0.00" />
+            </div>
+            <div>
+              <label className="label">DSCR</label>
+              <NumericInput value={form.dscr} onChange={v => setForm(p => ({ ...p, dscr: v }))} decimals placeholder="0.00" />
+            </div>
+            <div>
+              <label className="label">Year built</label>
+              <input type="number" value={form.yearBuilt || ''} onChange={f('yearBuilt')} className="input" placeholder="2005" />
+            </div>
+          </div>
+        </div>
+      </details>
+
+      {/* Capital stack */}
+      <details className="group">
+        <summary className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 py-1">Capital Stack</summary>
+        <div className="mt-3 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Senior debt ($)</label>
+              <NumericInput value={form.seniorDebtAmount} onChange={v => setForm(p => ({ ...p, seniorDebtAmount: v }))} decimals placeholder="0" />
+            </div>
+            <div>
+              <label className="label">Rate (%)</label>
+              <NumericInput value={form.seniorDebtRate} onChange={v => setForm(p => ({ ...p, seniorDebtRate: v }))} decimals placeholder="0.00" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Mezzanine ($)</label>
+              <NumericInput value={form.mezzAmount} onChange={v => setForm(p => ({ ...p, mezzAmount: v }))} decimals placeholder="0" />
+            </div>
+            <div>
+              <label className="label">Rate (%)</label>
+              <NumericInput value={form.mezzRate} onChange={v => setForm(p => ({ ...p, mezzRate: v }))} decimals placeholder="0" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Pref equity ($)</label>
+              <NumericInput value={form.prefEquityAmount} onChange={v => setForm(p => ({ ...p, prefEquityAmount: v }))} decimals placeholder="0" />
+            </div>
+            <div>
+              <label className="label">Rate (%)</label>
+              <NumericInput value={form.prefEquityRate} onChange={v => setForm(p => ({ ...p, prefEquityRate: v }))} decimals placeholder="0" />
+            </div>
+          </div>
+          <div>
+            <label className="label">JV equity ($)</label>
+            <NumericInput value={form.jvEquityAmount} onChange={v => setForm(p => ({ ...p, jvEquityAmount: v }))} decimals placeholder="0" />
+          </div>
+        </div>
+      </details>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label">Owner / Sponsor</label>
@@ -245,11 +342,85 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
   )
 }
 
+// ---- Deal Investors Panel ----
+function DealInvestorsPanel({ dealId, dealInvestors, companies, addDealInvestor, updateDealInvestor, deleteDealInvestor }) {
+  const [adding, setAdding] = useState(false)
+  const [newCompanyId, setNewCompanyId] = useState('')
+  const [newStatus, setNewStatus] = useState('contacted')
+  const [newBid, setNewBid] = useState('')
+
+  const linked = dealInvestors.filter(di => di.propertyId === dealId)
+
+  async function handleAdd(e) {
+    e.preventDefault()
+    if (!newCompanyId) return
+    await addDealInvestor({ propertyId: dealId, companyId: newCompanyId, status: newStatus, bidAmount: newBid || null })
+    setNewCompanyId(''); setNewStatus('contacted'); setNewBid(''); setAdding(false)
+  }
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Investor Tracking ({linked.length})</h3>
+        <button onClick={() => setAdding(!adding)} className="btn-ghost text-xs px-2 py-1"><Plus size={13} /> Add</button>
+      </div>
+
+      {adding && (
+        <form onSubmit={handleAdd} className="flex gap-2 mb-3 items-end">
+          <div className="flex-1">
+            <SearchableSelect
+              value={newCompanyId}
+              onChange={setNewCompanyId}
+              options={companies.sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ id: c.id, label: c.name }))}
+              placeholder="Select company..."
+            />
+          </div>
+          <select value={newStatus} onChange={e => setNewStatus(e.target.value)} className="input w-28">
+            {INVESTOR_STATUSES.map(s => <option key={s} value={s}>{formatInvestorStatus(s)}</option>)}
+          </select>
+          <NumericInput value={newBid} onChange={setNewBid} decimals placeholder="Bid $" className="w-28" />
+          <button type="submit" className="btn-primary py-2">Add</button>
+        </form>
+      )}
+
+      {linked.length === 0 && !adding && (
+        <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">No investors tracked yet</p>
+      )}
+
+      {linked.length > 0 && (
+        <div className="space-y-2">
+          {linked.map(di => {
+            const company = companies.find(c => c.id === di.companyId)
+            return (
+              <div key={di.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/30">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{company?.name || 'Unknown'}</p>
+                  {di.bidAmount && <p className="text-[11px] text-gray-500 dark:text-gray-400">Bid: {formatCurrency(di.bidAmount)}</p>}
+                </div>
+                <select
+                  value={di.status}
+                  onChange={e => updateDealInvestor(di.id, { status: e.target.value })}
+                  className={clsx('badge text-[11px] border-0 cursor-pointer pr-5 appearance-auto', INVESTOR_STATUS_COLORS[di.status] || 'bg-gray-100 text-gray-600')}
+                >
+                  {INVESTOR_STATUSES.map(s => <option key={s} value={s}>{formatInvestorStatus(s)}</option>)}
+                </select>
+                <button onClick={() => { if (confirm('Remove?')) deleteDealInvestor(di.id) }} className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---- Detail ----
 function DealDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getProperty, getCompany, getContact, updateProperty, deleteProperty } = useCRM()
+  const { getProperty, getCompany, getContact, updateProperty, deleteProperty, dealInvestors, addDealInvestor, updateDealInvestor, deleteDealInvestor, companies } = useCRM()
   const [editing, setEditing] = useState(false)
 
   const deal = getProperty(id)
@@ -314,6 +485,69 @@ function DealDetail() {
               )}
             </div>
 
+            {/* Financial metrics */}
+            {(deal.capRate || deal.noi || deal.pricePerSf || deal.ltv || deal.dscr || deal.askingPrice) && (
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-2">
+                {deal.capRate && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Cap rate</span><span className="font-medium text-gray-900 dark:text-gray-100">{formatPercent(deal.capRate)}</span></div>}
+                {deal.noi && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">NOI</span><span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(deal.noi)}</span></div>}
+                {deal.pricePerSf && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">$/SF</span><span className="font-medium text-gray-900 dark:text-gray-100">{formatPSF(deal.pricePerSf)}</span></div>}
+                {deal.askingPrice && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Asking</span><span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(deal.askingPrice)}</span></div>}
+                {deal.ltv && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">LTV</span><span className="font-medium text-gray-900 dark:text-gray-100">{formatPercent(deal.ltv)}</span></div>}
+                {deal.dscr && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">DSCR</span><span className="font-medium text-gray-900 dark:text-gray-100">{Number(deal.dscr).toFixed(2)}x</span></div>}
+              </div>
+            )}
+
+            {/* Capital stack */}
+            {(deal.seniorDebtAmount || deal.mezzAmount || deal.prefEquityAmount || deal.jvEquityAmount) && (
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mb-2 font-semibold uppercase tracking-wider">Capital Stack</p>
+                <div className="space-y-1.5">
+                  {deal.seniorDebtAmount && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Senior debt</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(deal.seniorDebtAmount)} {deal.seniorDebtRate ? `@ ${Number(deal.seniorDebtRate).toFixed(2)}%` : ''}</span>
+                    </div>
+                  )}
+                  {deal.mezzAmount && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Mezzanine</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(deal.mezzAmount)} {deal.mezzRate ? `@ ${Number(deal.mezzRate).toFixed(2)}%` : ''}</span>
+                    </div>
+                  )}
+                  {deal.prefEquityAmount && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Pref equity</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(deal.prefEquityAmount)} {deal.prefEquityRate ? `@ ${Number(deal.prefEquityRate).toFixed(2)}%` : ''}</span>
+                    </div>
+                  )}
+                  {deal.jvEquityAmount && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">JV equity</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(deal.jvEquityAmount)}</span>
+                    </div>
+                  )}
+                </div>
+                {/* Visual bar */}
+                {(() => {
+                  const parts = [
+                    { label: 'Debt', amount: Number(deal.seniorDebtAmount) || 0, color: '#6366f1' },
+                    { label: 'Mezz', amount: Number(deal.mezzAmount) || 0, color: '#ec4899' },
+                    { label: 'Pref', amount: Number(deal.prefEquityAmount) || 0, color: '#f59e0b' },
+                    { label: 'JV', amount: Number(deal.jvEquityAmount) || 0, color: '#10b981' },
+                  ].filter(p => p.amount > 0)
+                  const total = parts.reduce((s, p) => s + p.amount, 0)
+                  if (total <= 0) return null
+                  return (
+                    <div className="mt-2 h-4 rounded-full overflow-hidden flex" title={`Total: ${formatCurrency(total)}`}>
+                      {parts.map((p, i) => (
+                        <div key={i} style={{ width: `${(p.amount / total) * 100}%`, backgroundColor: p.color }} className="h-full first:rounded-l-full last:rounded-r-full" title={`${p.label}: ${formatCurrency(p.amount)}`} />
+                      ))}
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
+
             {(owner || tenant || lender) && (
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
                 {owner && (
@@ -350,7 +584,7 @@ function DealDetail() {
                   {keyContacts.map(c => (
                     <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400">
                       <div className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{c.firstName[0]}{c.lastName[0]}</span>
+                        <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{(c.firstName || '')[0]}{(c.lastName || '')[0]}</span>
                       </div>
                       <span className="truncate">{fullName(c)}</span>
                     </Link>
@@ -375,6 +609,7 @@ function DealDetail() {
         </div>
 
         <div className="col-span-2 space-y-4">
+          <DealInvestorsPanel dealId={id} dealInvestors={dealInvestors} companies={companies} addDealInvestor={addDealInvestor} updateDealInvestor={updateDealInvestor} deleteDealInvestor={deleteDealInvestor} />
           <ReminderList propertyId={id} />
           <ActivityFeed propertyId={id} />
         </div>
@@ -452,7 +687,7 @@ export default function Properties() {
         </select>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input w-44">
           <option value="">All statuses</option>
-          {[...DEAL_STATUSES].sort((a, b) => formatDealStatus(a).localeCompare(formatDealStatus(b))).map(s => <option key={s} value={s}>{formatDealStatus(s)}</option>)}
+          {DEAL_STATUSES.map(s => <option key={s} value={s}>{formatDealStatus(s)}</option>)}
         </select>
       </div>
 
@@ -469,7 +704,7 @@ export default function Properties() {
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Company</th>
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Key Contact</th>
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Next Step</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tags</th>
+                <th className="text-left px-4 pr-6 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tags</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -511,7 +746,7 @@ export default function Properties() {
                     <td className="px-4 py-3">
                       <NextStepCell dealId={p.id} />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 pr-6 py-3">
                       {p.tags?.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {p.tags.slice(0, 3).map(t => <span key={t} className="badge text-[11px] bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}

@@ -34,7 +34,7 @@ function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
         <div>
           <label className="label">Priority</label>
           <select value={form.priority} onChange={f('priority')} className="input">
-            {[...PRIORITIES].sort((a, b) => a.localeCompare(b)).map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+            {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
           </select>
         </div>
         <div>
@@ -157,12 +157,12 @@ export default function Reminders() {
     const type     = !filterType     || r.type === filterType
     const priority = !filterPriority || r.priority === filterPriority
     return status && type && priority
-  }).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+  }).sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''))
 
   const overdue = all.filter(r => r.status !== 'done' && isOverdue(r.dueDate))
   const today   = all.filter(r => r.status !== 'done' && isDueToday(r.dueDate))
   const upcoming = all.filter(r => r.status !== 'done' && !isOverdue(r.dueDate) && !isDueToday(r.dueDate))
-  const done    = reminders.filter(r => r.status === 'done').sort((a, b) => (b.completedAt || b.dueDate).localeCompare(a.completedAt || a.dueDate))
+  const done    = all.filter(r => r.status === 'done').sort((a, b) => (b.completedAt || b.dueDate || '').localeCompare(a.completedAt || a.dueDate || ''))
 
   const pending = reminders.filter(r => r.status !== 'done')
 
@@ -209,7 +209,7 @@ export default function Reminders() {
         </select>
         <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="input w-36">
           <option value="">All priorities</option>
-          {[...PRIORITIES].sort((a, b) => a.localeCompare(b)).map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+          {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
         </select>
       </div>
 

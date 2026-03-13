@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import { Link } from 'react-router-dom'
 import L from 'leaflet'
 import { useCRM } from '../context/CRMContext'
+import { useTheme } from '../context/ThemeContext'
 import { formatDealType, formatDealStatus, DEAL_STATUS_COLORS, DEAL_TYPE_COLORS } from '../utils/helpers'
 import clsx from 'clsx'
 import { ExternalLink, Loader2, MapPin, AlertCircle } from 'lucide-react'
@@ -32,17 +33,16 @@ const STATUS_PIN_COLORS = {
 
 function pinIcon(color) {
   const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
-      <path d="M14 0C6.268 0 0 6.268 0 14c0 9.333 14 22 14 22S28 23.333 28 14C28 6.268 21.732 0 14 0z"
-        fill="${color}" stroke="white" stroke-width="2"/>
-      <circle cx="14" cy="14" r="5" fill="white" fill-opacity="0.85"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26">
+      <circle cx="13" cy="13" r="11" fill="${color}" stroke="white" stroke-width="3"/>
+      <circle cx="13" cy="13" r="4" fill="white" fill-opacity="0.6"/>
     </svg>`
   return L.divIcon({
     html: svg,
     className: '',
-    iconSize: [28, 36],
-    iconAnchor: [14, 36],
-    popupAnchor: [0, -38],
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+    popupAnchor: [0, -18],
   })
 }
 
@@ -70,13 +70,14 @@ function MapFitter({ coords }) {
   useEffect(() => {
     if (!coords.length) { map.setView(USA_CENTER, USA_ZOOM); return }
     const bounds = L.latLngBounds(coords.map(c => [c.lat, c.lng]))
-    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 13 })
+    map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 })
   }, [coords, map])
   return null
 }
 
 export default function MapPage() {
   const { properties } = useCRM()
+  const { resolvedTheme } = useTheme()
   const [geoDeals, setGeoDeals] = useState([])
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [failed, setFailed] = useState(0)
@@ -124,9 +125,15 @@ export default function MapPage() {
     })()
 
     return () => { abortRef.current = true }
-  }, [properties.length])
+  }, [properties])
 
   const loading = progress.total > 0 && progress.done < progress.total
+
+  const isDark = resolvedTheme === 'dark'
+  const tileUrl = isDark
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+  const tileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
   return (
     <div className="relative w-full h-screen">
@@ -137,10 +144,7 @@ export default function MapPage() {
         className="w-full h-full z-0"
         zoomControl={true}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <TileLayer key={resolvedTheme} attribution={tileAttribution} url={tileUrl} />
         <MapFitter coords={geoDeals} />
         {geoDeals.map(deal => (
           <Marker
@@ -148,54 +152,46 @@ export default function MapPage() {
             position={[deal.lat, deal.lng]}
             icon={pinIcon(STATUS_PIN_COLORS[deal.status] || '#6b7280')}
           >
-            <Popup minWidth={220} maxWidth={280}>
-              <div className="font-sans text-[13px] leading-snug py-1">
+            <Popup minWidth={200} maxWidth={260}>
+              <div className="font-sans text-[13px] leading-snug py-0.5">
                 {/* Header */}
-                <p className="font-semibold text-gray-900 text-[14px] leading-tight mb-0.5">
+                <p className="font-semibold text-gray-900 dark:text-gray-100 text-[13px] leading-tight mb-1">
                   {deal.name || deal.address}
                 </p>
                 {deal.name && (
-                  <p className="text-gray-500 text-[11px] flex items-center gap-1 mb-2">
-                    <MapPin size={11} className="flex-shrink-0" /> {deal.address}
+                  <p className="text-gray-400 dark:text-gray-400 text-[11px] mb-2 truncate">
+                    {deal.address}
                   </p>
                 )}
 
                 {/* Badges */}
                 <div className="flex flex-wrap gap-1 mb-2">
                   {deal.status && (
-                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', DEAL_STATUS_COLORS[deal.status] || 'bg-gray-100 text-gray-600')}>
+                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', DEAL_STATUS_COLORS[deal.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
                       {formatDealStatus(deal.status)}
                     </span>
                   )}
                   {deal.dealType && (
-                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', DEAL_TYPE_COLORS[deal.dealType] || 'bg-gray-100 text-gray-600')}>
+                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', DEAL_TYPE_COLORS[deal.dealType] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
                       {formatDealType(deal.dealType)}
                     </span>
                   )}
                 </div>
 
-                {/* Metrics */}
-                <div className="space-y-1 border-t border-gray-100 pt-2 mt-1">
-                  {deal.dealValue && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Deal value</span>
-                      <span className="font-medium text-gray-900">${Number(deal.dealValue).toLocaleString()}</span>
-                    </div>
-                  )}
-                  {deal.size && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Size</span>
-                      <span className="font-medium text-gray-900">{Number(deal.size).toLocaleString()} {deal.sizeUnit}</span>
-                    </div>
-                  )}
-                </div>
+                {/* Deal value */}
+                {deal.dealValue && (
+                  <p className="text-[12px] text-gray-700 dark:text-gray-300 mb-2">
+                    <span className="font-semibold">${Number(deal.dealValue).toLocaleString()}</span>
+                    {deal.size && <span className="text-gray-400 dark:text-gray-500 text-[11px]"> · {Number(deal.size).toLocaleString()} {deal.sizeUnit}</span>}
+                  </p>
+                )}
 
                 {/* Link */}
                 <Link
                   to={`/properties/${deal.id}`}
-                  className="mt-2.5 flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:text-blue-700"
+                  className="flex items-center gap-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                 >
-                  <ExternalLink size={11} /> View deal
+                  <ExternalLink size={10} /> View deal
                 </Link>
               </div>
             </Popup>
@@ -232,11 +228,11 @@ export default function MapPage() {
 
       {/* Legend */}
       {geoDeals.length > 0 && (
-        <div className="absolute bottom-4 right-4 z-[1000] bg-white dark:bg-gray-800 shadow-lg rounded-lg p-3 border border-gray-200 dark:border-gray-600 text-[11px]">
-          <p className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Status</p>
+        <div className="absolute bottom-4 right-4 z-[1000] bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg rounded-xl p-3 border border-gray-200/60 dark:border-gray-700/60 text-[11px]">
+          <p className="font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 text-[10px]">Status</p>
           {Object.entries(STATUS_PIN_COLORS).map(([status, color]) => (
             <div key={status} className="flex items-center gap-2 mb-1 last:mb-0">
-              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
               <span className="text-gray-600 dark:text-gray-300">{formatDealStatus(status)}</span>
             </div>
           ))}

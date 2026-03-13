@@ -516,7 +516,7 @@ export default function Companies() {
 
   async function handleBulkDelete() {
     const count = selected.size
-    if (!confirm(`Delete ${count} compan${count !== 1 ? 'ies' : 'y'}? This cannot be undone.`)) return
+    if (!confirm(`Delete ${count} compan${count !== 1 ? 'ies' : 'y'}? They will be moved to Recently Deleted.`)) return
     for (const cid of selected) {
       await deleteCompany(cid)
     }
@@ -604,7 +604,7 @@ export default function Companies() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Type</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Description</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Contacts</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Tags</th>
+                <th className="text-left px-4 pr-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Tags</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
@@ -652,7 +652,7 @@ export default function Companies() {
                     <td className="px-4 py-3.5">
                       <span className="text-sm text-gray-600 dark:text-gray-400">{compContacts.length}</span>
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 pr-6 py-3.5">
                       <div className="flex flex-wrap gap-1">
                         {(c.tags || []).slice(0, 3).map(t => <span key={t} className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{t}</span>)}
                         {(c.tags || []).length > 3 && <span className="badge bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">+{c.tags.length - 3}</span>}

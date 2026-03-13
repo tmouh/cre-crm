@@ -21,10 +21,16 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
   const [showForm, setShowForm] = useState(false)
   const [type, setType] = useState('note')
   const [text, setText] = useState('')
-  const [activityDate, setActivityDate] = useState(new Date().toISOString().slice(0, 10))
-  const [activityTime, setActivityTime] = useState(new Date().toTimeString().slice(0, 5))
+  const [activityDate, setActivityDate] = useState('')
+  const [activityTime, setActivityTime] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({ type: '', description: '', date: '', time: '' })
+
+  function openForm() {
+    setActivityDate(new Date().toISOString().slice(0, 10))
+    setActivityTime(new Date().toTimeString().slice(0, 5))
+    setShowForm(v => !v)
+  }
 
   const field = contactId ? 'contactId' : companyId ? 'companyId' : 'propertyId'
   const id = contactId || companyId || propertyId
@@ -64,7 +70,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
             <span className="text-xs text-gray-400 dark:text-gray-500">{items.length} entries</span>
           )}
         </div>
-        <button onClick={() => setShowForm(v => !v)}
+        <button onClick={openForm}
           className={clsx('p-1.5 rounded-md transition-colors', showForm ? 'text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/20' : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300')}>
           <Plus size={14} />
         </button>
@@ -106,7 +112,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
         <div className="px-5 py-8 text-center">
           <MessageSquare size={22} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
           <p className="text-sm text-gray-400 dark:text-gray-500">No activity logged yet</p>
-          <button onClick={() => setShowForm(true)} className="text-xs text-brand-600 dark:text-brand-400 hover:underline mt-1">Log first activity</button>
+          <button onClick={openForm} className="text-xs text-brand-600 dark:text-brand-400 hover:underline mt-1">Log first activity</button>
         </div>
       )}
 

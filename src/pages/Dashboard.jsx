@@ -1,21 +1,22 @@
 import { Link } from 'react-router-dom'
 import { parseISO, isToday, addDays, isBefore, isAfter } from 'date-fns'
-import { Bell, Users, Building2, Briefcase, CheckCircle2, ArrowRight, AlertCircle, Calendar } from 'lucide-react'
+import { Bell, Users, Building2, Briefcase, CheckCircle2, ArrowRight, AlertCircle, Calendar, TrendingUp, DollarSign } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
-import { formatDate, isOverdue, isDueToday, PRIORITY_COLORS, TYPE_COLORS, fullName, daysDiff } from '../utils/helpers'
+import { formatDate, isOverdue, isDueToday, PRIORITY_COLORS, TYPE_COLORS, fullName, daysDiff, formatCurrency, DEAL_STATUSES, DEAL_STATUS_COLORS, formatDealStatus } from '../utils/helpers'
 
 function StatCard({ icon: Icon, label, value, to, color }) {
   return (
-    <Link to={to} className="card px-5 py-5 hover:shadow-md transition-all duration-150 group">
+    <Link to={to} className="rounded-xl border px-5 py-5 hover:shadow-md transition-all duration-150 group shadow-sm"
+      style={{ backgroundColor: '#d3e1fa', borderColor: '#b6cbf4' }}>
       <div className="flex items-center justify-between mb-3">
         <div className={clsx('w-9 h-9 rounded-lg flex items-center justify-center', color)}>
           <Icon size={17} className="text-white" />
         </div>
       </div>
-      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">{value}</p>
-      <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-0.5">{label}</p>
+      <p className="text-2xl font-bold tracking-tight" style={{ color: '#2d3754' }}>{value}</p>
+      <p className="text-[13px] mt-0.5" style={{ color: '#747b8e' }}>{label}</p>
     </Link>
   )
 }
@@ -36,13 +37,15 @@ function ReminderCard({ reminder, contact, company, property, onComplete }) {
       </button>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{reminder.title}</p>
-        <div className="flex items-center gap-2 mt-1 flex-wrap">
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
           {contact && (
             <Link to={`/contacts/${contact.id}`} className="text-xs text-brand-600 hover:underline dark:text-brand-400">{fullName(contact)}</Link>
           )}
+          {contact && company && <span className="text-xs text-gray-400 dark:text-gray-600">·</span>}
           {company && (
             <Link to={`/companies/${company.id}`} className="text-xs text-gray-500 hover:underline dark:text-gray-400">{company.name}</Link>
           )}
+          {(contact || company) && property && <span className="text-xs text-gray-400 dark:text-gray-600">·</span>}
           {property && (
             <Link to={`/properties/${property.id}`} className="text-xs text-gray-500 hover:underline dark:text-gray-400">{property.name}</Link>
           )}
@@ -75,7 +78,7 @@ export default function Dashboard() {
   const stale = contacts.filter(c => {
     if (!c.lastContacted) return false
     return daysDiff(c.lastContacted) >= 90
-  }).slice(0, 5)
+  }).sort((a, b) => a.lastContacted.localeCompare(b.lastContacted)).slice(0, 5)
 
   return (
     <div className="px-8 py-8">
@@ -85,12 +88,39 @@ export default function Dashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-5 gap-4 mb-6">
         <StatCard icon={Bell}      label="Pending reminders" value={pending.length}    to="/reminders"  color="bg-brand-500" />
         <StatCard icon={Users}     label="Contacts"           value={contacts.length}   to="/contacts"   color="bg-blue-500" />
         <StatCard icon={Building2} label="Companies"          value={companies.length}  to="/companies"  color="bg-violet-500" />
-        <StatCard icon={Briefcase}  label="Active deals"        value={properties.length} to="/properties" color="bg-teal-500" />
+        <StatCard icon={Briefcase}  label="Active deals"        value={properties.filter(p => p.status !== 'dead' && p.status !== 'closed').length} to="/pipeline" color="bg-teal-500" />
+        <StatCard icon={DollarSign} label="Pipeline value"     value={formatCurrency(properties.filter(p => p.status !== 'dead' && p.status !== 'closed').reduce((s, p) => s + (Number(p.dealValue) || 0), 0))} to="/pipeline" color="bg-emerald-500" />
       </div>
+
+      {/* Mini pipeline bar */}
+      {properties.length > 0 && (
+        <Link to="/pipeline" className="block mb-8">
+          <div className="card px-5 py-3 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pipeline</span>
+              <span className="text-xs text-brand-600 dark:text-brand-400 flex items-center gap-1">View pipeline <ArrowRight size={11} /></span>
+            </div>
+            <div className="h-3 rounded-full overflow-hidden flex bg-gray-100 dark:bg-gray-700">
+              {DEAL_STATUSES.filter(s => s !== 'dead').map(s => {
+                const count = properties.filter(p => p.status === s).length
+                if (count === 0) return null
+                const pct = (count / properties.length) * 100
+                const colors = { prospect: '#9ca3af', engaged: '#3b82f6', 'under-loi': '#6366f1', 'under-contract': '#eab308', 'due-diligence': '#a855f7', closed: '#10b981' }
+                return <div key={s} style={{ width: `${pct}%`, backgroundColor: colors[s] || '#6b7280' }} className="h-full" title={`${formatDealStatus(s)}: ${count}`} />
+              })}
+            </div>
+            <div className="flex gap-3 mt-1.5">
+              {DEAL_STATUSES.filter(s => s !== 'dead' && properties.some(p => p.status === s)).map(s => (
+                <span key={s} className="text-[10px] text-gray-400 dark:text-gray-500">{formatDealStatus(s)}: {properties.filter(p => p.status === s).length}</span>
+              ))}
+            </div>
+          </div>
+        </Link>
+      )}
 
       <div className="grid grid-cols-3 gap-6">
         {/* Left: reminders */}
@@ -171,7 +201,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3 mb-2 px-0">
                   <div className="w-8 flex-shrink-0" />
                   <div className="flex-1"><span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Last touch</span></div>
-                  <div className="w-16 text-right flex-shrink-0"><span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Last type</span></div>
+                  <div className="w-16 flex-shrink-0"><span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Last type</span></div>
                 </div>
                 <div className="space-y-3">
                   {stale.map(c => {
@@ -188,7 +218,7 @@ export default function Dashboard() {
                       <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-3 group">
                         <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
                           <span className="text-[11px] font-semibold text-brand-700 dark:text-brand-300">
-                            {c.firstName[0]}{c.lastName[0]}
+                            {(c.firstName || '')[0]}{(c.lastName || '')[0]}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -197,7 +227,7 @@ export default function Dashboard() {
                             {c.lastContacted ? `${daysDiff(c.lastContacted)}d ago` : 'Never contacted'}
                           </p>
                         </div>
-                        <div className="w-16 text-right flex-shrink-0">
+                        <div className="w-16 flex-shrink-0">
                           {lastTouch ? (
                             <span className={clsx('badge text-[10px] py-0', TYPE_COLORS[lastTouch.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
                               {lastTouch.type}
@@ -246,7 +276,7 @@ export default function Dashboard() {
                       <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-3 group">
                         <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
                           <span className="text-[11px] font-semibold text-brand-700 dark:text-brand-300">
-                            {c.firstName[0]}{c.lastName[0]}
+                            {(c.firstName || '')[0]}{(c.lastName || '')[0]}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -258,7 +288,7 @@ export default function Dashboard() {
                             </span>
                           </div>
                         </div>
-                        <div className="flex gap-1 flex-wrap justify-end flex-shrink-0 max-w-[100px]">
+                        <div className="flex gap-1 flex-wrap max-w-[90px]">
                           {c.tags?.length > 0 ? (
                             <>
                               {c.tags.slice(0, 2).map(t => (

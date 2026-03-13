@@ -142,7 +142,7 @@ export const COMPANY_TYPE_COLORS = {
 
 export function fullName(contact) {
   if (!contact) return 'Unknown'
-  return `${contact.firstName} ${contact.lastName}`
+  return `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || 'Unknown'
 }
 
 export function initials(contact) {
@@ -151,8 +151,72 @@ export function initials(contact) {
 }
 
 export function companyInitials(company) {
-  if (!company) return '?'
-  return company.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+  if (!company || !company.name) return '?'
+  return company.name.split(' ').slice(0, 2).map(w => w[0]).filter(Boolean).join('').toUpperCase() || '?'
+}
+
+export const ASSET_TYPES = ['office', 'industrial', 'retail', 'multifamily', 'land', 'mixed-use', 'hotel', 'self-storage', 'medical', 'data-center', 'other']
+
+export const CAPITAL_TYPES = ['core', 'core-plus', 'value-add', 'opportunistic', 'development', 'debt', 'other']
+
+export const INVESTOR_STATUSES = ['contacted', 'reviewing', 'interested', 'site-visit', 'bidding', 'passed', 'awarded']
+
+export const INVESTOR_STATUS_COLORS = {
+  contacted:   'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+  reviewing:   'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  interested:  'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  'site-visit':'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+  bidding:     'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  passed:      'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300',
+  awarded:     'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+}
+
+export function formatAssetType(t) {
+  if (!t) return ''
+  const labels = {
+    'office': 'Office', 'industrial': 'Industrial', 'retail': 'Retail',
+    'multifamily': 'Multifamily', 'land': 'Land', 'mixed-use': 'Mixed-Use',
+    'hotel': 'Hotel', 'self-storage': 'Self-Storage', 'medical': 'Medical',
+    'data-center': 'Data Center', 'other': 'Other',
+  }
+  return labels[t] || t.charAt(0).toUpperCase() + t.slice(1).replace(/-/g, ' ')
+}
+
+export function formatCapitalType(t) {
+  if (!t) return ''
+  const labels = {
+    'core': 'Core', 'core-plus': 'Core+', 'value-add': 'Value-Add',
+    'opportunistic': 'Opportunistic', 'development': 'Development',
+    'debt': 'Debt', 'other': 'Other',
+  }
+  return labels[t] || t.charAt(0).toUpperCase() + t.slice(1).replace(/-/g, ' ')
+}
+
+export function formatInvestorStatus(s) {
+  if (!s) return ''
+  return s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ')
+}
+
+export function formatCurrency(val) {
+  if (val == null || val === '') return '—'
+  const num = Number(val)
+  if (isNaN(num)) return '—'
+  if (num >= 1e9) return `$${(num / 1e9).toFixed(1)}B`
+  if (num >= 1e6) return `$${(num / 1e6).toFixed(1)}M`
+  if (num >= 1e3) return `$${(num / 1e3).toFixed(0)}K`
+  return `$${num.toLocaleString()}`
+}
+
+export function formatPercent(val) {
+  if (val == null || val === '') return '—'
+  const num = Number(val)
+  if (isNaN(num)) return '—'
+  return `${num.toFixed(2)}%`
+}
+
+export function formatPSF(val) {
+  if (val == null || val === '') return '—'
+  return `$${Number(val).toFixed(0)}/SF`
 }
 
 export const SNOOZE_OPTIONS = [

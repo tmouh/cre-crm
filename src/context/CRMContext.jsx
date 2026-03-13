@@ -13,14 +13,18 @@ function calcLastContacted(contactId, activitiesList, remindersList) {
 }
 
 export function CRMProvider({ children }) {
-  const [contacts,     setContacts]     = useState([])
-  const [companies,    setCompanies]    = useState([])
-  const [properties,   setProperties]   = useState([])
-  const [reminders,    setReminders]    = useState([])
-  const [activities,   setActivities]   = useState([])
-  const [teamMembers,  setTeamMembers]  = useState([])
-  const [loading,      setLoading]      = useState(true)
-  const [error,        setError]        = useState(null)
+  const [contacts,       setContacts]       = useState([])
+  const [companies,      setCompanies]      = useState([])
+  const [properties,     setProperties]     = useState([])
+  const [reminders,      setReminders]      = useState([])
+  const [activities,     setActivities]     = useState([])
+  const [teamMembers,    setTeamMembers]    = useState([])
+  const [comps,          setComps]          = useState([])
+  const [investors,      setInvestors]      = useState([])
+  const [dealInvestors,  setDealInvestors]  = useState([])
+  const [automations,    setAutomations]    = useState([])
+  const [loading,        setLoading]        = useState(true)
+  const [error,          setError]          = useState(null)
 
   const [deletedContacts,   setDeletedContacts]   = useState([])
   const [deletedCompanies,  setDeletedCompanies]  = useState([])
@@ -41,7 +45,7 @@ export function CRMProvider({ children }) {
           await seedDatabase()
           await db.config.markSeeded()
         }
-        const [co, ct, pr, re, ac, tm, delCo, delCt, delPr, delRe] = await Promise.all([
+        const [co, ct, pr, re, ac, tm, delCo, delCt, delPr, delRe, cp, inv, di, auto] = await Promise.all([
           db.companies.getAll(),
           db.contacts.getAll(),
           db.properties.getAll(),
@@ -52,6 +56,10 @@ export function CRMProvider({ children }) {
           db.contacts.getDeleted(),
           db.properties.getDeleted(),
           db.reminders.getDeleted(),
+          db.comps.getAll().catch(() => []),
+          db.investors.getAll().catch(() => []),
+          db.dealInvestors.getAll().catch(() => []),
+          db.automations.getAll().catch(() => []),
         ])
         setCompanies(co)
         setContacts(ct)
@@ -63,6 +71,10 @@ export function CRMProvider({ children }) {
         setDeletedContacts(delCt)
         setDeletedProperties(delPr)
         setDeletedReminders(delRe)
+        setComps(cp)
+        setInvestors(inv)
+        setDealInvestors(di)
+        setAutomations(auto)
       } catch (err) {
         setError(err.message || 'Failed to load data.')
       } finally {
@@ -89,7 +101,7 @@ export function CRMProvider({ children }) {
     const rec = await db.contacts.softDelete(id)
     setContacts(prev => prev.filter(c => c.id !== id))
     setDeletedContacts(prev => [rec, ...prev])
-    setUndoStack(prev => [{ type: 'contact', id, label: item?.name || 'Contact' }, ...prev.slice(0, 9)])
+    setUndoStack(prev => [{ type: 'contact', id, label: item ? `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Contact' : 'Contact' }, ...prev.slice(0, 9)])
   }, [contacts])
 
   const restoreContact = useCallback(async (id) => {
@@ -322,6 +334,104 @@ export function CRMProvider({ children }) {
     setUndoStack(prev => prev.slice(1))
   }, [])
 
+  // ─── COMPS ──────────────────────────────────────────────────────────────
+  const addComp = useCallback(async (comp) => {
+    const rec = await db.comps.insert(comp)
+    setComps(prev => [...prev, rec])
+    return rec
+  }, [])
+
+  const updateComp = useCallback(async (id, patch) => {
+    const rec = await db.comps.update(id, patch)
+    setComps(prev => prev.map(c => c.id === id ? rec : c))
+  }, [])
+
+  const deleteComp = useCallback(async (id) => {
+    await db.comps.softDelete(id)
+    setComps(prev => prev.filter(c => c.id !== id))
+  }, [])
+
+  // ─── INVESTORS ─────────────────────────────────────────────────────────
+  const addInvestor = useCallback(async (investor) => {
+    const rec = await db.investors.insert(investor)
+    setInvestors(prev => [...prev, rec])
+    return rec
+  }, [])
+
+  const updateInvestor = useCallback(async (id, patch) => {
+    const rec = await db.investors.update(id, patch)
+    setInvestors(prev => prev.map(i => i.id === id ? rec : i))
+  }, [])
+
+  const deleteInvestor = useCallback(async (id) => {
+    await db.investors.softDelete(id)
+    setInvestors(prev => prev.filter(i => i.id !== id))
+  }, [])
+
+  // ─── DEAL INVESTORS ────────────────────────────────────────────────────
+  const addDealInvestor = useCallback(async (di) => {
+    const rec = await db.dealInvestors.insert(di)
+    setDealInvestors(prev => [...prev, rec])
+    return rec
+  }, [])
+
+  const updateDealInvestor = useCallback(async (id, patch) => {
+    const rec = await db.dealInvestors.update(id, patch)
+    setDealInvestors(prev => prev.map(d => d.id === id ? rec : d))
+  }, [])
+
+  const deleteDealInvestor = useCallback(async (id) => {
+    await db.dealInvestors.delete(id)
+    setDealInvestors(prev => prev.filter(d => d.id !== id))
+  }, [])
+
+  // ─── AUTOMATIONS ───────────────────────────────────────────────────────
+  const addAutomation = useCallback(async (auto) => {
+    const rec = await db.automations.insert(auto)
+    setAutomations(prev => [...prev, rec])
+    return rec
+  }, [])
+
+  const updateAutomation = useCallback(async (id, patch) => {
+    const rec = await db.automations.update(id, patch)
+    setAutomations(prev => prev.map(a => a.id === id ? rec : a))
+  }, [])
+
+  const deleteAutomation = useCallback(async (id) => {
+    await db.automations.delete(id)
+    setAutomations(prev => prev.filter(a => a.id !== id))
+  }, [])
+
+  // ─── Stage change handler (wraps updateProperty with history tracking) ──
+  const updatePropertyWithStage = useCallback(async (id, patch) => {
+    const existing = properties.find(p => p.id === id)
+    if (existing && patch.status && patch.status !== existing.status) {
+      const now = new Date().toISOString()
+      const history = existing.stageHistory || []
+      patch.stageHistory = [...history, { from: existing.status, to: patch.status, at: now }]
+      patch.stageChangedAt = now
+
+      // Run automations for stage change
+      const matchingAutos = automations.filter(a =>
+        a.enabled && a.triggerType === 'stage-change' && a.triggerValue === patch.status
+      )
+      for (const auto of matchingAutos) {
+        if (auto.actionType === 'create-reminder') {
+          const config = auto.actionConfig || {}
+          await addReminder({
+            title: config.title || `Follow up: ${patch.status}`,
+            type: config.reminderType || 'call',
+            priority: config.priority || 'medium',
+            dueDate: new Date(Date.now() + (config.daysFromNow || 1) * 86400000).toISOString(),
+            propertyId: id,
+            contactId: (existing.contactIds || [])[0] || null,
+          })
+        }
+      }
+    }
+    return updateProperty(id, patch)
+  }, [properties, automations, updateProperty, addReminder])
+
   // ─── Lookups (synchronous — read from in-memory state) ────────────────────
   const getContact  = useCallback((id) => contacts.find(c => c.id === id),   [contacts])
   const getCompany  = useCallback((id) => companies.find(c => c.id === id),  [companies])
@@ -338,13 +448,18 @@ export function CRMProvider({ children }) {
   return (
     <CRMContext.Provider value={{
       contacts, companies, properties, reminders, activities, teamMembers,
+      comps, investors, dealInvestors, automations,
       loading, error,
       deletedContacts, deletedCompanies, deletedProperties, deletedReminders,
       addContact, updateContact, deleteContact, restoreContact, purgeContact,
       addCompany, updateCompany, deleteCompany, restoreCompany, purgeCompany,
-      addProperty, updateProperty, deleteProperty, restoreProperty, purgeProperty,
+      addProperty, updateProperty, updatePropertyWithStage, deleteProperty, restoreProperty, purgeProperty,
       addReminder, updateReminder, completeReminder, uncompleteReminder, deleteReminder, restoreReminder, purgeReminder,
       addActivity, updateActivity, deleteActivity,
+      addComp, updateComp, deleteComp,
+      addInvestor, updateInvestor, deleteInvestor,
+      addDealInvestor, updateDealInvestor, deleteDealInvestor,
+      addAutomation, updateAutomation, deleteAutomation,
       undoStack, undoLastDelete, dismissUndo,
       getContact, getCompany, getProperty,
       activitiesFor, remindersFor,
