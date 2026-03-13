@@ -9,6 +9,7 @@ import {
   getUpcomingEvents,
   getRecentFiles,
 } from '../services/microsoft'
+import { db, supabase } from '../lib/supabase'
 
 const MicrosoftContext = createContext(null)
 
@@ -47,6 +48,21 @@ export function MicrosoftProvider({ children }) {
           ])
           if (prof.status === 'fulfilled') setProfile(prof.value)
           if (caps.status === 'fulfilled') setCapabilities(caps.value)
+
+          // Persist connection info to Supabase
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            const profileData = prof.status === 'fulfilled' ? prof.value : null
+            db.microsoftConnections.upsert({
+              userId: user.id,
+              msUserId: acct.localAccountId || acct.homeAccountId,
+              msEmail: acct.username,
+              msDisplayName: profileData?.displayName || acct.name || '',
+              tenantId: acct.tenantId || '',
+              connectedAt: new Date().toISOString(),
+              lastSyncedAt: new Date().toISOString(),
+            }).catch(() => {})
+          }
         }
       } catch {
         // Not connected
@@ -72,7 +88,12 @@ export function MicrosoftProvider({ children }) {
       if (events.status === 'fulfilled') setUpcomingEvents(events.value)
       if (files.status === 'fulfilled') setRecentFiles(files.value)
 
-      setSyncState({ lastSync: new Date().toISOString(), syncing: false, error: null })
+      const now = new Date().toISOString()
+      setSyncState({ lastSync: now, syncing: false, error: null })
+      // Update lastSyncedAt in Supabase
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) db.microsoftConnections.upsert({ userId: user.id, lastSyncedAt: now }).catch(() => {})
+      })
     } catch (err) {
       setSyncState(prev => ({ ...prev, syncing: false, error: err.message }))
     }

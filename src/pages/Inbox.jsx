@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Activity, Mail, Phone, Calendar, FileText, MessageSquare,
-  Filter, Clock, Users,
+  Filter, Clock, Users, Trash2,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
@@ -19,7 +19,7 @@ const ACTIVITY_ICONS = {
 const FILTERS = ['all', 'call', 'email', 'meeting', 'note', 'tour', 'proposal']
 
 export default function Inbox() {
-  const { activities, contacts, companies, properties, getContact, getCompany, getProperty } = useCRM()
+  const { activities, contacts, companies, properties, getContact, getCompany, getProperty, deleteActivity } = useCRM()
   const { isConnected, recentEmails, upcomingEvents } = useMicrosoft()
   const [activeFilter, setActiveFilter] = useState('all')
   const [activeTab, setActiveTab] = useState('activity')
@@ -93,7 +93,7 @@ export default function Inbox() {
                 const deal = a.propertyId ? getProperty(a.propertyId) : null
 
                 return (
-                  <div key={a.id} className="v-card p-3 flex gap-3 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
+                  <div key={a.id} className="v-card p-3 flex gap-3 hover:border-slate-300 dark:hover:border-slate-600 transition-colors group">
                     <div className={clsx(
                       'w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0',
                       TYPE_COLORS[a.type] || TYPE_COLORS.other
@@ -126,6 +126,13 @@ export default function Inbox() {
                         )}
                       </div>
                     </div>
+                    <button
+                      onClick={() => deleteActivity(a.id)}
+                      className="p-1.5 rounded-md text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 self-center"
+                      title="Delete activity"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 )
               })}

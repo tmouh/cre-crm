@@ -103,6 +103,73 @@ export const db = {
   investors:     table('investors',      { trackDeleted: true }),
   dealInvestors: table('deal_investors'),
   automations:   table('automations'),
+
+  // ─── Microsoft integration tables ─────────────────────────────────────────
+  emailInteractions: {
+    forContact: async (contactId) => {
+      const { data, error } = await supabase
+        .from('email_interactions')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('received_at', { ascending: false })
+        .limit(100)
+      if (error) throw error
+      return rows(data)
+    },
+    getAll: async () => {
+      const { data, error } = await supabase
+        .from('email_interactions')
+        .select('*')
+        .order('received_at', { ascending: false })
+      if (error) throw error
+      return rows(data)
+    },
+    upsertBatch: async (items) => {
+      if (!items.length) return
+      const { error } = await supabase
+        .from('email_interactions')
+        .upsert(items.map(i => clean(toSnake(i))), { onConflict: 'ms_message_id', ignoreDuplicates: true })
+      if (error) throw error
+    },
+  },
+
+  calendarInteractions: {
+    forContact: async (contactId) => {
+      const { data, error } = await supabase
+        .from('calendar_interactions')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('start_at', { ascending: false })
+        .limit(50)
+      if (error) throw error
+      return rows(data)
+    },
+    upsertBatch: async (items) => {
+      if (!items.length) return
+      const { error } = await supabase
+        .from('calendar_interactions')
+        .upsert(items.map(i => clean(toSnake(i))), { onConflict: 'ms_event_id', ignoreDuplicates: true })
+      if (error) throw error
+    },
+  },
+
+  microsoftConnections: {
+    upsert: async (data) => {
+      const { error } = await supabase
+        .from('microsoft_connections')
+        .upsert(clean(toSnake(data)), { onConflict: 'user_id' })
+      if (error) throw error
+    },
+    get: async () => {
+      const { data, error } = await supabase
+        .from('microsoft_connections')
+        .select('*')
+        .maybeSingle()
+      if (error) throw error
+      return data ? toCamel(data) : null
+    },
+  },
+
   config: {
     isSeeded: async () => {
       const { data, error } = await supabase

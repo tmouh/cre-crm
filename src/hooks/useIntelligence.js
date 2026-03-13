@@ -3,17 +3,18 @@
  * staleness detection, and suggested follow-ups.
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { differenceInDays, parseISO } from 'date-fns'
 import { useCRM } from '../context/CRMContext'
+import { db } from '../lib/supabase'
 
 const TODAY = () => new Date()
 
 /**
  * Calculate relationship health score (0-100) for a contact.
- * Factors: recency of last touch, frequency of activity, depth (types of interaction).
+ * Factors: recency of last touch, frequency of activity, depth (types of interaction), email volume.
  */
-function contactHealthScore(contact, activities, reminders) {
+function contactHealthScore(contact, activities, reminders, emailInteractions) {
   const now = TODAY()
   let score = 50 // baseline
 
@@ -48,6 +49,18 @@ function contactHealthScore(contact, activities, reminders) {
   // Pending tasks (positive signal — means we're engaged)
   const pendingReminders = reminders.filter(r => r.contactId === contact.id && r.status === 'pending')
   if (pendingReminders.length > 0) score += 5
+
+  // Email interactions from Outlook (last 90 days)
+  if (emailInteractions?.length) {
+    const recentEmails = emailInteractions.filter(e =>
+      e.contactId === contact.id &&
+      e.receivedAt &&
+      differenceInDays(now, parseISO(e.receivedAt)) <= 90
+    )
+    if (recentEmails.length >= 10) score += 12
+    else if (recentEmails.length >= 5) score += 8
+    else if (recentEmails.length >= 1) score += 4
+  }
 
   return Math.max(0, Math.min(100, score))
 }
@@ -109,16 +122,23 @@ function momentumLabel(score) {
 
 export function useIntelligence() {
   const { contacts, companies, properties, activities, reminders } = useCRM()
+  const [emailInteractions, setEmailInteractions] = useState([])
+
+  useEffect(() => {
+    db.emailInteractions.getAll()
+      .then(setEmailInteractions)
+      .catch(() => {})
+  }, [])
 
   const contactHealth = useMemo(() => {
     return contacts.map(c => ({
       ...c,
-      healthScore: contactHealthScore(c, activities, reminders),
+      healthScore: contactHealthScore(c, activities, reminders, emailInteractions),
     })).map(c => ({
       ...c,
       healthLabel: healthLabel(c.healthScore),
     }))
-  }, [contacts, activities, reminders])
+  }, [contacts, activities, reminders, emailInteractions])
 
   const dealMomentum = useMemo(() => {
     return properties
@@ -218,12 +238,18 @@ export function useIntelligence() {
     const last30 = activities.filter(a =>
       a.createdAt && differenceInDays(now, parseISO(a.createdAt)) <= 30
     )
+    const emailLast30 = emailInteractions.filter(e =>
+      e.receivedAt && differenceInDays(now, parseISO(e.receivedAt)) <= 30
+    )
     const byType = {}
     last30.forEach(a => {
       byType[a.type] = (byType[a.type] || 0) + 1
     })
-    return { totalLast30: last30.length, byType }
-  }, [activities])
+    if (emailLast30.length > 0) {
+      byType['outlook-email'] = emailLast30.length
+    }
+    return { totalLast30: last30.length + emailLast30.length, byType }
+  }, [activities, emailInteractions])
 
   return {
     contactHealth,

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Mail, Loader2, ChevronDown, ChevronRight, AlertCircle, ExternalLink } from 'lucide-react'
 import clsx from 'clsx'
 import { getMicrosoftAccount, getEmailsForContact, signInMicrosoft } from '../lib/graphClient'
+import { db, supabase } from '../lib/supabase'
 
 const INITIAL_SHOW = 5
 
@@ -11,7 +12,7 @@ function formatMessageDate(iso) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function OutlookMessages({ email }) {
+export default function OutlookMessages({ email, contactId }) {
   const [account, setAccount] = useState(null)
   const [checked, setChecked] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -31,10 +32,43 @@ export default function OutlookMessages({ email }) {
     setLoading(true)
     setError('')
     getEmailsForContact(email, 90)
-      .then(msgs => setMessages(msgs))
+      .then(async msgs => {
+        setMessages(msgs)
+        if (msgs.length > 0 && contactId) {
+          // Persist to Supabase for health scoring and offline access
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            await db.emailInteractions.upsertBatch(msgs.map(m => ({
+              userId: user.id,
+              contactId,
+              msMessageId: m.id,
+              subject: m.subject || '',
+              fromAddress: m.from?.emailAddress?.address || '',
+              fromName: m.from?.emailAddress?.name || '',
+              receivedAt: m.receivedDateTime,
+              bodyPreview: (m.bodyPreview || '').slice(0, 500),
+              webLink: m.webLink || '',
+              isInbound: true,
+            }))).catch(() => {})
+
+            // Update contact's lastContacted if newest email is more recent
+            const latest = msgs.reduce((a, b) =>
+              (a.receivedDateTime || '') > (b.receivedDateTime || '') ? a : b
+            )
+            if (latest.receivedDateTime) {
+              await supabase
+                .from('contacts')
+                .update({ last_contacted: latest.receivedDateTime })
+                .eq('id', contactId)
+                .lt('last_contacted', latest.receivedDateTime)
+                .catch(() => {})
+            }
+          }
+        }
+      })
       .catch(e => setError(e.message || 'Failed to fetch emails'))
       .finally(() => setLoading(false))
-  }, [account, email])
+  }, [account, email, contactId])
 
   async function handleConnect() {
     try {

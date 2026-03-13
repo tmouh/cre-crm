@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { Phone, Mail, Users, FileText, Building2, Map, MessageSquare, Plus, Trash2, Edit3, Clock } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Phone, Mail, Users, FileText, Building2, Map, MessageSquare, Plus, Trash2, Edit3, Clock, ExternalLink } from 'lucide-react'
 import clsx from 'clsx'
 import { formatDateTime, ACTIVITY_TYPES, TYPE_COLORS } from '../utils/helpers'
 import { useCRM } from '../context/CRMContext'
+import { db } from '../lib/supabase'
 
 const TYPE_ICONS = {
   call:     Phone,
@@ -25,6 +26,14 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
   const [activityTime, setActivityTime] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({ type: '', description: '', date: '', time: '' })
+  const [emailItems, setEmailItems] = useState([])
+
+  useEffect(() => {
+    if (!contactId) return
+    db.emailInteractions.forContact(contactId)
+      .then(rows => setEmailItems(rows))
+      .catch(() => {})
+  }, [contactId])
 
   function openForm() {
     setActivityDate(new Date().toISOString().slice(0, 10))
@@ -34,7 +43,20 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
 
   const field = contactId ? 'contactId' : companyId ? 'companyId' : 'propertyId'
   const id = contactId || companyId || propertyId
-  const items = activitiesFor(field, id)
+  const manualItems = activitiesFor(field, id)
+
+  // Merge manual activities with persisted email interactions, sorted newest first
+  const emailActivityItems = emailItems.map(e => ({
+    id: `email-${e.id}`,
+    type: 'email',
+    description: e.subject || '(no subject)',
+    fromName: e.fromName || e.fromAddress || '',
+    webLink: e.webLink,
+    createdAt: e.receivedAt,
+    isEmail: true,
+  }))
+  const items = [...manualItems, ...emailActivityItems]
+    .sort((a, b) => (b.createdAt || '') > (a.createdAt || '') ? 1 : -1)
 
   async function submit(e) {
     e.preventDefault()
@@ -67,7 +89,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
           <Clock size={15} className="text-brand-500" />
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Activity Log</h3>
           {items.length > 0 && (
-            <span className="text-xs text-slate-400 dark:text-slate-500">{items.length} entries</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">{manualItems.length} logged{emailItems.length > 0 ? ` · ${emailItems.length} emails` : ''}</span>
           )}
         </div>
         <button onClick={openForm}
@@ -109,7 +131,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
       )}
 
       {/* Empty state */}
-      {items.length === 0 && !showForm && (
+      {manualItems.length === 0 && emailItems.length === 0 && !showForm && (
         <div className="px-5 py-8 text-center">
           <MessageSquare size={22} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
           <p className="text-sm text-slate-400 dark:text-slate-500">No activity logged yet</p>
@@ -130,12 +152,33 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
                 )}
                 {/* Icon circle */}
                 <div className={clsx('w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 relative z-10',
-                  TYPE_COLORS[a.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
+                  a.isEmail
+                    ? 'bg-blue-50 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400'
+                    : TYPE_COLORS[a.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                   <Icon size={13} />
                 </div>
                 {/* Content */}
                 <div className="flex-1 min-w-0 pb-5">
-                  {editingId === a.id ? (
+                  {a.isEmail ? (
+                    // Read-only email item
+                    <>
+                      <div className="flex items-start justify-between">
+                        <p className="text-sm text-slate-800 dark:text-slate-200 truncate">{a.description}</p>
+                        {a.webLink && (
+                          <a href={a.webLink} target="_blank" rel="noopener noreferrer"
+                            className="ml-2 flex-shrink-0 text-slate-300 hover:text-blue-500 dark:text-slate-600 dark:hover:text-blue-400 transition-colors"
+                            title="Open in Outlook">
+                            <ExternalLink size={12} />
+                          </a>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                        {a.fromName && <span className="mr-1">{a.fromName} ·</span>}
+                        {formatDateTime(a.createdAt)}
+                        <span className="ml-1.5 text-[10px] text-blue-400 dark:text-blue-500">Outlook</span>
+                      </p>
+                    </>
+                  ) : editingId === a.id ? (
                     <form onSubmit={saveEdit} className="bg-brand-50/30 dark:bg-brand-900/10 rounded-lg p-3 space-y-2">
                       <div className="flex gap-2">
                         <select value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className="input text-xs py-1.5 flex-1">

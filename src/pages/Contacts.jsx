@@ -303,7 +303,7 @@ function ContactDetail() {
         <div className="col-span-2 space-y-4">
           <ReminderList contactId={id} />
           <ActivityFeed contactId={id} />
-          <OutlookMessages email={contact.email} />
+          <OutlookMessages email={contact.email} contactId={id} />
           <OutlookAttachments email={contact.email} />
         </div>
       </div>
