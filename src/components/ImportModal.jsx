@@ -36,16 +36,17 @@ function norm(s) { return s.toLowerCase().replace(/[\s_\-]/g, '') }
 
 // ─── Column alias maps ────────────────────────────────────────────────────────
 const CONTACT_ALIASES = {
-  firstName:  ['firstname','first','fname'],
-  lastName:   ['lastname','last','lname'],
-  title:      ['title','jobtitle','role'],
-  company:    ['company','companyname','organization','org'],
-  email:      ['email','emailaddress'],
-  phone:      ['phone','phonenumber','tel','telephone'],
-  mobile:     ['mobile','cell','cellphone'],
-  linkedIn:   ['linkedin','linkedinurl'],
-  tags:       ['tags','tag'],
-  notes:      ['notes','note','comments'],
+  firstName:       ['firstname','first','fname'],
+  lastName:        ['lastname','last','lname'],
+  title:           ['title','jobtitle','role'],
+  contactFunction: ['function','contactfunction','type','contacttype'],
+  company:         ['company','companyname','organization','org'],
+  email:           ['email','emailaddress'],
+  phone:           ['phone','phonenumber','tel','telephone'],
+  mobile:          ['mobile','cell','cellphone'],
+  linkedIn:        ['linkedin','linkedinurl'],
+  tags:            ['tags','tag'],
+  notes:           ['notes','note','comments'],
 }
 
 const COMPANY_ALIASES = {
@@ -71,6 +72,25 @@ const PROPERTY_ALIASES = {
   tenantCompany:  ['tenantcompany','tenant','borrower'],
   tags:           ['tags','tag'],
   notes:          ['notes','note','comments'],
+}
+
+const COMP_ALIASES = {
+  address:      ['address','addr','property','propertyaddress'],
+  propertyType: ['propertytype','type','assettype'],
+  saleDate:     ['saledate','date','closedate','transactiondate'],
+  salePrice:    ['saleprice','price','salesprice','transactionprice','amount'],
+  capRate:      ['caprate','cap','capratepcnt'],
+  pricePerSf:   ['pricepersf','priceperft','psf','ppsf'],
+  noi:          ['noi','netoperatingincome'],
+  size:         ['size','sf','sqft','squarefeet','buildingsize'],
+  sizeUnit:     ['sizeunit','unit','units'],
+  buyer:        ['buyer','purchaser'],
+  seller:       ['seller','vendor','grantor'],
+  market:       ['market','city','region'],
+  submarket:    ['submarket','neighborhood','subarea'],
+  yearBuilt:    ['yearbuilt','year','built'],
+  tags:         ['tags','tag'],
+  notes:        ['notes','note','comments'],
 }
 
 function buildMapping(headers, aliases) {
@@ -109,17 +129,41 @@ function rowToContact(row, map, companies) {
     ? (companies.find(c => c.name.toLowerCase() === compName.toLowerCase())?.id || '')
     : ''
   return {
-    firstName: v('firstName'),
-    lastName:  v('lastName'),
-    title:     v('title'),
+    firstName:       v('firstName'),
+    lastName:        v('lastName'),
+    title:           v('title'),
+    contactFunction: v('contactFunction') || '',
     companyId,
-    email:     v('email'),
-    phone:     v('phone'),
-    mobile:    v('mobile'),
-    linkedIn:  v('linkedIn'),
-    tags:      v('tags') ? v('tags').split(';').map(t => t.trim()).filter(Boolean) : [],
-    notes:     v('notes'),
-    ownerIds:  [],
+    email:           v('email'),
+    phone:           v('phone'),
+    mobile:          v('mobile'),
+    linkedIn:        v('linkedIn'),
+    tags:            v('tags') ? v('tags').split(';').map(t => t.trim()).filter(Boolean) : [],
+    notes:           v('notes'),
+    ownerIds:        [],
+  }
+}
+
+function rowToComp(row, map) {
+  const v = (f) => getCell(row, map, f)
+  const saleDate = v('saleDate')
+  return {
+    address:      v('address'),
+    propertyType: v('propertyType'),
+    saleDate:     saleDate ? new Date(saleDate + 'T00:00:00').toISOString() : null,
+    salePrice:    v('salePrice') ? Number(v('salePrice').replace(/[$,]/g, '')) : '',
+    capRate:      v('capRate') ? Number(v('capRate').replace(/%/g, '')) : '',
+    pricePerSf:   v('pricePerSf') ? Number(v('pricePerSf').replace(/[$,]/g, '')) : '',
+    noi:          v('noi') ? Number(v('noi').replace(/[$,]/g, '')) : '',
+    size:         v('size') ? Number(v('size').replace(/,/g, '')) : '',
+    sizeUnit:     v('sizeUnit') || 'SF',
+    buyer:        v('buyer'),
+    seller:       v('seller'),
+    market:       v('market'),
+    submarket:    v('submarket'),
+    yearBuilt:    v('yearBuilt') ? Number(v('yearBuilt')) : '',
+    tags:         v('tags') ? v('tags').split(';').map(t => t.trim()).filter(Boolean) : [],
+    notes:        v('notes'),
   }
 }
 
@@ -144,10 +188,10 @@ function rowToProperty(row, map, companies) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-const ENTITY_LABELS = { contacts: 'Contacts', companies: 'Companies', properties: 'Properties' }
+const ENTITY_LABELS = { contacts: 'Contacts', companies: 'Companies', properties: 'Properties', comps: 'Comps' }
 
 export default function ImportModal({ entity, onClose }) {
-  const { companies, addContact, addCompany, addProperty } = useCRM()
+  const { companies, addContact, addCompany, addProperty, addComp } = useCRM()
   const [rawText, setRawText]   = useState('')
   const [phase, setPhase]       = useState('idle') // idle | preview | importing | done
   const [parsed, setParsed]     = useState(null)   // { headers, rows, mapping, mapped }
@@ -168,6 +212,7 @@ export default function ImportModal({ entity, onClose }) {
 
     const aliases = entity === 'contacts' ? CONTACT_ALIASES
       : entity === 'companies' ? COMPANY_ALIASES
+      : entity === 'comps' ? COMP_ALIASES
       : PROPERTY_ALIASES
 
     const mapping = buildMapping(headers, aliases)
@@ -198,6 +243,11 @@ export default function ImportModal({ entity, onClose }) {
           const obj = rowToContact(row, mapping, companies)
           if (!obj.firstName || !obj.lastName) throw new Error('Missing first or last name')
           await addContact(obj)
+        } else if (entity === 'comps') {
+          const obj = rowToComp(row, mapping)
+          if (!obj.address) throw new Error('Missing address')
+          if (!obj.salePrice) throw new Error('Missing sale price')
+          await addComp(obj)
         } else {
           const obj = rowToProperty(row, mapping, companies)
           if (!obj.name) throw new Error('Missing name')
@@ -237,20 +287,26 @@ export default function ImportModal({ entity, onClose }) {
 
               {entity === 'contacts' && (
                 <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
-                  Recognised columns: <span className="font-mono">firstName, lastName, title, company, email, phone, mobile, linkedIn, tags, notes</span>
-                  <br />For <span className="font-mono">company</span>, use the exact company name — it will be matched to an existing company. For <span className="font-mono">tags</span>, separate multiple values with semicolons.
+                  Recognised columns: <span className="font-mono">firstName*, lastName*, title, function, company, email, phone, mobile, linkedIn, tags, notes</span>
+                  <br />* Required. For <span className="font-mono">company</span>, use the exact company name. For <span className="font-mono">function</span>, valid values: lp-investor, broker, developer, lender, owner-operator, tenant, attorney, accountant, property-manager, other. Tags separated by semicolons.
                 </p>
               )}
               {entity === 'companies' && (
                 <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
-                  Recognised columns: <span className="font-mono">name, type, address, phone, email, website, tags, notes</span>
-                  <br />Valid types: owner, tenant, investor, developer, broker, lender, other.
+                  Recognised columns: <span className="font-mono">name*, type, address, phone, email, website, tags, notes</span>
+                  <br />* Required. Valid types: owner, tenant, investor, developer, broker, lender, other. Tags separated by semicolons.
                 </p>
               )}
               {entity === 'properties' && (
                 <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
-                  Recognised columns: <span className="font-mono">name, address, dealType, size, sizeUnit, status, dealValue, ownerCompany, tenantCompany, tags, notes</span>
-                  <br />For <span className="font-mono">ownerCompany / tenantCompany</span>, use exact company names. Tags separated by semicolons.
+                  Recognised columns: <span className="font-mono">name*, address, dealType, size, sizeUnit, status, dealValue, ownerCompany, tenantCompany, tags, notes</span>
+                  <br />* Required. For <span className="font-mono">ownerCompany / tenantCompany</span>, use exact company names. Tags separated by semicolons.
+                </p>
+              )}
+              {entity === 'comps' && (
+                <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
+                  Recognised columns: <span className="font-mono">address*, salePrice*, propertyType, saleDate, capRate, pricePerSf, noi, size, sizeUnit, buyer, seller, market, submarket, yearBuilt, tags, notes</span>
+                  <br />* Required. Dates as YYYY-MM-DD. Numbers without $ or %. Cap rate as a decimal (e.g. 5.25 for 5.25%). Tags separated by semicolons.
                 </p>
               )}
 

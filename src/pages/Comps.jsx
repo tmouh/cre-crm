@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, ArrowLeft, Edit2, Trash2, Database, Filter, Download } from 'lucide-react'
+import { Plus, Search, ArrowLeft, Edit2, Trash2, Database, Filter, Download, Upload } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { ASSET_TYPES, formatAssetType, formatCurrency, formatPercent, formatPSF, formatDate } from '../utils/helpers'
@@ -11,6 +11,7 @@ import AddressAutocomplete from '../components/AddressAutocomplete'
 import CompanyNameCombobox from '../components/CompanyNameCombobox'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
+import ImportModal from '../components/ImportModal'
 
 const BLANK = { address: '', propertyType: '', salePrice: '', capRate: '', pricePerSf: '', noi: '', size: '', sizeUnit: 'SF', saleDate: '', buyer: '', seller: '', market: '', submarket: '', yearBuilt: '', notes: '', tags: [], propertyId: '' }
 
@@ -213,6 +214,7 @@ export default function Comps() {
   const [filterType, setFilterType] = useState('')
   const [filterMarket, setFilterMarket] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [sortField, setSortField] = useState('saleDate')
   const [sortDir, setSortDir] = useState('desc')
 
@@ -262,6 +264,7 @@ export default function Comps() {
         subtitle={`${comps.length} comparable${comps.length !== 1 ? 's' : ''}`}
         actions={
           <div className="flex gap-2">
+            <button onClick={() => setShowImport(true)} className="btn-secondary"><Upload size={15} /> Import CSV</button>
             <button onClick={exportCSV} className="btn-secondary"><Download size={15} /> Export CSV</button>
             <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Comp</button>
           </div>
@@ -328,6 +331,8 @@ export default function Comps() {
           <CompForm properties={properties} onSubmit={async (form) => { await addComp(form); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
         </Modal>
       )}
+
+      {showImport && <ImportModal entity="comps" onClose={() => setShowImport(false)} />}
     </div>
   )
 }
