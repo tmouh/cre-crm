@@ -19,6 +19,7 @@ import ImportModal from '../components/ImportModal'
 import OutlookImport from '../components/OutlookImport'
 import DuplicateCheckModal from '../components/DuplicateCheckModal'
 import LinkedInProfile from '../components/LinkedInProfile'
+import CommunicationHeatmap from '../components/CommunicationHeatmap'
 
 // Prevents a LinkedIn section crash from taking down the whole contact page
 class LinkedInErrorBoundary extends Component {
@@ -301,6 +302,7 @@ function ContactDetail() {
 
         {/* Right panel */}
         <div className="col-span-2 space-y-4">
+          <CommunicationHeatmap contactId={id} />
           <ReminderList contactId={id} />
           <ActivityFeed contactId={id} />
           <OutlookMessages email={contact.email} contactId={id} />
