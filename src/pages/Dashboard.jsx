@@ -188,8 +188,8 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Right sidebar */}
-        <div className="space-y-6">
+        {/* Right sidebar — pt accounts for left column section headers so cards align */}
+        <div className="space-y-6 pt-[30px]">
           {/* Needs Attention */}
           <div className="card p-5">
             <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200 mb-1">Needs Attention</h2>
