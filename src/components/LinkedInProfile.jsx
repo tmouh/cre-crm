@@ -143,8 +143,10 @@ export default function LinkedInProfile({ contact }) {
         const found = map.get(contact.email.toLowerCase())
         if (!found) return
 
-        // Save the discovered URL to the contact (do NOT auto-enrich via PDL)
-        if (!cancelled) await updateContact(contact.id, { linkedIn: found })
+        // Save the discovered URL to the contact
+        await updateContact(contact.id, { linkedIn: found })
+        // Then immediately enrich from PDL
+        if (!cancelled) await enrich(found)
       } catch {
         // Auto-detect is best-effort — fail silently
       } finally {
@@ -238,11 +240,15 @@ export default function LinkedInProfile({ contact }) {
   const location_name = titleCase(data.location_name)
 
   // Headline: use stored value, or fall back to "Title at Company" from first experience
+  // Strip sub-titles after comma before "at" (e.g. "Analyst, Capital Markets at X" → "Analyst at X")
   const primaryExp   = (data.experiences || []).find(e => e.is_primary) || (data.experiences || [])[0]
-  const headline     = titleCase(data.headline)
+  const rawHeadline  = titleCase(data.headline)
     || (primaryExp
         ? [titleCase(primaryExp.title), titleCase(primaryExp.company)].filter(Boolean).join(' at ')
         : null)
+  const headline = rawHeadline
+    ? rawHeadline.replace(/^([^,]+),\s*.*?\s+at\s+/i, '$1 at ')
+    : null
 
   const experiences    = (data.experiences    || [])
   const education      = (data.education      || [])
@@ -279,11 +285,11 @@ export default function LinkedInProfile({ contact }) {
         </div>
 
         {full_name && <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">{full_name}</p>}
-        {headline  && <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 leading-snug">{headline}</p>}
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          {location_name && <span className="text-[11px] text-gray-500 dark:text-gray-400">{location_name}</span>}
-          {industry      && <span className="text-[11px] text-gray-400 dark:text-gray-500">· {industry}</span>}
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {headline      && <span className="text-xs text-gray-600 dark:text-gray-400 leading-snug">{headline}</span>}
+          {industry       && <span className="text-xs text-gray-400 dark:text-gray-500">{headline ? '·' : ''} {industry}</span>}
         </div>
+        {location_name && <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{location_name}</p>}
       </div>
 
       {/* ── Error on re-enrich ── */}
