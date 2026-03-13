@@ -8,6 +8,7 @@ import Modal from '../components/Modal'
 import TagInput from '../components/TagInput'
 import NumericInput from '../components/NumericInput'
 import AddressAutocomplete from '../components/AddressAutocomplete'
+import CompanyNameCombobox from '../components/CompanyNameCombobox'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 
@@ -16,25 +17,34 @@ const BLANK = { address: '', propertyType: '', salePrice: '', capRate: '', price
 function CompForm({ initial = BLANK, onSubmit, onCancel, properties }) {
   const [form, setForm] = useState({ ...BLANK, ...initial, saleDate: initial.saleDate ? initial.saleDate.slice(0, 10) : '' })
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   async function handleSubmit(e) {
     e.preventDefault()
+    setError('')
+    if (!form.address.trim()) { setError('Address is required.'); return }
+    if (!form.propertyType) { setError('Property type is required.'); return }
+    if (!form.salePrice) { setError('Sale price is required.'); return }
     setSaving(true)
     try {
-      await onSubmit({ ...form, saleDate: form.saleDate ? new Date(form.saleDate).toISOString() : null })
-    } catch { setSaving(false) }
+      await onSubmit({ ...form, saleDate: form.saleDate ? new Date(form.saleDate + 'T00:00:00').toISOString() : null })
+    } catch (err) {
+      setError(err?.message || 'Failed to save comp.')
+      setSaving(false)
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>}
       <div>
-        <label className="label">Address *</label>
-        <AddressAutocomplete value={form.address} onChange={v => setForm(p => ({ ...p, address: v }))} required />
+        <label className="label">Address <span className="text-red-500">*</span></label>
+        <AddressAutocomplete value={form.address} onChange={v => setForm(p => ({ ...p, address: v }))} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="label">Property type</label>
+          <label className="label">Property type <span className="text-red-500">*</span></label>
           <select value={form.propertyType} onChange={f('propertyType')} className="input">
             <option value="">— Select —</option>
             {ASSET_TYPES.map(t => <option key={t} value={t}>{formatAssetType(t)}</option>)}
@@ -47,7 +57,7 @@ function CompForm({ initial = BLANK, onSubmit, onCancel, properties }) {
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="label">Sale price ($)</label>
+          <label className="label">Sale price ($) <span className="text-red-500">*</span></label>
           <NumericInput value={form.salePrice} onChange={v => setForm(p => ({ ...p, salePrice: v }))} decimals placeholder="0" />
         </div>
         <div>
@@ -78,11 +88,11 @@ function CompForm({ initial = BLANK, onSubmit, onCancel, properties }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label">Buyer</label>
-          <input value={form.buyer} onChange={f('buyer')} className="input" placeholder="Buyer name" />
+          <CompanyNameCombobox value={form.buyer} onChange={v => setForm(p => ({ ...p, buyer: v }))} placeholder="Search companies or type name..." />
         </div>
         <div>
           <label className="label">Seller</label>
-          <input value={form.seller} onChange={f('seller')} className="input" placeholder="Seller name" />
+          <CompanyNameCombobox value={form.seller} onChange={v => setForm(p => ({ ...p, seller: v }))} placeholder="Search companies or type name..." />
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3">
