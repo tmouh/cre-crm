@@ -41,34 +41,34 @@ function PipelineReport({ properties, getCompany }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Pipeline Summary</h3>
+        <h3 className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Pipeline Summary</h3>
         <button onClick={handleExport} className="btn-secondary text-xs"><Download size={13} /> Export CSV</button>
       </div>
 
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-              <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-              <th className="text-right px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Deals</th>
-              <th className="text-right px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Value</th>
-              <th className="text-right px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Avg Value</th>
+            <tr className="border-b border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+              <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+              <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Deals</th>
+              <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Value</th>
+              <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Avg Value</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
             {byStatus.filter(s => s.count > 0).map(s => (
               <tr key={s.status}>
                 <td className="px-4 py-2.5"><span className={clsx('badge text-[11px]', DEAL_STATUS_COLORS[s.status])}>{formatDealStatus(s.status)}</span></td>
-                <td className="px-4 py-2.5 text-right font-medium text-gray-900 dark:text-gray-100">{s.count}</td>
-                <td className="px-4 py-2.5 text-right font-medium text-gray-900 dark:text-gray-100">{formatCurrency(s.value)}</td>
-                <td className="px-4 py-2.5 text-right text-gray-500 dark:text-gray-400">{s.count > 0 ? formatCurrency(s.value / s.count) : '—'}</td>
+                <td className="px-4 py-2.5 text-right font-medium text-slate-900 dark:text-slate-100">{s.count}</td>
+                <td className="px-4 py-2.5 text-right font-medium text-slate-900 dark:text-slate-100">{formatCurrency(s.value)}</td>
+                <td className="px-4 py-2.5 text-right text-slate-500 dark:text-slate-400">{s.count > 0 ? formatCurrency(s.value / s.count) : '—'}</td>
               </tr>
             ))}
-            <tr className="bg-gray-50 dark:bg-gray-800/50 font-semibold">
-              <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100">Total</td>
-              <td className="px-4 py-2.5 text-right text-gray-900 dark:text-gray-100">{properties.length}</td>
-              <td className="px-4 py-2.5 text-right text-gray-900 dark:text-gray-100">{formatCurrency(properties.reduce((s, p) => s + (Number(p.dealValue) || 0), 0))}</td>
-              <td className="px-4 py-2.5 text-right text-gray-500 dark:text-gray-400">{properties.length > 0 ? formatCurrency(properties.reduce((s, p) => s + (Number(p.dealValue) || 0), 0) / properties.length) : '—'}</td>
+            <tr className="bg-slate-50 dark:bg-slate-800/50 font-semibold">
+              <td className="px-4 py-2.5 text-slate-900 dark:text-slate-100">Total</td>
+              <td className="px-4 py-2.5 text-right text-slate-900 dark:text-slate-100">{properties.length}</td>
+              <td className="px-4 py-2.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(properties.reduce((s, p) => s + (Number(p.dealValue) || 0), 0))}</td>
+              <td className="px-4 py-2.5 text-right text-slate-500 dark:text-slate-400">{properties.length > 0 ? formatCurrency(properties.reduce((s, p) => s + (Number(p.dealValue) || 0), 0) / properties.length) : '—'}</td>
             </tr>
           </tbody>
         </table>
@@ -76,16 +76,16 @@ function PipelineReport({ properties, getCompany }) {
 
       {byType.length > 0 && (
         <div className="card overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-200/80 dark:border-gray-700">
-            <h4 className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">By Deal Type</h4>
+          <div className="px-4 py-3 border-b border-slate-200/80 dark:border-slate-700">
+            <h4 className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">By Deal Type</h4>
           </div>
           <table className="w-full text-sm">
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
               {byType.map(t => (
                 <tr key={t.type}>
                   <td className="px-4 py-2.5"><span className={clsx('badge text-[11px]', DEAL_TYPE_COLORS[t.type])}>{formatDealType(t.type)}</span></td>
-                  <td className="px-4 py-2.5 text-right text-sm text-gray-600 dark:text-gray-400">{t.count} deal{t.count !== 1 ? 's' : ''}</td>
-                  <td className="px-4 py-2.5 text-right font-medium text-gray-900 dark:text-gray-100">{formatCurrency(t.value)}</td>
+                  <td className="px-4 py-2.5 text-right text-sm text-slate-600 dark:text-slate-400">{t.count} deal{t.count !== 1 ? 's' : ''}</td>
+                  <td className="px-4 py-2.5 text-right font-medium text-slate-900 dark:text-slate-100">{formatCurrency(t.value)}</td>
                 </tr>
               ))}
             </tbody>
@@ -123,45 +123,45 @@ function ActivityReport({ activities, contacts, getContact }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Activity Report (Last 30 days)</h3>
+        <h3 className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Activity Report (Last 30 days)</h3>
         <button onClick={handleExport} className="btn-secondary text-xs"><Download size={13} /> Export CSV</button>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div className="card p-4 text-center">
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{last30.length}</p>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">Total activities</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{last30.length}</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">Total activities</p>
         </div>
         <div className="card p-4 text-center">
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{new Set(last30.map(a => a.contactId).filter(Boolean)).size}</p>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">Contacts touched</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{new Set(last30.map(a => a.contactId).filter(Boolean)).size}</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">Contacts touched</p>
         </div>
         <div className="card p-4 text-center">
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{(last30.length / 30).toFixed(1)}</p>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">Activities / day</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{(last30.length / 30).toFixed(1)}</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">Activities / day</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-6">
         <div className="card p-4">
-          <h4 className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">By Type</h4>
+          <h4 className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">By Type</h4>
           <div className="space-y-2">
             {byType.map(([type, count]) => (
               <div key={type} className="flex items-center justify-between">
-                <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">{type}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{count}</span>
+                <span className="text-sm text-slate-700 dark:text-slate-300 capitalize">{type}</span>
+                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{count}</span>
               </div>
             ))}
           </div>
         </div>
 
         <div className="card p-4">
-          <h4 className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Most Active Contacts</h4>
+          <h4 className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Most Active Contacts</h4>
           <div className="space-y-2">
             {topContacts.map(({ contact, count }) => (
               <div key={contact.id} className="flex items-center justify-between">
-                <span className="text-sm text-gray-700 dark:text-gray-300">{fullName(contact)}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{count}</span>
+                <span className="text-sm text-slate-700 dark:text-slate-300">{fullName(contact)}</span>
+                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{count}</span>
               </div>
             ))}
           </div>
@@ -185,26 +185,26 @@ function ContactsReport({ contacts, reminders }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Contacts Report</h3>
+        <h3 className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Contacts Report</h3>
         <button onClick={handleExport} className="btn-secondary text-xs"><Download size={13} /> Export CSV</button>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
         <div className="card p-4 text-center">
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{contacts.length}</p>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">Total contacts</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{contacts.length}</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">Total contacts</p>
         </div>
         <div className="card p-4 text-center">
           <p className="text-2xl font-bold text-red-600">{stale.length}</p>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">Stale (90+ days)</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">Stale (90+ days)</p>
         </div>
         <div className="card p-4 text-center">
           <p className="text-2xl font-bold text-orange-500">{neverContacted.length}</p>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">Never contacted</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">Never contacted</p>
         </div>
         <div className="card p-4 text-center">
           <p className="text-2xl font-bold text-green-600">{withPending.length}</p>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">With pending tasks</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">With pending tasks</p>
         </div>
       </div>
     </div>
@@ -225,10 +225,10 @@ export default function Reports() {
     <div className="px-8 py-8">
       <PageHeader title="Reports" subtitle="Analytics and exports" />
 
-      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 mb-6 w-fit">
+      <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 mb-6 w-fit">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={clsx('flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-md transition-colors', tab === t.id ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400')}>
+            className={clsx('flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-md transition-colors', tab === t.id ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400')}>
             <t.icon size={13} /> {t.label}
           </button>
         ))}

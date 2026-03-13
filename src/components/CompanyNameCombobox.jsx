@@ -90,21 +90,21 @@ export default function CompanyNameCombobox({ value, onChange, placeholder = 'Se
         />
         <ChevronDown
           size={14}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
         />
       </div>
 
       {open && (filtered.length > 0 || showCreate) && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto">
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto">
           {filtered.map(c => (
             <button
               key={c.id}
               type="button"
               onMouseDown={e => e.preventDefault()}
               onClick={() => handleSelect(c)}
-              className="w-full text-left px-3 py-2 text-sm text-gray-800 dark:text-gray-200 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:text-brand-300 flex items-center gap-2"
+              className="w-full text-left px-3 py-2 text-sm text-slate-800 dark:text-slate-200 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:text-brand-300 flex items-center gap-2"
             >
-              <Building2 size={13} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+              <Building2 size={13} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
               {c.name}
             </button>
           ))}
@@ -114,7 +114,7 @@ export default function CompanyNameCombobox({ value, onChange, placeholder = 'Se
               onMouseDown={e => e.preventDefault()}
               onClick={handleCreate}
               disabled={creating}
-              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-gray-100 dark:border-gray-700"
+              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-slate-100 dark:border-slate-700"
             >
               {creating
                 ? <><Loader2 size={13} className="animate-spin" /> Adding to companies...</>

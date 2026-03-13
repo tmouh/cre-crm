@@ -15,14 +15,14 @@ function daysLeft(deletedAt) {
 function DeletedItem({ icon: Icon, title, subtitle, deletedAt, onRestore, onPurge }) {
   const days = daysLeft(deletedAt)
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl border border-gray-200/80 dark:border-gray-700 bg-white dark:bg-gray-800">
-      <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-        <Icon size={14} className="text-gray-400 dark:text-gray-500" />
+    <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-800">
+      <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+        <Icon size={14} className="text-slate-400 dark:text-slate-500" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{title}</p>
-        {subtitle && <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{subtitle}</p>}
-        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1">
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{title}</p>
+        {subtitle && <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">{subtitle}</p>}
+        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1">
           <Clock size={10} />
           {days === 0 ? 'Expires today' : `${days}d until permanent deletion`}
         </p>
@@ -49,7 +49,7 @@ function Section({ icon: Icon, label, items, renderItem }) {
   if (items.length === 0) return null
   return (
     <section>
-      <h2 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+      <h2 className="text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
         <Icon size={13} /> {label} ({items.length})
       </h2>
       <div className="space-y-2">
@@ -89,12 +89,12 @@ export default function RecentlyDeleted() {
   return (
     <div className="px-8 py-8">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Recently Deleted</h1>
-        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">Items are permanently deleted after {RETENTION_DAYS} days</p>
+        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Recently Deleted</h1>
+        <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1">Items are permanently deleted after {RETENTION_DAYS} days</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-0 mb-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex gap-0 mb-6 border-b border-slate-200 dark:border-slate-700">
         {TABS.map(t => {
           const count = t.id === 'all' ? total : counts[t.id]
           return (
@@ -105,7 +105,7 @@ export default function RecentlyDeleted() {
                 'px-4 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5',
                 activeTab === t.id
                   ? 'border-brand-600 text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
               )}
             >
               {t.label}
@@ -114,7 +114,7 @@ export default function RecentlyDeleted() {
                   'text-[10px] px-1.5 py-0.5 rounded-full',
                   activeTab === t.id
                     ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300'
-                    : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                    : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
                 )}>
                   {count}
                 </span>
@@ -126,8 +126,8 @@ export default function RecentlyDeleted() {
 
       {total === 0 ? (
         <div className="card p-12 text-center">
-          <Trash2 size={28} className="text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-          <p className="text-[13px] text-gray-500 dark:text-gray-400">Nothing in the trash</p>
+          <Trash2 size={28} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+          <p className="text-[13px] text-slate-500 dark:text-slate-400">Nothing in the trash</p>
         </div>
       ) : (
         <div className="space-y-8">

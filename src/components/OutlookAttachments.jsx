@@ -19,7 +19,7 @@ function formatDate(iso) {
 function FileIcon({ contentType }) {
   if (contentType?.startsWith('image/')) return <Image size={14} className="text-purple-400" />
   if (contentType?.includes('pdf')) return <FileText size={14} className="text-red-400" />
-  return <File size={14} className="text-gray-400" />
+  return <File size={14} className="text-slate-400" />
 }
 
 export default function OutlookAttachments({ email }) {
@@ -75,25 +75,25 @@ export default function OutlookAttachments({ email }) {
 
   return (
     <div className="card overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
         <div className="flex items-center gap-2">
           <Paperclip size={15} className="text-amber-500" />
-          <h3 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Attachments</h3>
+          <h3 className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Attachments</h3>
           {attachments.length > 0 && (
-            <span className="text-[11px] text-gray-400 dark:text-gray-500">({attachments.length})</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">({attachments.length})</span>
           )}
         </div>
       </div>
 
-      <div className="divide-y divide-gray-50 dark:divide-gray-700/30">
+      <div className="divide-y divide-slate-50 dark:divide-slate-700/30">
         {!checked ? (
           <div className="px-5 py-8 text-center">
-            <Loader2 size={20} className="animate-spin text-gray-300 dark:text-gray-600 mx-auto" />
+            <Loader2 size={20} className="animate-spin text-slate-300 dark:text-slate-600 mx-auto" />
           </div>
         ) : !email ? (
           <div className="px-5 py-8 text-center">
-            <Paperclip size={22} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-            <p className="text-sm text-gray-400 dark:text-gray-500">No email address on this contact</p>
+            <Paperclip size={22} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+            <p className="text-sm text-slate-400 dark:text-slate-500">No email address on this contact</p>
           </div>
         ) : !account ? (
           <div className="px-5 py-8 text-center">
@@ -105,7 +105,7 @@ export default function OutlookAttachments({ email }) {
                 <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
               </svg>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Connect Microsoft to see attachments</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Connect Microsoft to see attachments</p>
             <button onClick={handleConnect} className="btn-secondary text-xs">
               <Paperclip size={13} /> Sign in with Microsoft
             </button>
@@ -113,7 +113,7 @@ export default function OutlookAttachments({ email }) {
         ) : loading ? (
           <div className="px-5 py-8 text-center">
             <Loader2 size={20} className="animate-spin text-amber-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-400 dark:text-gray-500">Fetching attachments...</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500">Fetching attachments...</p>
           </div>
         ) : error ? (
           <div className="px-5 py-6 text-center">
@@ -122,28 +122,28 @@ export default function OutlookAttachments({ email }) {
           </div>
         ) : attachments.length === 0 ? (
           <div className="px-5 py-8 text-center">
-            <Paperclip size={22} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-            <p className="text-sm text-gray-400 dark:text-gray-500">No attachments in the last 90 days</p>
+            <Paperclip size={22} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+            <p className="text-sm text-slate-400 dark:text-slate-500">No attachments in the last 90 days</p>
           </div>
         ) : (
           <>
             {(showAll ? attachments : attachments.slice(0, INITIAL_SHOW)).map(att => (
-              <div key={`${att.messageId}-${att.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+              <div key={`${att.messageId}-${att.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                 <FileIcon contentType={att.contentType} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{att.name}</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{att.name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[11px] text-gray-400 dark:text-gray-500">{formatSize(att.size)}</span>
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500">{formatSize(att.size)}</span>
                     {att.subject && (
                       <>
-                        <span className="text-gray-300 dark:text-gray-600">·</span>
-                        <span className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{att.subject}</span>
+                        <span className="text-slate-300 dark:text-slate-600">·</span>
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 truncate">{att.subject}</span>
                       </>
                     )}
                     {att.date && (
                       <>
-                        <span className="text-gray-300 dark:text-gray-600">·</span>
-                        <span className="text-[11px] text-gray-400 dark:text-gray-500">{formatDate(att.date)}</span>
+                        <span className="text-slate-300 dark:text-slate-600">·</span>
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500">{formatDate(att.date)}</span>
                       </>
                     )}
                   </div>
@@ -153,7 +153,7 @@ export default function OutlookAttachments({ email }) {
                     href={att.webLink || `https://outlook.office.com/mail/search/id/${att.messageId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-1.5 text-gray-400 hover:text-blue-500 dark:text-gray-500 dark:hover:text-blue-400 transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors"
                     title="Open in Outlook"
                   >
                     <ExternalLink size={13} />
@@ -161,7 +161,7 @@ export default function OutlookAttachments({ email }) {
                   <button
                     onClick={() => handleDownload(att)}
                     disabled={downloading === att.id}
-                    className="p-1.5 text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400 transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400 transition-colors"
                   >
                     {downloading === att.id
                       ? <Loader2 size={14} className="animate-spin" />

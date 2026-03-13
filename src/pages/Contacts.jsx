@@ -4,6 +4,7 @@ import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, 
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
+import { useIntelligence } from '../hooks/useIntelligence'
 import { fullName, initials, formatDate, daysDiff, CONTACT_FUNCTIONS, formatContactFunction } from '../utils/helpers'
 import Modal from '../components/Modal'
 import TagInput from '../components/TagInput'
@@ -110,17 +111,17 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
       {teamMembers.length > 0 && (
         <div>
           <label className="label">Owners</label>
-          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-2 space-y-1 max-h-28 overflow-y-auto">
+          <div className="border border-slate-200 dark:border-slate-600 rounded-lg p-2 space-y-1 max-h-28 overflow-y-auto">
             {teamMembers.map(m => (
-              <label key={m.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 rounded">
+              <label key={m.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 px-2 py-1 rounded">
                 <input
                   type="checkbox"
                   checked={form.ownerIds.includes(m.id)}
                   onChange={() => toggleOwner(m.id)}
                   className="rounded"
                 />
-                <span className="text-gray-700 dark:text-gray-300">{m.displayName || m.email}</span>
-                {m.id === user?.id && <span className="text-xs text-gray-400 dark:text-gray-500">(you)</span>}
+                <span className="text-slate-700 dark:text-slate-300">{m.displayName || m.email}</span>
+                {m.id === user?.id && <span className="text-xs text-slate-400 dark:text-slate-500">(you)</span>}
               </label>
             ))}
           </div>
@@ -152,7 +153,7 @@ function ContactDetail() {
   const [editing, setEditing] = useState(false)
 
   const contact = getContact(id)
-  if (!contact) return <div className="p-8 text-gray-400 dark:text-gray-500">Contact not found.</div>
+  if (!contact) return <div className="p-8 text-slate-400 dark:text-slate-500">Contact not found.</div>
 
   const company = getCompany(contact.companyId)
   const relatedProps = properties.filter(p => p.contactIds?.includes(id))
@@ -181,7 +182,7 @@ function ContactDetail() {
 
   return (
     <div className="px-8 py-8">
-      <Link to="/contacts" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
+      <Link to="/contacts" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-6">
         <ArrowLeft size={15} /> Contacts
       </Link>
 
@@ -198,10 +199,10 @@ function ContactDetail() {
                 <button onClick={handleDelete} className="btn-ghost p-2 hover:text-red-500"><Trash2 size={14} /></button>
               </div>
             </div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{fullName(contact)}</h2>
-            {contact.title && <p className="text-sm text-gray-500 dark:text-gray-400">{contact.title}</p>}
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{fullName(contact)}</h2>
+            {contact.title && <p className="text-sm text-slate-500 dark:text-slate-400">{contact.title}</p>}
             {contact.contactFunction && (
-              <span className={clsx('badge mt-1 inline-block', contact.contactFunction === 'lp-investor' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+              <span className={clsx('badge mt-1 inline-block', contact.contactFunction === 'lp-investor' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                 {formatContactFunction(contact.contactFunction)}
               </span>
             )}
@@ -211,33 +212,33 @@ function ContactDetail() {
               </Link>
             )}
 
-            <div className="mt-4 space-y-2.5 border-t border-gray-100 dark:border-gray-700 pt-4">
+            <div className="mt-4 space-y-2.5 border-t border-slate-100 dark:border-slate-700 pt-4">
               {contact.email && (
-                <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">
-                  <Mail size={14} className="text-gray-400 dark:text-gray-500" /> {contact.email}
+                <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                  <Mail size={14} className="text-slate-400 dark:text-slate-500" /> {contact.email}
                 </a>
               )}
               {contact.phone && (
-                <a href={`tel:${contact.phone}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">
-                  <Phone size={14} className="text-gray-400 dark:text-gray-500" /> {contact.phone}
+                <a href={`tel:${contact.phone}`} className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                  <Phone size={14} className="text-slate-400 dark:text-slate-500" /> {contact.phone}
                 </a>
               )}
               {contact.mobile && (
-                <a href={`tel:${contact.mobile}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">
-                  <Phone size={14} className="text-gray-400 dark:text-gray-500" /> {contact.mobile} <span className="text-xs text-gray-400 dark:text-gray-500">mobile</span>
+                <a href={`tel:${contact.mobile}`} className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                  <Phone size={14} className="text-slate-400 dark:text-slate-500" /> {contact.mobile} <span className="text-xs text-slate-400 dark:text-slate-500">mobile</span>
                 </a>
               )}
               {contact.linkedIn && (
-                <a href={`https://${contact.linkedIn}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">
-                  <Linkedin size={14} className="text-gray-400 dark:text-gray-500" /> LinkedIn <ExternalLink size={11} className="text-gray-400 dark:text-gray-500" />
+                <a href={`https://${contact.linkedIn}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                  <Linkedin size={14} className="text-slate-400 dark:text-slate-500" /> LinkedIn <ExternalLink size={11} className="text-slate-400 dark:text-slate-500" />
                 </a>
               )}
             </div>
 
             {/* Owners */}
             {owners.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
                   <UserCheck size={12} /> Owners
                 </p>
                 <div className="space-y-1">
@@ -246,7 +247,7 @@ function ContactDetail() {
                       <div className="w-5 h-5 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
                         <span className="text-xs font-bold text-brand-700 dark:text-brand-300">{m.email[0].toUpperCase()}</span>
                       </div>
-                      <span className="text-xs text-gray-600 dark:text-gray-400">{m.displayName || m.email}</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-400">{m.displayName || m.email}</span>
                     </div>
                   ))}
                 </div>
@@ -254,22 +255,22 @@ function ContactDetail() {
             )}
 
             {contact.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                 {contact.tags.map(t => (
                   <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>
                 ))}
               </div>
             )}
 
-            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-1.5 text-xs text-gray-400 dark:text-gray-500">
-              <p>Last contacted: <span className="text-gray-600 dark:text-gray-300">{formatDate(contact.lastContacted)}</span>{lastTouchType && <span className="text-gray-400 dark:text-gray-500"> · {lastTouchType}</span>}</p>
-              <p>Added: <span className="text-gray-600 dark:text-gray-300">{formatDate(contact.createdAt)}</span></p>
+            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-1.5 text-xs text-slate-400 dark:text-slate-500">
+              <p>Last contacted: <span className="text-slate-600 dark:text-slate-300">{formatDate(contact.lastContacted)}</span>{lastTouchType && <span className="text-slate-400 dark:text-slate-500"> · {lastTouchType}</span>}</p>
+              <p>Added: <span className="text-slate-600 dark:text-slate-300">{formatDate(contact.createdAt)}</span></p>
             </div>
 
             {contact.notes && (
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Notes</p>
-                <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{contact.notes}</p>
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Notes</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{contact.notes}</p>
               </div>
             )}
 
@@ -279,13 +280,13 @@ function ContactDetail() {
           {relatedProps.length > 0 && (
             <div className="card p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Building2 size={15} className="text-gray-400 dark:text-gray-500" />
-                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Relevant Deals</p>
+                <Building2 size={15} className="text-slate-400 dark:text-slate-500" />
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Relevant Deals</p>
               </div>
               <div className="space-y-2">
                 {relatedProps.map(p => (
-                  <Link key={p.id} to={`/properties/${p.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400">
-                    <MapPin size={13} className="text-gray-400 dark:text-gray-500" />
+                  <Link key={p.id} to={`/deals/${p.id}`} className="flex items-center gap-2 text-sm text-slate-700 hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-400">
+                    <MapPin size={13} className="text-slate-400 dark:text-slate-500" />
                     <span className="truncate">{p.name}</span>
                   </Link>
                 ))}
@@ -322,6 +323,7 @@ export default function Contacts() {
   if (id) return <ContactDetail />
 
   const { contacts, companies, addContact, updateContact, getCompany, teamMembers } = useCRM()
+  const { contactHealth } = useIntelligence()
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
@@ -404,7 +406,7 @@ export default function Contacts() {
       {/* Filters */}
       <div className="flex gap-3 mb-6">
         <div className="relative flex-1 max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search contacts..." className="input pl-9" />
         </div>
         <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)} className="input w-44">
@@ -429,66 +431,83 @@ export default function Contacts() {
         <div className="card overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60">
+              <tr className="border-b border-slate-200/80 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/60">
                 {[
                   { field: 'name', label: 'Name', className: 'px-5' },
                   { field: 'company', label: 'Company' },
                   { field: 'title', label: 'Title' },
                   { field: 'function', label: 'Function' },
                   { field: null, label: 'Contact' },
+                  { field: null, label: 'Health' },
                   { field: 'lastTouch', label: 'Last touch' },
                   { field: null, label: 'Owners' },
                   { field: null, label: 'Tags', className: 'pr-6' },
                 ].map(({ field, label, className = '' }) => (
                   <th key={label}
                     onClick={field ? () => handleSort(field) : undefined}
-                    className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-gray-700 dark:hover:text-gray-200', className)}>
+                    className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200', className)}>
                     {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
               {filtered.map(c => {
                 const company = getCompany(c.companyId)
                 const stale = c.lastContacted && daysDiff(c.lastContacted) >= 90
+                const ch = contactHealth.find(h => h.id === c.id)
+                const healthScore = ch?.healthScore ?? 0
+                const healthLbl = ch?.healthLabel || 'cold'
                 const owners = (c.ownerIds || [])
                   .map(oid => teamMembers.find(m => m.id === oid))
                   .filter(Boolean)
                 return (
-                  <tr key={c.id} className="hover:bg-gray-50/70 dark:hover:bg-gray-700/50 transition-colors">
+                  <tr key={c.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-700/50 transition-colors">
                     <td className="px-5 py-3.5">
                       <Link to={`/contacts/${c.id}`} className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
                           <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{initials(c)}</span>
                         </div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-brand-600 dark:hover:text-brand-400">{fullName(c)}</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-brand-600 dark:hover:text-brand-400">{fullName(c)}</p>
                       </Link>
                     </td>
                     <td className="px-4 py-3.5">
                       {company ? (
-                        <Link to={`/companies/${company.id}`} className="text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">{company.name}</Link>
-                      ) : <span className="text-sm text-gray-300 dark:text-gray-600">—</span>}
+                        <Link to={`/companies/${company.id}`} className="text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">{company.name}</Link>
+                      ) : <span className="text-sm text-slate-300 dark:text-slate-600">—</span>}
                     </td>
                     <td className="px-4 py-3.5">
-                      {c.title ? <span className="text-sm text-gray-600 dark:text-gray-400">{c.title}</span> : <span className="text-sm text-gray-300 dark:text-gray-600">—</span>}
+                      {c.title ? <span className="text-sm text-slate-600 dark:text-slate-400">{c.title}</span> : <span className="text-sm text-slate-300 dark:text-slate-600">—</span>}
                     </td>
                     <td className="px-4 py-3.5">
                       {c.contactFunction ? (
-                        <span className={clsx('badge text-[11px]', c.contactFunction === 'lp-investor' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+                        <span className={clsx('badge text-[11px]', c.contactFunction === 'lp-investor' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                           {formatContactFunction(c.contactFunction)}
                         </span>
-                      ) : <span className="text-sm text-gray-300 dark:text-gray-600">—</span>}
+                      ) : <span className="text-sm text-slate-300 dark:text-slate-600">—</span>}
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex gap-2">
-                        {c.email && <a href={`mailto:${c.email}`} className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Mail size={14} /></a>}
-                        {(c.phone || c.mobile) && <a href={`tel:${c.phone || c.mobile}`} className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Phone size={14} /></a>}
-                        {c.linkedIn && <a href={`https://${c.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400"><Linkedin size={14} /></a>}
+                        {c.email && <a href={`mailto:${c.email}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Mail size={14} /></a>}
+                        {(c.phone || c.mobile) && <a href={`tel:${c.phone || c.mobile}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Phone size={14} /></a>}
+                        {c.linkedIn && <a href={`https://${c.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Linkedin size={14} /></a>}
                       </div>
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className={clsx('text-xs', stale ? 'text-red-500 font-medium' : 'text-gray-400 dark:text-gray-500')}>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-8 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                          <div
+                            className={clsx('h-full rounded-full', healthLbl === 'strong' ? 'bg-emerald-500' : healthLbl === 'healthy' ? 'bg-blue-500' : healthLbl === 'cooling' ? 'bg-amber-500' : 'bg-red-500')}
+                            style={{ width: `${healthScore}%` }}
+                          />
+                        </div>
+                        <span className={clsx('text-2xs font-medium', healthLbl === 'strong' ? 'text-emerald-600 dark:text-emerald-400' : healthLbl === 'healthy' ? 'text-blue-600 dark:text-blue-400' : healthLbl === 'cooling' ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400')}>
+                          {healthScore}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className={clsx('text-xs', stale ? 'text-red-500 font-medium' : 'text-slate-400 dark:text-slate-500')}>
                         {c.lastContacted ? formatDate(c.lastContacted) : 'Never'}
                       </span>
                     </td>
@@ -499,13 +518,13 @@ export default function Contacts() {
                             <span className="text-xs font-bold text-brand-700 dark:text-brand-300">{m.email[0].toUpperCase()}</span>
                           </div>
                         ))}
-                        {owners.length === 0 && <span className="text-xs text-gray-300 dark:text-gray-600">—</span>}
+                        {owners.length === 0 && <span className="text-xs text-slate-300 dark:text-slate-600">—</span>}
                       </div>
                     </td>
                     <td className="px-4 pr-6 py-3.5">
                       <div className="flex flex-wrap gap-1">
-                        {(c.tags || []).slice(0, 3).map(t => <span key={t} className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{t}</span>)}
-                        {(c.tags || []).length > 3 && <span className="badge bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">+{c.tags.length - 3}</span>}
+                        {(c.tags || []).slice(0, 3).map(t => <span key={t} className="badge bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">{t}</span>)}
+                        {(c.tags || []).length > 3 && <span className="badge bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">+{c.tags.length - 3}</span>}
                       </div>
                     </td>
                   </tr>

@@ -62,23 +62,23 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
   return (
     <div className="card overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <Clock size={15} className="text-brand-500" />
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Activity Log</h3>
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Activity Log</h3>
           {items.length > 0 && (
-            <span className="text-xs text-gray-400 dark:text-gray-500">{items.length} entries</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">{items.length} entries</span>
           )}
         </div>
         <button onClick={openForm}
-          className={clsx('p-1.5 rounded-md transition-colors', showForm ? 'text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/20' : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300')}>
+          className={clsx('p-1.5 rounded-md transition-colors', showForm ? 'text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/20' : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300')}>
           <Plus size={14} />
         </button>
       </div>
 
       {/* Log form */}
       {showForm && (
-        <form onSubmit={submit} className="px-5 py-4 bg-gray-50/60 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-700">
+        <form onSubmit={submit} className="px-5 py-4 bg-slate-50/60 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700">
           {/* Type picker pills */}
           <div className="flex flex-wrap gap-1.5 mb-3">
             {ACTIVITY_TYPES.map(t => {
@@ -88,14 +88,14 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
                   className={clsx('flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors',
                     type === t
                       ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 ring-1 ring-brand-200 dark:ring-brand-700'
-                      : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
+                      : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
                   )}>
                   <Icon size={11} /> {capitalize(t)}
                 </button>
               )
             })}
           </div>
-          <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Description <span className="text-red-500">*</span></label>
+          <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Description <span className="text-red-500">*</span></label>
           <textarea autoFocus value={text} onChange={e => setText(e.target.value)}
             placeholder="What happened?" rows={3} className="input text-sm resize-y" />
           <div className="flex items-center gap-2 mt-2">
@@ -111,8 +111,8 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
       {/* Empty state */}
       {items.length === 0 && !showForm && (
         <div className="px-5 py-8 text-center">
-          <MessageSquare size={22} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-          <p className="text-sm text-gray-400 dark:text-gray-500">No activity logged yet</p>
+          <MessageSquare size={22} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+          <p className="text-sm text-slate-400 dark:text-slate-500">No activity logged yet</p>
           <button onClick={openForm} className="text-xs text-brand-600 dark:text-brand-400 hover:underline mt-1">Log first activity</button>
         </div>
       )}
@@ -126,11 +126,11 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
               <div key={a.id} className="flex gap-3 group relative">
                 {/* Connector line */}
                 {i < items.length - 1 && (
-                  <div className="absolute left-[13px] top-8 bottom-0 w-px bg-gray-100 dark:bg-gray-700/60" />
+                  <div className="absolute left-[13px] top-8 bottom-0 w-px bg-slate-100 dark:bg-slate-700/60" />
                 )}
                 {/* Icon circle */}
                 <div className={clsx('w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 relative z-10',
-                  TYPE_COLORS[a.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+                  TYPE_COLORS[a.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                   <Icon size={13} />
                 </div>
                 {/* Content */}
@@ -154,17 +154,17 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
                   ) : (
                     <>
                       <div className="flex items-start justify-between">
-                        <p className="text-sm text-gray-800 dark:text-gray-200">{a.description}</p>
+                        <p className="text-sm text-slate-800 dark:text-slate-200">{a.description}</p>
                         <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-2 flex-shrink-0">
-                          <button onClick={() => startEdit(a)} className="p-1 text-gray-300 hover:text-brand-500 dark:text-gray-600 dark:hover:text-brand-400 transition-colors">
+                          <button onClick={() => startEdit(a)} className="p-1 text-slate-300 hover:text-brand-500 dark:text-slate-600 dark:hover:text-brand-400 transition-colors">
                             <Edit3 size={12} />
                           </button>
-                          <button onClick={() => deleteActivity(a.id)} className="p-1 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-colors">
+                          <button onClick={() => deleteActivity(a.id)} className="p-1 text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 transition-colors">
                             <Trash2 size={12} />
                           </button>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDateTime(a.createdAt)}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{formatDateTime(a.createdAt)}</p>
                     </>
                   )}
                 </div>

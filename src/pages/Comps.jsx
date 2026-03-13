@@ -142,18 +142,18 @@ function CompDetail() {
   const [editing, setEditing] = useState(false)
 
   const comp = comps.find(c => c.id === id)
-  if (!comp) return <div className="p-8 text-gray-400">Comp not found.</div>
+  if (!comp) return <div className="p-8 text-slate-400">Comp not found.</div>
 
   const linkedDeal = comp.propertyId ? properties.find(p => p.id === comp.propertyId) : null
 
   return (
     <div className="px-8 py-8 max-w-3xl">
-      <Link to="/comps" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
+      <Link to="/comps" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-6">
         <ArrowLeft size={15} /> Comps
       </Link>
       <div className="card p-6">
         <div className="flex items-start justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{comp.address}</h2>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{comp.address}</h2>
           <div className="flex gap-1">
             <button onClick={() => setEditing(true)} className="btn-ghost p-2"><Edit2 size={14} /></button>
             <button onClick={async () => { if (confirm('Delete this comp?')) { await deleteComp(id); navigate('/comps') } }} className="btn-ghost p-2 hover:text-red-500"><Trash2 size={14} /></button>
@@ -161,36 +161,36 @@ function CompDetail() {
         </div>
 
         <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-          {comp.propertyType && <div><span className="text-gray-500 dark:text-gray-400">Type</span><p className="font-medium text-gray-900 dark:text-gray-100">{formatAssetType(comp.propertyType)}</p></div>}
-          {comp.saleDate && <div><span className="text-gray-500 dark:text-gray-400">Sale date</span><p className="font-medium text-gray-900 dark:text-gray-100">{formatDate(comp.saleDate)}</p></div>}
-          {comp.salePrice && <div><span className="text-gray-500 dark:text-gray-400">Sale price</span><p className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(comp.salePrice)}</p></div>}
-          {comp.capRate && <div><span className="text-gray-500 dark:text-gray-400">Cap rate</span><p className="font-medium text-gray-900 dark:text-gray-100">{formatPercent(comp.capRate)}</p></div>}
-          {comp.pricePerSf && <div><span className="text-gray-500 dark:text-gray-400">$/SF</span><p className="font-medium text-gray-900 dark:text-gray-100">{formatPSF(comp.pricePerSf)}</p></div>}
-          {comp.noi && <div><span className="text-gray-500 dark:text-gray-400">NOI</span><p className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(comp.noi)}</p></div>}
-          {comp.size && <div><span className="text-gray-500 dark:text-gray-400">Size</span><p className="font-medium text-gray-900 dark:text-gray-100">{Number(comp.size).toLocaleString()} {comp.sizeUnit}</p></div>}
-          {comp.buyer && <div><span className="text-gray-500 dark:text-gray-400">Buyer</span><p className="font-medium text-gray-900 dark:text-gray-100">{comp.buyer}</p></div>}
-          {comp.seller && <div><span className="text-gray-500 dark:text-gray-400">Seller</span><p className="font-medium text-gray-900 dark:text-gray-100">{comp.seller}</p></div>}
-          {comp.market && <div><span className="text-gray-500 dark:text-gray-400">Market</span><p className="font-medium text-gray-900 dark:text-gray-100">{comp.market}</p></div>}
-          {comp.submarket && <div><span className="text-gray-500 dark:text-gray-400">Submarket</span><p className="font-medium text-gray-900 dark:text-gray-100">{comp.submarket}</p></div>}
-          {comp.yearBuilt && <div><span className="text-gray-500 dark:text-gray-400">Year built</span><p className="font-medium text-gray-900 dark:text-gray-100">{comp.yearBuilt}</p></div>}
+          {comp.propertyType && <div><span className="text-slate-500 dark:text-slate-400">Type</span><p className="font-medium text-slate-900 dark:text-slate-100">{formatAssetType(comp.propertyType)}</p></div>}
+          {comp.saleDate && <div><span className="text-slate-500 dark:text-slate-400">Sale date</span><p className="font-medium text-slate-900 dark:text-slate-100">{formatDate(comp.saleDate)}</p></div>}
+          {comp.salePrice && <div><span className="text-slate-500 dark:text-slate-400">Sale price</span><p className="font-medium text-slate-900 dark:text-slate-100">{formatCurrency(comp.salePrice)}</p></div>}
+          {comp.capRate && <div><span className="text-slate-500 dark:text-slate-400">Cap rate</span><p className="font-medium text-slate-900 dark:text-slate-100">{formatPercent(comp.capRate)}</p></div>}
+          {comp.pricePerSf && <div><span className="text-slate-500 dark:text-slate-400">$/SF</span><p className="font-medium text-slate-900 dark:text-slate-100">{formatPSF(comp.pricePerSf)}</p></div>}
+          {comp.noi && <div><span className="text-slate-500 dark:text-slate-400">NOI</span><p className="font-medium text-slate-900 dark:text-slate-100">{formatCurrency(comp.noi)}</p></div>}
+          {comp.size && <div><span className="text-slate-500 dark:text-slate-400">Size</span><p className="font-medium text-slate-900 dark:text-slate-100">{Number(comp.size).toLocaleString()} {comp.sizeUnit}</p></div>}
+          {comp.buyer && <div><span className="text-slate-500 dark:text-slate-400">Buyer</span><p className="font-medium text-slate-900 dark:text-slate-100">{comp.buyer}</p></div>}
+          {comp.seller && <div><span className="text-slate-500 dark:text-slate-400">Seller</span><p className="font-medium text-slate-900 dark:text-slate-100">{comp.seller}</p></div>}
+          {comp.market && <div><span className="text-slate-500 dark:text-slate-400">Market</span><p className="font-medium text-slate-900 dark:text-slate-100">{comp.market}</p></div>}
+          {comp.submarket && <div><span className="text-slate-500 dark:text-slate-400">Submarket</span><p className="font-medium text-slate-900 dark:text-slate-100">{comp.submarket}</p></div>}
+          {comp.yearBuilt && <div><span className="text-slate-500 dark:text-slate-400">Year built</span><p className="font-medium text-slate-900 dark:text-slate-100">{comp.yearBuilt}</p></div>}
         </div>
 
         {linkedDeal && (
-          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-            <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Linked deal</p>
-            <Link to={`/properties/${linkedDeal.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400">{linkedDeal.name || linkedDeal.address}</Link>
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Linked deal</p>
+            <Link to={`/deals/${linkedDeal.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400">{linkedDeal.name || linkedDeal.address}</Link>
           </div>
         )}
 
         {comp.notes && (
-          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Notes</p>
-            <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{comp.notes}</p>
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Notes</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{comp.notes}</p>
           </div>
         )}
 
         {comp.tags?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+          <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
             {comp.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
           </div>
         )}
@@ -252,7 +252,7 @@ export default function Comps() {
   }
 
   const SortHeader = ({ field, children, className }) => (
-    <th onClick={() => handleSort(field)} className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none', className)}>
+    <th onClick={() => handleSort(field)} className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 select-none', className)}>
       {children} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
     </th>
   )
@@ -273,7 +273,7 @@ export default function Comps() {
 
       <div className="flex gap-3 mb-6">
         <div className="relative flex-1 max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search comps..." className="input pl-9" />
         </div>
         <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-40">
@@ -294,7 +294,7 @@ export default function Comps() {
         <div className="card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+              <tr className="border-b border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
                 <SortHeader field="address">Address</SortHeader>
                 <SortHeader field="propertyType">Type</SortHeader>
                 <SortHeader field="salePrice">Sale Price</SortHeader>
@@ -302,23 +302,23 @@ export default function Comps() {
                 <SortHeader field="pricePerSf">$/SF</SortHeader>
                 <SortHeader field="size">Size</SortHeader>
                 <SortHeader field="saleDate">Sale Date</SortHeader>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Market</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Market</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
               {filtered.map(c => (
-                <tr key={c.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                   <td className="px-4 py-3">
-                    <Link to={`/comps/${c.id}`} className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-brand-600 dark:hover:text-brand-400">{c.address}</Link>
-                    {c.buyer && <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{c.buyer} → {c.seller || '?'}</p>}
+                    <Link to={`/comps/${c.id}`} className="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-brand-600 dark:hover:text-brand-400">{c.address}</Link>
+                    {c.buyer && <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{c.buyer} → {c.seller || '?'}</p>}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{formatAssetType(c.propertyType) || '—'}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">{formatCurrency(c.salePrice)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{formatPercent(c.capRate)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{formatPSF(c.pricePerSf)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{c.size ? `${Number(c.size).toLocaleString()} ${c.sizeUnit || 'SF'}` : '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{c.saleDate ? formatDate(c.saleDate) : '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{c.market || '—'}{c.submarket ? ` · ${c.submarket}` : ''}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{formatAssetType(c.propertyType) || '—'}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">{formatCurrency(c.salePrice)}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{formatPercent(c.capRate)}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{formatPSF(c.pricePerSf)}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{c.size ? `${Number(c.size).toLocaleString()} ${c.sizeUnit || 'SF'}` : '—'}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{c.saleDate ? formatDate(c.saleDate) : '—'}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{c.market || '—'}{c.submarket ? ` · ${c.submarket}` : ''}</td>
                 </tr>
               ))}
             </tbody>

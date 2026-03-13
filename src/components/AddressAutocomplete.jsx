@@ -162,14 +162,14 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
           required={required}
           autoComplete="off"
         />
-        <MapPin size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
+        <MapPin size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" />
         {loading && (
-          <Loader2 size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />
+          <Loader2 size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />
         )}
       </div>
 
       {open && suggestions.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden">
           {suggestions.map((item, i) => {
             const { main, secondary } = formatSuggestion(item)
             return (
@@ -180,13 +180,13 @@ export default function AddressAutocomplete({ value, onChange, placeholder = 'Pr
                 className={`w-full text-left px-3 py-2 text-sm flex items-start gap-2 transition-colors ${
                   i === activeIdx
                     ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300'
-                    : 'text-gray-800 dark:text-gray-200 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:text-brand-300'
+                    : 'text-slate-800 dark:text-slate-200 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:text-brand-300'
                 }`}
               >
-                <MapPin size={13} className="text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                <MapPin size={13} className="text-slate-400 dark:text-slate-500 mt-0.5 flex-shrink-0" />
                 <span>
                   <span className="font-medium">{main}</span>
-                  {secondary && <span className="text-gray-500 dark:text-gray-400"> {secondary}</span>}
+                  {secondary && <span className="text-slate-500 dark:text-slate-400"> {secondary}</span>}
                 </span>
               </button>
             )

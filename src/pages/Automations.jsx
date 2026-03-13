@@ -112,20 +112,20 @@ export default function Automations() {
             <div key={auto.id} className="card p-4 flex items-center gap-4">
               <button
                 onClick={() => updateAutomation(auto.id, { enabled: !auto.enabled })}
-                className={clsx('flex-shrink-0 transition-colors', auto.enabled ? 'text-green-500' : 'text-gray-300 dark:text-gray-600')}
+                className={clsx('flex-shrink-0 transition-colors', auto.enabled ? 'text-green-500' : 'text-slate-300 dark:text-slate-600')}
                 title={auto.enabled ? 'Enabled — click to disable' : 'Disabled — click to enable'}
               >
                 {auto.enabled ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
               </button>
               <div className="flex-1 min-w-0">
-                <p className={clsx('text-sm font-medium', auto.enabled ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500')}>{auto.name}</p>
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                <p className={clsx('text-sm font-medium', auto.enabled ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500')}>{auto.name}</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
                   When deal → <span className="font-medium">{formatDealStatus(auto.triggerValue)}</span>
                   {auto.actionType === 'create-reminder' && <> → Create <span className="font-medium">{auto.actionConfig?.reminderType}</span> reminder</>}
                 </p>
               </div>
               <button onClick={() => setEditId(auto.id)} className="btn-ghost p-2 text-xs">Edit</button>
-              <button onClick={() => { if (confirm('Delete?')) deleteAutomation(auto.id) }} className="btn-ghost p-2 text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+              <button onClick={() => { if (confirm('Delete?')) deleteAutomation(auto.id) }} className="btn-ghost p-2 text-slate-400 hover:text-red-500"><Trash2 size={14} /></button>
             </div>
           ))}
         </div>

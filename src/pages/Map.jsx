@@ -155,11 +155,11 @@ export default function MapPage() {
             <Popup minWidth={200} maxWidth={260}>
               <div className="font-sans text-[13px] leading-snug py-0.5">
                 {/* Header */}
-                <p className="font-semibold text-gray-900 dark:text-gray-100 text-[13px] leading-tight mb-1">
+                <p className="font-semibold text-slate-900 dark:text-slate-100 text-[13px] leading-tight mb-1">
                   {deal.name || deal.address}
                 </p>
                 {deal.name && (
-                  <p className="text-gray-400 dark:text-gray-400 text-[11px] mb-2 truncate">
+                  <p className="text-slate-400 dark:text-slate-400 text-[11px] mb-2 truncate">
                     {deal.address}
                   </p>
                 )}
@@ -167,12 +167,12 @@ export default function MapPage() {
                 {/* Badges */}
                 <div className="flex flex-wrap gap-1 mb-2">
                   {deal.status && (
-                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', DEAL_STATUS_COLORS[deal.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', DEAL_STATUS_COLORS[deal.status] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                       {formatDealStatus(deal.status)}
                     </span>
                   )}
                   {deal.dealType && (
-                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', DEAL_TYPE_COLORS[deal.dealType] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', DEAL_TYPE_COLORS[deal.dealType] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                       {formatDealType(deal.dealType)}
                     </span>
                   )}
@@ -180,15 +180,15 @@ export default function MapPage() {
 
                 {/* Deal value */}
                 {deal.dealValue && (
-                  <p className="text-[12px] text-gray-700 dark:text-gray-300 mb-2">
+                  <p className="text-[12px] text-slate-700 dark:text-slate-300 mb-2">
                     <span className="font-semibold">${Number(deal.dealValue).toLocaleString()}</span>
-                    {deal.size && <span className="text-gray-400 dark:text-gray-500 text-[11px]"> · {Number(deal.size).toLocaleString()} {deal.sizeUnit}</span>}
+                    {deal.size && <span className="text-slate-400 dark:text-slate-500 text-[11px]"> · {Number(deal.size).toLocaleString()} {deal.sizeUnit}</span>}
                   </p>
                 )}
 
                 {/* Link */}
                 <Link
-                  to={`/properties/${deal.id}`}
+                  to={`/deals/${deal.id}`}
                   className="flex items-center gap-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                 >
                   <ExternalLink size={10} /> View deal
@@ -201,7 +201,7 @@ export default function MapPage() {
 
       {/* Loading overlay */}
       {loading && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-white dark:bg-gray-800 shadow-lg rounded-full px-4 py-2 flex items-center gap-2 text-[13px] text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-white dark:bg-slate-800 shadow-lg rounded-full px-4 py-2 flex items-center gap-2 text-[13px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
           <Loader2 size={14} className="animate-spin text-brand-500" />
           Locating deals… {progress.done}/{progress.total}
         </div>
@@ -209,11 +209,11 @@ export default function MapPage() {
 
       {/* No deals empty state */}
       {!loading && activeDeals.length === 0 && (
-        <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/70 dark:bg-gray-900/70">
+        <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/70 dark:bg-slate-900/70">
           <div className="text-center">
-            <MapPin size={36} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400 text-sm">No deals with addresses yet.</p>
-            <Link to="/properties" className="mt-2 inline-block text-sm text-blue-600 hover:underline">Add a deal →</Link>
+            <MapPin size={36} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+            <p className="text-slate-500 dark:text-slate-400 text-sm">No deals with addresses yet.</p>
+            <Link to="/deals" className="mt-2 inline-block text-sm text-brand-600 hover:underline dark:text-brand-400">Add a deal →</Link>
           </div>
         </div>
       )}
@@ -228,12 +228,12 @@ export default function MapPage() {
 
       {/* Legend */}
       {geoDeals.length > 0 && (
-        <div className="absolute bottom-4 right-4 z-[1000] bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg rounded-xl p-3 border border-gray-200/60 dark:border-gray-700/60 text-[11px]">
-          <p className="font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 text-[10px]">Status</p>
+        <div className="absolute bottom-4 right-4 z-[1000] bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60 text-[11px]">
+          <p className="font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 text-[10px]">Status</p>
           {Object.entries(STATUS_PIN_COLORS).map(([status, color]) => (
             <div key={status} className="flex items-center gap-2 mb-1 last:mb-0">
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-              <span className="text-gray-600 dark:text-gray-300">{formatDealStatus(status)}</span>
+              <span className="text-slate-600 dark:text-slate-300">{formatDealStatus(status)}</span>
             </div>
           ))}
         </div>

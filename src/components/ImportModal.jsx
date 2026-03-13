@@ -282,10 +282,10 @@ export default function ImportModal({ entity, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Import {ENTITY_LABELS[entity]}</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Import {ENTITY_LABELS[entity]}</h2>
           <button onClick={onClose} className="btn-ghost p-1.5"><X size={16} /></button>
         </div>
 
@@ -294,31 +294,31 @@ export default function ImportModal({ entity, onClose }) {
           {/* ── Idle: paste or upload ── */}
           {phase === 'idle' && (
             <>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Paste CSV text below or upload a <code>.csv</code> file. The first row must be a header row.
                 Column names are matched automatically (case-insensitive).
               </p>
 
               {entity === 'contacts' && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
+                <p className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
                   Recognised columns: <span className="font-mono">firstName*, lastName*, title, function, company, email, phone, mobile, linkedIn, tags, notes</span>
                   <br />* Required. For <span className="font-mono">company</span>, use the exact company name. For <span className="font-mono">function</span>, valid values: lp-investor, broker, developer, lender, owner-operator, tenant, attorney, accountant, property-manager, other. Tags separated by semicolons.
                 </p>
               )}
               {entity === 'companies' && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
+                <p className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
                   Recognised columns: <span className="font-mono">name*, type, address, phone, email, website, tags, notes, capitalType, propertyTypes, minDealSize, maxDealSize, targetMarkets, targetReturns, investmentCriteria</span>
                   <br />* Required. Valid types: owner, tenant, investor, developer, broker, lender, other. Tags, propertyTypes, and targetMarkets separated by semicolons. Investment fields (capitalType, etc.) apply to companies with type <span className="font-mono">investor</span>.
                 </p>
               )}
               {entity === 'properties' && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
+                <p className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
                   Recognised columns: <span className="font-mono">name*, address, dealType, size, sizeUnit, status, dealValue, ownerCompany, tenantCompany, tags, notes</span>
                   <br />* Required. For <span className="font-mono">ownerCompany / tenantCompany</span>, use exact company names. Tags separated by semicolons.
                 </p>
               )}
               {entity === 'comps' && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
+                <p className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
                   Recognised columns: <span className="font-mono">address*, salePrice*, propertyType, saleDate, capRate, pricePerSf, noi, size, sizeUnit, buyer, seller, market, submarket, yearBuilt, tags, notes</span>
                   <br />* Required. Dates as YYYY-MM-DD. Numbers without $ or %. Cap rate as a decimal (e.g. 5.25 for 5.25%). Tags separated by semicolons.
                 </p>
@@ -341,7 +341,7 @@ export default function ImportModal({ entity, onClose }) {
                   <FileText size={14} /> Upload .csv file
                 </button>
                 <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile} />
-                {rawText && <span className="text-xs text-gray-400 dark:text-gray-500">{rawText.split('\n').length - 1} data rows detected</span>}
+                {rawText && <span className="text-xs text-slate-400 dark:text-slate-500">{rawText.split('\n').length - 1} data rows detected</span>}
               </div>
             </>
           )}
@@ -349,23 +349,23 @@ export default function ImportModal({ entity, onClose }) {
           {/* ── Preview ── */}
           {phase === 'preview' && parsed && (
             <>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
                 <span className="font-medium">{parsed.rows.length} rows</span> ready to import. Preview of first 5:
               </p>
               <div className="overflow-x-auto">
-                <table className="w-full text-xs border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
+                <table className="w-full text-xs border border-slate-200 dark:border-slate-600 rounded-lg overflow-hidden">
+                  <thead className="bg-slate-50 dark:bg-slate-700">
                     <tr>
                       {parsed.headers.map(h => (
-                        <th key={h} className="px-3 py-2 text-left text-gray-500 dark:text-gray-400 font-medium border-b border-gray-200 dark:border-gray-600">{h}</th>
+                        <th key={h} className="px-3 py-2 text-left text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-600">{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                     {parsed.preview.map((row, i) => (
                       <tr key={i}>
                         {parsed.headers.map(h => (
-                          <td key={h} className="px-3 py-1.5 text-gray-700 dark:text-gray-300 max-w-[150px] truncate">{row[h]}</td>
+                          <td key={h} className="px-3 py-1.5 text-slate-700 dark:text-slate-300 max-w-[150px] truncate">{row[h]}</td>
                         ))}
                       </tr>
                     ))}
@@ -373,7 +373,7 @@ export default function ImportModal({ entity, onClose }) {
                 </table>
               </div>
               {parsed.rows.length > 5 && (
-                <p className="text-xs text-gray-400 dark:text-gray-500">…and {parsed.rows.length - 5} more rows not shown.</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">…and {parsed.rows.length - 5} more rows not shown.</p>
               )}
             </>
           )}
@@ -382,7 +382,7 @@ export default function ImportModal({ entity, onClose }) {
           {phase === 'importing' && (
             <div className="flex flex-col items-center gap-3 py-8">
               <Loader2 size={28} className="animate-spin text-brand-600" />
-              <p className="text-sm text-gray-600 dark:text-gray-300">Importing {parsed.rows.length} rows…</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Importing {parsed.rows.length} rows…</p>
             </div>
           )}
 
@@ -407,7 +407,7 @@ export default function ImportModal({ entity, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-2">
           {phase === 'idle' && (
             <>
               <button onClick={onClose} className="btn-secondary">Cancel</button>

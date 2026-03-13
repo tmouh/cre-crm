@@ -1,317 +1,329 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { parseISO, isToday, addDays, isBefore, isAfter } from 'date-fns'
-import { Bell, Users, Building2, Briefcase, CheckCircle2, ArrowRight, AlertCircle, Calendar, TrendingUp, DollarSign } from 'lucide-react'
+import {
+  TrendingUp, Users, Building2, Briefcase, Bell,
+  AlertTriangle, Clock, CheckCircle2, ArrowRight, Activity,
+  Calendar, Flame, Snowflake, Zap,
+} from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
-import { useAuth } from '../context/AuthContext'
-import { formatDate, isOverdue, isDueToday, PRIORITY_COLORS, TYPE_COLORS, fullName, daysDiff, formatCurrency, DEAL_STATUSES, DEAL_STATUS_COLORS, formatDealStatus } from '../utils/helpers'
+import { useMicrosoft } from '../context/MicrosoftContext'
+import { useIntelligence } from '../hooks/useIntelligence'
+import {
+  formatCurrency, formatDate, fullName, isOverdue, isDueToday,
+  formatDealStatus, formatDealType, DEAL_STATUS_COLORS,
+  PRIORITY_COLORS, TYPE_COLORS,
+} from '../utils/helpers'
 
-function StatCard({ icon: Icon, label, value, to, color }) {
+export default function Dashboard() {
+  const { contacts, companies, properties, reminders, activities } = useCRM()
+  const { isConnected, upcomingEvents } = useMicrosoft()
+  const {
+    hotDeals, stalledDeals, staleContacts,
+    suggestedFollowUps, pipelineStats, communicationStats,
+  } = useIntelligence()
+
+  const pendingReminders = useMemo(() =>
+    reminders
+      .filter(r => r.status !== 'done')
+      .sort((a, b) => {
+        const aOverdue = isOverdue(a.dueDate) ? 0 : isDueToday(a.dueDate) ? 1 : 2
+        const bOverdue = isOverdue(b.dueDate) ? 0 : isDueToday(b.dueDate) ? 1 : 2
+        if (aOverdue !== bOverdue) return aOverdue - bOverdue
+        return (a.dueDate || '').localeCompare(b.dueDate || '')
+      }),
+    [reminders]
+  )
+
+  const overdueCount = pendingReminders.filter(r => isOverdue(r.dueDate)).length
+  const todayCount = pendingReminders.filter(r => isDueToday(r.dueDate)).length
+  const activeDeals = properties.filter(p => p.status !== 'closed' && p.status !== 'dead')
+
+  const recentActivities = useMemo(() =>
+    [...activities].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 8),
+    [activities]
+  )
+
   return (
-    <Link to={to} className="rounded-xl border px-5 py-5 hover:shadow-md transition-all duration-150 group shadow-sm"
-      style={{ backgroundColor: '#d3e1fa', borderColor: '#b6cbf4' }}>
-      <div className="flex items-center justify-between mb-3">
-        <div className={clsx('w-9 h-9 rounded-lg flex items-center justify-center', color)}>
-          <Icon size={17} className="text-white" />
+    <div className="p-6 space-y-6 max-w-[1400px] mx-auto animate-fade-in">
+      {/* Stats row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <StatCard label="Contacts" value={contacts.length} icon={Users} color="brand" to="/contacts" />
+        <StatCard label="Companies" value={companies.length} icon={Building2} color="blue" to="/companies" />
+        <StatCard label="Active Deals" value={activeDeals.length} icon={Briefcase} color="emerald" to="/deals" />
+        <StatCard label="Pipeline" value={formatCurrency(pipelineStats.totalValue)} icon={TrendingUp} color="violet" to="/pipeline" isText />
+        <StatCard label="Overdue" value={overdueCount} icon={AlertTriangle} color={overdueCount > 0 ? 'red' : 'slate'} to="/reminders" />
+        <StatCard label="Due Today" value={todayCount} icon={Clock} color={todayCount > 0 ? 'amber' : 'slate'} to="/reminders" />
+      </div>
+
+      {/* Pipeline bar */}
+      <PipelineBar stats={pipelineStats} />
+
+      {/* 3-column grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Col 1: Tasks */}
+        <div className="space-y-4">
+          <Panel title="Priority Tasks" icon={Bell} badge={overdueCount + todayCount} badgeColor="red" to="/reminders">
+            {pendingReminders.length === 0 ? (
+              <EmptyPanel text="All caught up" icon={CheckCircle2} />
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                {pendingReminders.slice(0, 6).map(r => (
+                  <ReminderRow key={r.id} reminder={r} contacts={contacts} />
+                ))}
+              </div>
+            )}
+          </Panel>
+
+          {suggestedFollowUps.length > 0 && (
+            <Panel title="Suggested Follow-ups" icon={Zap}>
+              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                {suggestedFollowUps.slice(0, 5).map((s, i) => (
+                  <Link key={i} to={s.entityType === 'contact' ? `/contacts/${s.entity.id}` : `/deals/${s.entity.id}`}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-surface-100 transition-colors">
+                    <div className={clsx('v-dot', s.priority === 'high' ? 'bg-red-500' : 'bg-amber-500')} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
+                        {s.entityType === 'contact' ? fullName(s.entity) : s.entity.name || s.entity.address}
+                      </p>
+                      <p className="text-2xs text-slate-400 dark:text-slate-500">{s.reason}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </Panel>
+          )}
+        </div>
+
+        {/* Col 2: Deals */}
+        <div className="space-y-4">
+          <Panel title="Hot Deals" icon={Flame} to="/deals">
+            {hotDeals.length === 0 ? (
+              <EmptyPanel text="No hot deals" icon={Briefcase} />
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                {hotDeals.slice(0, 5).map(d => <DealRow key={d.id} deal={d} />)}
+              </div>
+            )}
+          </Panel>
+
+          {stalledDeals.length > 0 && (
+            <Panel title="Needs Attention" icon={AlertTriangle} to="/deals">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                {stalledDeals.slice(0, 4).map(d => <DealRow key={d.id} deal={d} showMomentum />)}
+              </div>
+            </Panel>
+          )}
+
+          <Panel title="Activity (30d)" icon={Activity}>
+            <div className="px-4 py-3 grid grid-cols-3 gap-3">
+              {Object.entries(communicationStats.byType).map(([type, count]) => (
+                <div key={type} className="text-center">
+                  <p className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">{count}</p>
+                  <p className="text-2xs text-slate-400 dark:text-slate-500 capitalize">{type}s</p>
+                </div>
+              ))}
+              {Object.keys(communicationStats.byType).length === 0 && (
+                <div className="col-span-3 text-center py-2">
+                  <p className="text-2xs text-slate-400 dark:text-slate-500">No activity yet</p>
+                </div>
+              )}
+            </div>
+          </Panel>
+        </div>
+
+        {/* Col 3: Relationships & Microsoft */}
+        <div className="space-y-4">
+          <Panel title="Cooling Relationships" icon={Snowflake} to="/contacts">
+            {staleContacts.length === 0 ? (
+              <EmptyPanel text="All relationships healthy" icon={Users} />
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                {staleContacts.slice(0, 5).map(c => (
+                  <Link key={c.id} to={`/contacts/${c.id}`}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-surface-100 transition-colors">
+                    <HealthDot score={c.healthScore} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{fullName(c)}</p>
+                      <p className="text-2xs text-slate-400 dark:text-slate-500">{c.title || 'No title'}</p>
+                    </div>
+                    <span className="text-2xs text-slate-400 dark:text-slate-500">
+                      {c.lastContacted ? formatDate(c.lastContacted) : 'Never'}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </Panel>
+
+          {isConnected && upcomingEvents.length > 0 && (
+            <Panel title="Upcoming Meetings" icon={Calendar}>
+              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                {upcomingEvents.slice(0, 5).map(evt => (
+                  <div key={evt.id} className="px-4 py-2.5">
+                    <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{evt.subject}</p>
+                    <p className="text-2xs text-slate-400 dark:text-slate-500 mt-0.5">
+                      {evt.start?.dateTime ? formatDate(evt.start.dateTime) : ''}
+                      {evt.location?.displayName ? ` · ${evt.location.displayName}` : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          )}
+
+          <Panel title="Recent Activity" icon={Activity} to="/inbox">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+              {recentActivities.length === 0 ? (
+                <EmptyPanel text="No activity yet" icon={Activity} />
+              ) : recentActivities.slice(0, 5).map(a => (
+                <div key={a.id} className="px-4 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className={clsx('v-badge', TYPE_COLORS[a.type] || TYPE_COLORS.other)}>{a.type}</span>
+                    <span className="text-2xs text-slate-400 dark:text-slate-500">{formatDate(a.date || a.createdAt)}</span>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-1">{a.description}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          {!isConnected && (
+            <div className="v-card p-4 text-center">
+              <Activity size={20} className="text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-300">Connect Microsoft 365</p>
+              <p className="text-2xs text-slate-400 dark:text-slate-500 mt-1">Sync emails, calendar, contacts & files</p>
+              <Link to="/settings" className="v-btn-primary mt-3 text-2xs">Connect</Link>
+            </div>
+          )}
         </div>
       </div>
-      <p className="text-2xl font-bold tracking-tight" style={{ color: '#2d3754' }}>{value}</p>
-      <p className="text-[13px] mt-0.5" style={{ color: '#747b8e' }}>{label}</p>
+    </div>
+  )
+}
+
+/* ── Sub-components ──────────────────────────────────────────────────────────── */
+
+function StatCard({ label, value, icon: Icon, color, to, isText }) {
+  const colors = {
+    brand: 'text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-950/30',
+    blue: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/30',
+    emerald: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/30',
+    violet: 'text-violet-600 bg-violet-50 dark:text-violet-400 dark:bg-violet-950/30',
+    red: 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950/30',
+    amber: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/30',
+    slate: 'text-slate-400 bg-slate-100 dark:text-slate-500 dark:bg-slate-800',
+  }
+  return (
+    <Link to={to} className="v-card p-3 hover:border-brand-300 dark:hover:border-brand-700 transition-colors">
+      <div className={clsx('w-6 h-6 rounded flex items-center justify-center mb-2', colors[color])}>
+        <Icon size={13} />
+      </div>
+      <p className={clsx('font-bold text-slate-900 dark:text-white tabular-nums', isText ? 'text-sm' : 'text-lg')}>{value}</p>
+      <p className="text-2xs text-slate-400 dark:text-slate-500 mt-0.5">{label}</p>
     </Link>
   )
 }
 
-function ReminderCard({ reminder, contact, company, property, onComplete }) {
-  const overdue = isOverdue(reminder.dueDate)
-  const today   = isDueToday(reminder.dueDate)
-
+function Panel({ title, icon: Icon, children, badge, badgeColor, to }) {
   return (
-    <div className={clsx(
-      'flex items-start gap-3 p-4 rounded-xl border transition-all duration-150',
-      overdue ? 'border-red-200/80 bg-red-50 dark:border-red-800/60 dark:bg-red-900/20' :
-      today   ? 'border-orange-200/80 bg-orange-50 dark:border-orange-800/60 dark:bg-orange-900/20' :
-                'border-gray-200/80 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
-    )}>
-      <button onClick={() => onComplete(reminder.id)} className="mt-0.5 flex-shrink-0 text-gray-300 hover:text-green-500 dark:text-gray-600 dark:hover:text-green-400 transition-colors">
-        <CheckCircle2 size={18} />
-      </button>
+    <div className="v-panel">
+      <div className="v-panel-header">
+        <div className="flex items-center gap-2">
+          {Icon && <Icon size={14} className="text-slate-400 dark:text-slate-500" />}
+          <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200">{title}</h3>
+          {badge > 0 && (
+            <span className={clsx('min-w-[16px] h-[16px] px-1 rounded-full text-2xs font-bold flex items-center justify-center text-white', badgeColor === 'red' ? 'bg-red-500' : 'bg-brand-500')}>
+              {badge}
+            </span>
+          )}
+        </div>
+        {to && (
+          <Link to={to} className="text-2xs text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+            View all <ArrowRight size={10} />
+          </Link>
+        )}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function EmptyPanel({ text, icon: Icon }) {
+  return (
+    <div className="px-4 py-6 text-center">
+      <Icon size={18} className="text-slate-200 dark:text-slate-700 mx-auto mb-2" />
+      <p className="text-2xs text-slate-400 dark:text-slate-500">{text}</p>
+    </div>
+  )
+}
+
+function ReminderRow({ reminder, contacts }) {
+  const contact = contacts.find(c => c.id === reminder.contactId)
+  const overdue = isOverdue(reminder.dueDate)
+  const today = isDueToday(reminder.dueDate)
+  return (
+    <Link to="/reminders" className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-surface-100 transition-colors">
+      <div className={clsx('v-dot', overdue ? 'bg-red-500' : today ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600')} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{reminder.title}</p>
-        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-          {contact && (
-            <Link to={`/contacts/${contact.id}`} className="text-xs text-brand-600 hover:underline dark:text-brand-400">{fullName(contact)}</Link>
-          )}
-          {contact && company && <span className="text-xs text-gray-400 dark:text-gray-600">·</span>}
-          {company && (
-            <Link to={`/companies/${company.id}`} className="text-xs text-gray-500 hover:underline dark:text-gray-400">{company.name}</Link>
-          )}
-          {(contact || company) && property && <span className="text-xs text-gray-400 dark:text-gray-600">·</span>}
-          {property && (
-            <Link to={`/properties/${property.id}`} className="text-xs text-gray-500 hover:underline dark:text-gray-400">{property.name}</Link>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5 mt-1.5">
-          <span className={clsx('badge text-[11px]', overdue ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : today ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300')}>
-            {overdue ? `${daysDiff(reminder.dueDate)}d overdue` : formatDate(reminder.dueDate)}
+        <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{reminder.title}</p>
+        <p className="text-2xs text-slate-400 dark:text-slate-500 truncate">
+          {contact ? fullName(contact) : ''}{contact && reminder.dueDate ? ' · ' : ''}{reminder.dueDate ? formatDate(reminder.dueDate) : ''}
+        </p>
+      </div>
+      <span className={clsx('v-badge', PRIORITY_COLORS[reminder.priority] || PRIORITY_COLORS.low)}>{reminder.priority}</span>
+    </Link>
+  )
+}
+
+function DealRow({ deal, showMomentum }) {
+  return (
+    <Link to={`/deals/${deal.id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-surface-100 transition-colors">
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{deal.name || deal.address}</p>
+        <p className="text-2xs text-slate-400 dark:text-slate-500">{formatDealType(deal.dealType)} · {formatCurrency(deal.dealValue)}</p>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {showMomentum && deal.momentumScore != null && (
+          <span className={clsx('text-2xs font-bold tabular-nums', deal.momentumScore >= 50 ? 'text-emerald-500' : deal.momentumScore >= 25 ? 'text-amber-500' : 'text-red-500')}>
+            {deal.momentumScore}
           </span>
-          <span className={clsx('badge text-[11px]', TYPE_COLORS[reminder.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{reminder.type}</span>
-          {reminder.priority === 'high' && <span className="badge text-[11px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">high</span>}
-        </div>
+        )}
+        <span className={clsx('v-badge', DEAL_STATUS_COLORS[deal.status])}>{formatDealStatus(deal.status)}</span>
+      </div>
+    </Link>
+  )
+}
+
+function PipelineBar({ stats }) {
+  const stages = ['prospect', 'engaged', 'under-loi', 'under-contract', 'due-diligence']
+  const colors = { prospect: 'bg-slate-400 dark:bg-slate-600', engaged: 'bg-blue-500', 'under-loi': 'bg-indigo-500', 'under-contract': 'bg-amber-500', 'due-diligence': 'bg-purple-500' }
+  const total = stages.reduce((s, st) => s + (stats.byStage[st]?.count || 0), 0) || 1
+  return (
+    <div className="v-card p-3">
+      <div className="flex items-center gap-2 mb-2">
+        <p className="text-2xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Pipeline</p>
+        <p className="text-2xs text-slate-400 dark:text-slate-500">{stats.activeDeals} active · {formatCurrency(stats.totalValue)} total</p>
+      </div>
+      <div className="flex h-2 rounded-full overflow-hidden bg-slate-100 dark:bg-surface-200 gap-px">
+        {stages.map(st => {
+          const pct = ((stats.byStage[st]?.count || 0) / total) * 100
+          if (pct === 0) return null
+          return <div key={st} className={clsx('h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full', colors[st])} style={{ width: `${pct}%` }} title={`${formatDealStatus(st)}: ${stats.byStage[st]?.count || 0}`} />
+        })}
+      </div>
+      <div className="flex items-center gap-3 mt-2 flex-wrap">
+        {stages.map(st => stats.byStage[st] ? (
+          <div key={st} className="flex items-center gap-1.5">
+            <div className={clsx('w-2 h-2 rounded-full', colors[st])} />
+            <span className="text-2xs text-slate-500 dark:text-slate-400">{formatDealStatus(st)} ({stats.byStage[st].count})</span>
+          </div>
+        ) : null)}
       </div>
     </div>
   )
 }
 
-export default function Dashboard() {
-  const { contacts, companies, properties, reminders, activities, completeReminder, getContact, getCompany, getProperty } = useCRM()
-  const { user } = useAuth()
-  const displayName = (user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there').split(' ')[0]
-
-  const pending = reminders.filter(r => r.status !== 'done')
-  const overdue = pending.filter(r => isOverdue(r.dueDate)).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
-  const today   = pending.filter(r => isDueToday(r.dueDate)).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
-  const week    = pending.filter(r => {
-    const d = parseISO(r.dueDate)
-    return isAfter(d, new Date()) && isBefore(d, addDays(new Date(), 7))
-  }).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
-
-  const stale = contacts.filter(c => {
-    if (!c.lastContacted) return false
-    return daysDiff(c.lastContacted) >= 90
-  }).sort((a, b) => a.lastContacted.localeCompare(b.lastContacted)).slice(0, 5)
-
-  return (
-    <div className="px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Dashboard</h1>
-        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">Welcome, {displayName}</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-5 gap-4 mb-6">
-        <StatCard icon={Bell}      label="Pending reminders" value={pending.length}    to="/reminders"  color="bg-brand-500" />
-        <StatCard icon={Users}     label="Contacts"           value={contacts.length}   to="/contacts"   color="bg-blue-500" />
-        <StatCard icon={Building2} label="Companies"          value={companies.length}  to="/companies"  color="bg-violet-500" />
-        <StatCard icon={Briefcase}  label="Active deals"        value={properties.filter(p => p.status !== 'dead' && p.status !== 'closed').length} to="/pipeline" color="bg-teal-500" />
-        <StatCard icon={DollarSign} label="Pipeline value"     value={formatCurrency(properties.filter(p => p.status !== 'dead' && p.status !== 'closed').reduce((s, p) => s + (Number(p.dealValue) || 0), 0))} to="/pipeline" color="bg-emerald-500" />
-      </div>
-
-      {/* Mini pipeline bar */}
-      {properties.length > 0 && (
-        <Link to="/pipeline" className="block mb-8">
-          <div className="card px-5 py-3 hover:shadow-md transition-all">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pipeline</span>
-              <span className="text-xs text-brand-600 dark:text-brand-400 flex items-center gap-1">View pipeline <ArrowRight size={11} /></span>
-            </div>
-            <div className="h-3 rounded-full overflow-hidden flex bg-gray-100 dark:bg-gray-700">
-              {DEAL_STATUSES.filter(s => s !== 'dead').map(s => {
-                const count = properties.filter(p => p.status === s).length
-                if (count === 0) return null
-                const pct = (count / properties.length) * 100
-                const colors = { prospect: '#9ca3af', engaged: '#3b82f6', 'under-loi': '#6366f1', 'under-contract': '#eab308', 'due-diligence': '#a855f7', closed: '#10b981' }
-                return <div key={s} style={{ width: `${pct}%`, backgroundColor: colors[s] || '#6b7280' }} className="h-full" title={`${formatDealStatus(s)}: ${count}`} />
-              })}
-            </div>
-            <div className="flex gap-3 mt-1.5">
-              {DEAL_STATUSES.filter(s => s !== 'dead' && properties.some(p => p.status === s)).map(s => (
-                <span key={s} className="text-[10px] text-gray-400 dark:text-gray-500">{formatDealStatus(s)}: {properties.filter(p => p.status === s).length}</span>
-              ))}
-            </div>
-          </div>
-        </Link>
-      )}
-
-      <div className="grid grid-cols-[2fr_1fr] gap-10 items-start">
-        {/* Left: reminders */}
-        <div className="space-y-8">
-          {/* Overdue */}
-          {overdue.length > 0 && (
-            <section>
-              <div className="flex items-center gap-2 mb-3">
-                <AlertCircle size={15} className="text-red-500" />
-                <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Overdue ({overdue.length})</h2>
-              </div>
-              <div className="space-y-2">
-                {overdue.map(r => (
-                  <ReminderCard key={r.id} reminder={r}
-                    contact={getContact(r.contactId)} company={getCompany(r.companyId)} property={getProperty(r.propertyId)}
-                    onComplete={completeReminder}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Today */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">
-                Today {today.length > 0 && <span className="text-gray-400 dark:text-gray-500 font-normal">({today.length})</span>}
-              </h2>
-            </div>
-            {today.length === 0 ? (
-              <div className="card p-6 text-center">
-                <CheckCircle2 size={22} className="text-green-400 mx-auto mb-2" />
-                <p className="text-[13px] text-gray-500 dark:text-gray-400">Nothing due today</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {today.map(r => (
-                  <ReminderCard key={r.id} reminder={r}
-                    contact={getContact(r.contactId)} company={getCompany(r.companyId)} property={getProperty(r.propertyId)}
-                    onComplete={completeReminder}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* This week */}
-          {week.length > 0 && (
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">This Week ({week.length})</h2>
-                <Link to="/reminders" className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 flex items-center gap-1 transition-colors">
-                  View all <ArrowRight size={11} />
-                </Link>
-              </div>
-              <div className="space-y-2">
-                {week.slice(0, 5).map(r => (
-                  <ReminderCard key={r.id} reminder={r}
-                    contact={getContact(r.contactId)} company={getCompany(r.companyId)} property={getProperty(r.propertyId)}
-                    onComplete={completeReminder}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* Right sidebar — pt accounts for left column section headers so cards align */}
-        <div className="space-y-6 pt-[30px]">
-          {/* Needs Attention */}
-          <div className="card p-5">
-            <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200 mb-1">Needs Attention</h2>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">Not contacted in 3+ months</p>
-            {stale.length === 0 ? (
-              <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">All contacts are fresh</p>
-            ) : (
-              <>
-                <div className="flex items-center gap-3 mb-2 px-0">
-                  <div className="w-8 flex-shrink-0" />
-                  <div className="flex-1"><span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Last touch</span></div>
-                  <div className="w-16 flex-shrink-0"><span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Last type</span></div>
-                </div>
-                <div className="space-y-3">
-                  {stale.map(c => {
-                    const lastReminder = reminders
-                      .filter(r => r.contactId === c.id && r.status === 'done')
-                      .sort((a, b) => (b.completedAt || b.dueDate).localeCompare(a.completedAt || a.dueDate))[0]
-                    const lastActivity = activities
-                      .filter(a => a.contactId === c.id)
-                      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0]
-                    const reminderDate = lastReminder ? (lastReminder.completedAt || lastReminder.dueDate || '') : ''
-                    const activityDate = lastActivity ? (lastActivity.createdAt || '') : ''
-                    const lastTouch = reminderDate >= activityDate ? lastReminder : lastActivity
-                    return (
-                      <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-3 group">
-                        <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                          <span className="text-[11px] font-semibold text-brand-700 dark:text-brand-300">
-                            {(c.firstName || '')[0]}{(c.lastName || '')[0]}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 truncate transition-colors">{fullName(c)}</p>
-                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                            {c.lastContacted ? `${daysDiff(c.lastContacted)}d ago` : 'Never contacted'}
-                          </p>
-                        </div>
-                        <div className="w-16 flex-shrink-0">
-                          {lastTouch ? (
-                            <span className={clsx('badge text-[10px] py-0', TYPE_COLORS[lastTouch.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
-                              {lastTouch.type}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-gray-400 dark:text-gray-500">None</span>
-                          )}
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
-              </>
-            )}
-            <Link to="/contacts" className="flex items-center gap-1 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors">
-              All contacts <ArrowRight size={11} />
-            </Link>
-          </div>
-
-          {/* Upcoming */}
-          <div className="card p-5">
-            <h2 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200 mb-1">Upcoming</h2>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">Next reminders by contact</p>
-            {(() => {
-              const contactsWithUpcoming = contacts
-                .map(c => {
-                  const next = reminders
-                    .filter(r => r.contactId === c.id && r.status !== 'done')
-                    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0]
-                  return next ? { contact: c, reminder: next } : null
-                })
-                .filter(Boolean)
-                .sort((a, b) => a.reminder.dueDate.localeCompare(b.reminder.dueDate))
-                .slice(0, 6)
-
-              if (contactsWithUpcoming.length === 0) {
-                return <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">No upcoming reminders</p>
-              }
-
-              return (
-                <div className="space-y-3">
-                  {contactsWithUpcoming.map(({ contact: c, reminder: r }) => {
-                    const ov = isOverdue(r.dueDate)
-                    const td = isDueToday(r.dueDate)
-                    return (
-                      <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-3 group">
-                        <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
-                          <span className="text-[11px] font-semibold text-brand-700 dark:text-brand-300">
-                            {(c.firstName || '')[0]}{(c.lastName || '')[0]}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 truncate transition-colors">{fullName(c)}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className={clsx('badge text-[10px] py-0', TYPE_COLORS[r.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{r.type}</span>
-                            <span className={clsx('text-[10px] flex items-center gap-0.5', ov ? 'text-red-500' : td ? 'text-orange-500' : 'text-gray-400 dark:text-gray-500')}>
-                              <Calendar size={9} /> {ov ? `${daysDiff(r.dueDate)}d overdue` : formatDate(r.dueDate)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex gap-1 flex-wrap max-w-[90px]">
-                          {c.tags?.length > 0 ? (
-                            <>
-                              {c.tags.slice(0, 2).map(t => (
-                                <span key={t} className="badge text-[10px] py-0 bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">{t}</span>
-                              ))}
-                              {c.tags.length > 2 && <span className="text-[10px] text-gray-400 dark:text-gray-500">+{c.tags.length - 2}</span>}
-                            </>
-                          ) : (
-                            <span className="text-[10px] text-gray-400 dark:text-gray-500">—</span>
-                          )}
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
-              )
-            })()}
-            <Link to="/reminders" className="flex items-center gap-1 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors">
-              All reminders <ArrowRight size={11} />
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+function HealthDot({ score }) {
+  return <div className={clsx('w-2.5 h-2.5 rounded-full flex-shrink-0', score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-blue-500' : score >= 25 ? 'bg-amber-500' : 'bg-red-500')} />
 }

@@ -24,24 +24,24 @@ export default function DuplicateCheckModal({ entityType, matchFields, onAdd, on
         </div>
 
         {/* Side-by-side comparison */}
-        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600">
+        <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 dark:bg-gray-700/60">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 w-1/4">Field</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 w-[37.5%]">Existing</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 w-[37.5%]">New</th>
+              <tr className="bg-slate-50 dark:bg-slate-700/60">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 w-1/4">Field</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 w-[37.5%]">Existing</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 w-[37.5%]">New</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {matchFields.map(({ label, existingVal, newVal }) => {
                 const isDiff = (existingVal || '') !== (newVal || '')
                 return (
                   <tr key={label}>
-                    <td className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400">{label}</td>
-                    <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{existingVal || <span className="text-gray-300 dark:text-gray-600">—</span>}</td>
-                    <td className={`px-4 py-2 ${isDiff ? 'text-brand-600 dark:text-brand-400 font-medium' : 'text-gray-700 dark:text-gray-300'}`}>
-                      {newVal || <span className="text-gray-300 dark:text-gray-600">—</span>}
+                    <td className="px-4 py-2 text-xs font-medium text-slate-500 dark:text-slate-400">{label}</td>
+                    <td className="px-4 py-2 text-slate-700 dark:text-slate-300">{existingVal || <span className="text-slate-300 dark:text-slate-600">—</span>}</td>
+                    <td className={`px-4 py-2 ${isDiff ? 'text-brand-600 dark:text-brand-400 font-medium' : 'text-slate-700 dark:text-slate-300'}`}>
+                      {newVal || <span className="text-slate-300 dark:text-slate-600">—</span>}
                     </td>
                   </tr>
                 )

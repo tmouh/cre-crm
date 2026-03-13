@@ -108,37 +108,37 @@ function ReminderRow({ reminder, onComplete, onUncomplete, onDelete, contact, co
   return (
     <div className={clsx(
       'flex items-start gap-3 p-4 rounded-xl border transition-all duration-150 group',
-      reminder.status === 'done' ? 'border-gray-100 bg-gray-50/80 opacity-50 dark:border-gray-700 dark:bg-gray-800/50' :
+      reminder.status === 'done' ? 'border-slate-100 bg-slate-50/80 opacity-50 dark:border-slate-700 dark:bg-slate-800/50' :
       overdue ? 'border-red-200/80 bg-red-50 dark:border-red-800/60 dark:bg-red-900/20' :
       today   ? 'border-orange-200/80 bg-orange-50 dark:border-orange-800/60 dark:bg-orange-900/20' :
-                'border-gray-200/80 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
+                'border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600'
     )}>
       {reminder.status === 'done' ? (
         <button onClick={() => onUncomplete(reminder.id)} className="mt-0.5 flex-shrink-0 text-green-500 hover:text-brand-500 transition-colors" title="Mark as pending">
           <RotateCcw size={16} />
         </button>
       ) : (
-        <button onClick={() => onComplete(reminder.id)} className="mt-0.5 flex-shrink-0 text-gray-300 hover:text-green-500 dark:text-gray-600 dark:hover:text-green-400 transition-colors" title="Complete">
+        <button onClick={() => onComplete(reminder.id)} className="mt-0.5 flex-shrink-0 text-slate-300 hover:text-green-500 dark:text-slate-600 dark:hover:text-green-400 transition-colors" title="Complete">
           <CheckCircle2 size={18} />
         </button>
       )}
       <div className="flex-1 min-w-0">
-        <p className={clsx('text-sm font-medium', reminder.status === 'done' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100')}>{reminder.title}</p>
+        <p className={clsx('text-sm font-medium', reminder.status === 'done' ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-900 dark:text-slate-100')}>{reminder.title}</p>
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
           {contact && <Link to={`/contacts/${contact.id}`} className="text-xs text-brand-600 hover:underline dark:text-brand-400">{fullName(contact)}</Link>}
-          {company && <><span className="text-gray-300 dark:text-gray-600">·</span><Link to={`/companies/${company.id}`} className="text-xs text-gray-500 hover:underline dark:text-gray-400">{company.name}</Link></>}
-          {property && <><span className="text-gray-300 dark:text-gray-600">·</span><Link to={`/properties/${property.id}`} className="text-xs text-gray-500 hover:underline dark:text-gray-400">{property.name}</Link></>}
+          {company && <><span className="text-slate-300 dark:text-slate-600">·</span><Link to={`/companies/${company.id}`} className="text-xs text-slate-500 hover:underline dark:text-slate-400">{company.name}</Link></>}
+          {property && <><span className="text-slate-300 dark:text-slate-600">·</span><Link to={`/deals/${property.id}`} className="text-xs text-slate-500 hover:underline dark:text-slate-400">{property.name}</Link></>}
         </div>
         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-          <span className={clsx('badge text-[11px]', overdue && reminder.status !== 'done' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : today ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300')}>
+          <span className={clsx('badge text-[11px]', overdue && reminder.status !== 'done' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : today ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300')}>
             <Calendar size={10} className="inline mr-1" />{formatDate(reminder.dueDate)}
           </span>
-          <span className={clsx('badge text-[11px]', TYPE_COLORS[reminder.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{reminder.type}</span>
+          <span className={clsx('badge text-[11px]', TYPE_COLORS[reminder.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{reminder.type}</span>
           <span className={clsx('badge text-[11px]', PRIORITY_COLORS[reminder.priority])}>{reminder.priority}</span>
         </div>
-        {reminder.notes && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 line-clamp-2">{reminder.notes}</p>}
+        {reminder.notes && <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 line-clamp-2">{reminder.notes}</p>}
       </div>
-      <button onClick={() => onDelete(reminder.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-all flex-shrink-0">
+      <button onClick={() => onDelete(reminder.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 transition-all flex-shrink-0">
         <Trash2 size={13} />
       </button>
     </div>
@@ -195,9 +195,9 @@ export default function Reminders() {
 
       {/* Filters */}
       <div className="flex gap-3 mb-6 flex-wrap">
-        <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
+        <div className="flex rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
           {['pending', 'done'].map(s => (
-            <button key={s} onClick={() => setFilterStatus(s)} className={clsx('px-4 py-2 text-[13px] font-medium transition-all duration-150', filterStatus === s ? 'bg-brand-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700')}>
+            <button key={s} onClick={() => setFilterStatus(s)} className={clsx('px-4 py-2 text-[13px] font-medium transition-all duration-150', filterStatus === s ? 'bg-brand-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700')}>
               {s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
           ))}
@@ -220,7 +220,7 @@ export default function Reminders() {
           <>
             <Section title="Overdue"  items={overdue}  className="text-red-600 dark:text-red-400" />
             <Section title="Today"    items={today}    className="text-orange-600 dark:text-orange-400" />
-            <Section title="Upcoming" items={upcoming} className="text-gray-500 dark:text-gray-400" />
+            <Section title="Upcoming" items={upcoming} className="text-slate-500 dark:text-slate-400" />
           </>
         )
       ) : (

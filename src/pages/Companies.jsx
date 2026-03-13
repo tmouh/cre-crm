@@ -46,20 +46,20 @@ function TypeCombobox({ value, onChange, disabled, allTypes }) {
           onFocus={() => { setOpen(true); setIsEditing(true) }}
           onBlur={() => setTimeout(() => setIsEditing(false), 200)}
           className="input pr-8" placeholder="Search or create type..." disabled={disabled} />
-        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
       </div>
       {open && !disabled && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
-          {filtered.length === 0 && !showCreate && <p className="px-3 py-2.5 text-sm text-gray-400 dark:text-gray-500">No types found</p>}
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+          {filtered.length === 0 && !showCreate && <p className="px-3 py-2.5 text-sm text-slate-400 dark:text-slate-500">No types found</p>}
           {filtered.map(t => (
             <button key={t} type="button" onMouseDown={e => e.preventDefault()} onClick={() => select(t)}
-              className="w-full text-left px-3 py-2 text-sm text-gray-800 dark:text-gray-200 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:text-brand-300 flex items-center gap-2">
-              <span className={clsx('badge text-[10px]', COMPANY_TYPE_COLORS[t] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{capitalize(t)}</span>
+              className="w-full text-left px-3 py-2 text-sm text-slate-800 dark:text-slate-200 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:text-brand-300 flex items-center gap-2">
+              <span className={clsx('badge text-[10px]', COMPANY_TYPE_COLORS[t] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{capitalize(t)}</span>
             </button>
           ))}
           {showCreate && (
             <button type="button" onMouseDown={e => e.preventDefault()} onClick={create}
-              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-gray-100 dark:border-gray-700">
+              className="w-full text-left px-3 py-2 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 flex items-center gap-1.5 border-t border-slate-100 dark:border-slate-700">
               <Plus size={13} /> Create &ldquo;{normalizedNew}&rdquo;
             </button>
           )}
@@ -124,7 +124,7 @@ export function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
 
       {/* Investment Profile — only when type is 'investor' */}
       {form.type === 'investor' && (
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2 space-y-4">
+        <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-2 space-y-4">
           <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">Investment Profile</p>
 
           <div>
@@ -144,7 +144,7 @@ export function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
                   className={clsx('badge cursor-pointer transition-colors',
                     (form.propertyTypes || []).includes(t)
                       ? 'bg-brand-600 text-white dark:bg-brand-500'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
                   )}>
                   {formatAssetType(t)}
                 </button>
@@ -194,17 +194,17 @@ function DetailRow({ icon: Icon, label, value, href, external }) {
   const text = value || '—'
   const content = href && !empty ? (
     <a href={href} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-      className="text-sm text-gray-700 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors flex items-center gap-1">
-      {text} {external && <ExternalLink size={10} className="text-gray-400 dark:text-gray-500" />}
+      className="text-sm text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors flex items-center gap-1">
+      {text} {external && <ExternalLink size={10} className="text-slate-400 dark:text-slate-500" />}
     </a>
   ) : (
-    <span className={empty ? 'text-sm text-gray-300 dark:text-gray-600 italic' : 'text-sm text-gray-700 dark:text-gray-300'}>{text}</span>
+    <span className={empty ? 'text-sm text-slate-300 dark:text-slate-600 italic' : 'text-sm text-slate-700 dark:text-slate-300'}>{text}</span>
   )
   return (
     <div className="flex items-center gap-3 py-2.5">
-      <Icon size={14} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+      <Icon size={14} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">{label}</p>
+        <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide">{label}</p>
         {content}
       </div>
     </div>
@@ -219,7 +219,7 @@ function CompanyDetail() {
   const [editing, setEditing] = useState(false)
 
   const company = getCompany(id)
-  if (!company) return <div className="p-8 text-gray-400 dark:text-gray-500">Company not found.</div>
+  if (!company) return <div className="p-8 text-slate-400 dark:text-slate-500">Company not found.</div>
 
   const relatedContacts  = contacts.filter(c => c.companyId === id)
   const ownedProperties  = properties.filter(p => p.ownerCompanyId === id)
@@ -233,7 +233,7 @@ function CompanyDetail() {
   return (
     <div className="px-8 py-8">
       {/* Page header */}
-      <Link to="/companies" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-5">
+      <Link to="/companies" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-5">
         <ArrowLeft size={15} /> Companies
       </Link>
 
@@ -243,9 +243,9 @@ function CompanyDetail() {
             <span className="text-sm font-bold text-brand-700 dark:text-brand-300">{companyInitials(company)}</span>
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{company.name}</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{company.name}</h2>
             {company.type && (
-              <span className={clsx('badge mt-0.5', COMPANY_TYPE_COLORS[company.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+              <span className={clsx('badge mt-0.5', COMPANY_TYPE_COLORS[company.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                 {company.type}
               </span>
             )}
@@ -261,8 +261,8 @@ function CompanyDetail() {
         <div className="col-span-1 space-y-5">
           {/* Company info — always-visible fields */}
           <div className="card p-5">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Details</p>
-            <div className="divide-y divide-gray-50 dark:divide-gray-700/40">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Details</p>
+            <div className="divide-y divide-slate-50 dark:divide-slate-700/40">
               <DetailRow icon={MapPin} label="Address" value={company.address} />
               <DetailRow icon={Mail} label="Email" value={company.email} href={company.email ? `mailto:${company.email}` : null} />
               <DetailRow icon={Phone} label="Phone" value={company.phone} href={company.phone ? `tel:${company.phone}` : null} />
@@ -270,24 +270,24 @@ function CompanyDetail() {
             </div>
 
             {/* Tags — always visible */}
-            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-              <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Tags</p>
+            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+              <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Tags</p>
               {company.tags?.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {company.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
                 </div>
               ) : (
-                <p className="text-sm text-gray-300 dark:text-gray-600 italic">No tags</p>
+                <p className="text-sm text-slate-300 dark:text-slate-600 italic">No tags</p>
               )}
             </div>
 
             {/* Notes — always visible */}
-            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-              <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Notes</p>
+            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+              <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Notes</p>
               {company.notes ? (
-                <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{company.notes}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{company.notes}</p>
               ) : (
-                <p className="text-sm text-gray-300 dark:text-gray-600 italic">No notes</p>
+                <p className="text-sm text-slate-300 dark:text-slate-600 italic">No notes</p>
               )}
             </div>
           </div>
@@ -299,13 +299,13 @@ function CompanyDetail() {
               <div className="space-y-3">
                 {company.capitalType && (
                   <div>
-                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Capital Type</p>
+                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Capital Type</p>
                     <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{formatCapitalType(company.capitalType)}</span>
                   </div>
                 )}
                 {(company.propertyTypes || []).length > 0 && (
                   <div>
-                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Property Types</p>
+                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Property Types</p>
                     <div className="flex flex-wrap gap-1">
                       {company.propertyTypes.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{formatAssetType(t)}</span>)}
                     </div>
@@ -313,8 +313,8 @@ function CompanyDetail() {
                 )}
                 {(company.minDealSize || company.maxDealSize) && (
                   <div>
-                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Deal Size Range</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Deal Size Range</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-300">
                       {company.minDealSize ? `$${Number(company.minDealSize).toLocaleString()}` : '—'}
                       {' — '}
                       {company.maxDealSize ? `$${Number(company.maxDealSize).toLocaleString()}` : '—'}
@@ -323,7 +323,7 @@ function CompanyDetail() {
                 )}
                 {(company.targetMarkets || []).length > 0 && (
                   <div>
-                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Target Markets</p>
+                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Target Markets</p>
                     <div className="flex flex-wrap gap-1">
                       {company.targetMarkets.map(m => <span key={m} className="badge bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300">{m}</span>)}
                     </div>
@@ -331,14 +331,14 @@ function CompanyDetail() {
                 )}
                 {company.targetReturns && (
                   <div>
-                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Target Returns</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">{company.targetReturns}</p>
+                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Target Returns</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-300">{company.targetReturns}</p>
                   </div>
                 )}
                 {company.investmentCriteria && (
                   <div>
-                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Investment Criteria</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{company.investmentCriteria}</p>
+                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Investment Criteria</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{company.investmentCriteria}</p>
                   </div>
                 )}
               </div>
@@ -347,7 +347,7 @@ function CompanyDetail() {
 
           {/* Contacts — always visible */}
           <div className="card p-4">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Contacts ({relatedContacts.length})</p>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">Contacts ({relatedContacts.length})</p>
             {relatedContacts.length > 0 ? (
               <div className="space-y-2.5">
                 {relatedContacts.map(c => {
@@ -359,12 +359,12 @@ function CompanyDetail() {
                         <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{ini}</span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-gray-800 dark:text-gray-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">{fullName(c)}</p>
+                        <p className="text-sm text-slate-800 dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">{fullName(c)}</p>
                         <div className="flex items-center gap-1.5">
-                          {c.title && <span className="text-xs text-gray-400 dark:text-gray-500">{c.title}</span>}
-                          {c.title && owners.length > 0 && <span className="text-xs text-gray-300 dark:text-gray-600">·</span>}
+                          {c.title && <span className="text-xs text-slate-400 dark:text-slate-500">{c.title}</span>}
+                          {c.title && owners.length > 0 && <span className="text-xs text-slate-300 dark:text-slate-600">·</span>}
                           {owners.length > 0 && (
-                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                            <span className="text-xs text-slate-400 dark:text-slate-500">
                               Owner: {owners.map(o => o.name || o.email).join(', ')}
                             </span>
                           )}
@@ -375,20 +375,20 @@ function CompanyDetail() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 dark:text-gray-500">No contacts linked to this company.</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500">No contacts linked to this company.</p>
             )}
           </div>
 
           {/* Properties — always visible */}
           <div className="card p-4">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Properties ({ownedProperties.length + tenantProperties.length})</p>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">Properties ({ownedProperties.length + tenantProperties.length})</p>
             {ownedProperties.length > 0 && (
               <>
-                <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">Owns ({ownedProperties.length})</p>
+                <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5">Owns ({ownedProperties.length})</p>
                 <div className="space-y-1.5 mb-3">
                   {ownedProperties.map(p => (
-                    <Link key={p.id} to={`/properties/${p.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400">
-                      <MapPin size={12} className="text-gray-400 dark:text-gray-500" /><span className="truncate">{p.name}</span>
+                    <Link key={p.id} to={`/deals/${p.id}`} className="flex items-center gap-2 text-sm text-slate-700 hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-400">
+                      <MapPin size={12} className="text-slate-400 dark:text-slate-500" /><span className="truncate">{p.name}</span>
                     </Link>
                   ))}
                 </div>
@@ -396,18 +396,18 @@ function CompanyDetail() {
             )}
             {tenantProperties.length > 0 && (
               <>
-                <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">Tenancy ({tenantProperties.length})</p>
+                <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5">Tenancy ({tenantProperties.length})</p>
                 <div className="space-y-1.5">
                   {tenantProperties.map(p => (
-                    <Link key={p.id} to={`/properties/${p.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400">
-                      <MapPin size={12} className="text-gray-400 dark:text-gray-500" /><span className="truncate">{p.name}</span>
+                    <Link key={p.id} to={`/deals/${p.id}`} className="flex items-center gap-2 text-sm text-slate-700 hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-400">
+                      <MapPin size={12} className="text-slate-400 dark:text-slate-500" /><span className="truncate">{p.name}</span>
                     </Link>
                   ))}
                 </div>
               </>
             )}
             {ownedProperties.length === 0 && tenantProperties.length === 0 && (
-              <p className="text-sm text-gray-400 dark:text-gray-500">No properties linked.</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500">No properties linked.</p>
             )}
           </div>
         </div>
@@ -466,8 +466,8 @@ function BulkEditModal({ selected, onClose, onSave }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">Completed!</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{selected.size} compan{selected.size !== 1 ? 'ies were' : 'y was'} updated successfully.</p>
+          <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Completed!</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{selected.size} compan{selected.size !== 1 ? 'ies were' : 'y was'} updated successfully.</p>
           <button onClick={onClose} className="btn-primary mt-2 px-6">Done</button>
         </div>
       </Modal>
@@ -497,11 +497,11 @@ function BulkEditModal({ selected, onClose, onSave }) {
             <div>
               <label className="label">Tag mode</label>
               <div className="flex gap-3">
-                <label className="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                   <input type="radio" name="tagMode" checked={tagMode === 'add'} onChange={() => setTagMode('add')} className="accent-brand-600" disabled={status === 'saving'} />
                   Add to existing
                 </label>
-                <label className="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                   <input type="radio" name="tagMode" checked={tagMode === 'replace'} onChange={() => setTagMode('replace')} className="accent-brand-600" disabled={status === 'saving'} />
                   Replace all
                 </label>
@@ -675,7 +675,7 @@ export default function Companies() {
 
       <div className="flex gap-3 mb-6">
         <div className="relative flex-1 max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search companies..." className="input pl-9" />
         </div>
         <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-40">
@@ -698,14 +698,14 @@ export default function Companies() {
           <button onClick={handleBulkDelete} className="btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5 text-red-600 hover:bg-red-50 hover:border-red-200 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:border-red-800">
             <Trash2 size={13} /> Delete
           </button>
-          <button onClick={clearSelection} className="btn-ghost p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+          <button onClick={clearSelection} className="btn-ghost p-1.5 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
             <X size={15} />
           </button>
         </div>
       )}
       {selected.size > 0 && barStuck && (
         <div className="fixed top-4 left-[220px] right-0 z-50 px-8 pointer-events-none">
-          <div className="flex items-center gap-3 rounded-xl bg-white dark:bg-gray-800 border border-brand-200 dark:border-brand-700 px-5 py-3 shadow-lg pointer-events-auto">
+          <div className="flex items-center gap-3 rounded-xl bg-white dark:bg-slate-800 border border-brand-200 dark:border-brand-700 px-5 py-3 shadow-lg pointer-events-auto">
             <CheckSquare size={16} className="text-brand-600 dark:text-brand-400" />
             <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{selected.size} selected</span>
             <div className="flex-1" />
@@ -715,7 +715,7 @@ export default function Companies() {
             <button onClick={handleBulkDelete} className="btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5 text-red-600 hover:bg-red-50 hover:border-red-200 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:border-red-800">
               <Trash2 size={13} /> Delete
             </button>
-            <button onClick={clearSelection} className="btn-ghost p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+            <button onClick={clearSelection} className="btn-ghost p-1.5 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
               <X size={15} />
             </button>
           </div>
@@ -728,13 +728,13 @@ export default function Companies() {
         <div className="card overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60">
+              <tr className="border-b border-slate-200/80 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/60">
                 <th className="px-3 py-3 w-10">
                   <input
                     type="checkbox"
                     checked={allVisibleSelected}
                     onChange={toggleAll}
-                    className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600"
+                    className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600"
                   />
                 </th>
                 {[
@@ -746,24 +746,24 @@ export default function Companies() {
                 ].map(({ field, label, className = '' }) => (
                   <th key={label}
                     onClick={field ? () => handleSort(field) : undefined}
-                    className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-gray-700 dark:hover:text-gray-200', className)}>
+                    className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200', className)}>
                     {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
               {filtered.map(c => {
                 const compContacts = contacts.filter(ct => ct.companyId === c.id)
                 const isSelected = selected.has(c.id)
                 return (
-                  <tr key={c.id} className={clsx('transition-colors', isSelected ? 'bg-brand-50/50 dark:bg-brand-900/10' : 'hover:bg-gray-50/70 dark:hover:bg-gray-700/50')}>
+                  <tr key={c.id} className={clsx('transition-colors', isSelected ? 'bg-brand-50/50 dark:bg-brand-900/10' : 'hover:bg-slate-50/70 dark:hover:bg-slate-700/50')}>
                     <td className="px-3 py-3.5">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleOne(c.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600"
+                        className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600"
                       />
                     </td>
                     <td className="px-5 py-3.5">
@@ -773,34 +773,34 @@ export default function Companies() {
                             <span className="text-xs font-bold text-brand-700 dark:text-brand-300">{companyInitials(c)}</span>
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-brand-600 dark:hover:text-brand-400">{c.name}</p>
-                            {c.address && <p className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[200px]">{c.address}</p>}
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-brand-600 dark:hover:text-brand-400">{c.name}</p>
+                            {c.address && <p className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-[200px]">{c.address}</p>}
                           </div>
                         </Link>
                         {c.website && (
-                          <a href={`https://${c.website}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400 flex-shrink-0" title={c.website}>
+                          <a href={`https://${c.website}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400 flex-shrink-0" title={c.website}>
                             <Globe size={14} />
                           </a>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className={clsx('badge', COMPANY_TYPE_COLORS[c.type] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{c.type}</span>
+                      <span className={clsx('badge', COMPANY_TYPE_COLORS[c.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{c.type}</span>
                     </td>
                     <td className="px-4 py-3.5">
                       {c.notes ? (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 max-w-[250px] line-clamp-3">{c.notes}</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-[250px] line-clamp-3">{c.notes}</p>
                       ) : (
-                        <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
+                        <span className="text-xs text-slate-300 dark:text-slate-600">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{compContacts.length}</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-400">{compContacts.length}</span>
                     </td>
                     <td className="px-4 pr-6 py-3.5">
                       <div className="flex flex-wrap gap-1">
-                        {(c.tags || []).slice(0, 3).map(t => <span key={t} className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{t}</span>)}
-                        {(c.tags || []).length > 3 && <span className="badge bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">+{c.tags.length - 3}</span>}
+                        {(c.tags || []).slice(0, 3).map(t => <span key={t} className="badge bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">{t}</span>)}
+                        {(c.tags || []).length > 3 && <span className="badge bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">+{c.tags.length - 3}</span>}
                       </div>
                     </td>
                   </tr>

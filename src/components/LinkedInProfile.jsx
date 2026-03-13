@@ -142,12 +142,12 @@ function OrgLogo({ url, fallback, size = 40 }) {
   if (url && !err) {
     return (
       <img src={url} alt="" onError={() => setErr(true)}
-        className="rounded object-contain bg-white dark:bg-gray-200 border border-gray-100 dark:border-gray-300 flex-shrink-0 p-0.5"
+        className="rounded object-contain bg-white dark:bg-slate-200 border border-slate-100 dark:border-slate-300 flex-shrink-0 p-0.5"
         style={style} />
     )
   }
   return (
-    <div className="rounded flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-bold flex-shrink-0 text-sm"
+    <div className="rounded flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold flex-shrink-0 text-sm"
       style={style}>
       {fallback?.[0]?.toUpperCase() ?? '?'}
     </div>
@@ -155,13 +155,13 @@ function OrgLogo({ url, fallback, size = 40 }) {
 }
 
 function Divider() {
-  return <div className="border-t border-gray-200 dark:border-gray-700 mx-5" />
+  return <div className="border-t border-slate-200 dark:border-slate-700 mx-5" />
 }
 
 function Section({ title, children }) {
   return (
     <div className="px-5 py-4">
-      <h3 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200 mb-3">{title}</h3>
+      <h3 className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 mb-3">{title}</h3>
       {children}
     </div>
   )
@@ -238,7 +238,7 @@ export default function LinkedInProfile({ contact }) {
   if (autoDetecting && !contact.linkedIn) {
     return (
       <div className="card overflow-hidden">
-        <div className="px-5 py-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+        <div className="px-5 py-4 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
           <Loader2 size={12} className="animate-spin flex-shrink-0" />
           Checking Outlook for LinkedIn profile…
         </div>
@@ -253,7 +253,7 @@ export default function LinkedInProfile({ contact }) {
         <div className="px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Linkedin size={15} className="text-[#0A66C2]" />
-            <span className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">LinkedIn Profile</span>
+            <span className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">LinkedIn Profile</span>
           </div>
           <button
             onClick={handleEnrich}
@@ -319,9 +319,9 @@ export default function LinkedInProfile({ contact }) {
         <div className="flex items-end justify-between -mt-7 mb-2">
           {profile_pic_url ? (
             <img src={profile_pic_url} alt={full_name}
-              className="w-14 h-14 rounded-full border-[3px] border-white dark:border-gray-800 object-cover shadow-sm" />
+              className="w-14 h-14 rounded-full border-[3px] border-white dark:border-slate-800 object-cover shadow-sm" />
           ) : (
-            <div className="w-14 h-14 rounded-full border-[3px] border-white dark:border-gray-800 bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-lg font-bold text-white shadow-sm">
+            <div className="w-14 h-14 rounded-full border-[3px] border-white dark:border-slate-800 bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-lg font-bold text-white shadow-sm">
               {full_name?.[0] ?? '?'}
             </div>
           )}
@@ -330,18 +330,18 @@ export default function LinkedInProfile({ contact }) {
             onClick={handleEnrich}
             disabled={loading}
             title="Re-enrich from LinkedIn"
-            className="mb-1 p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="mb-1 p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           >
             {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           </button>
         </div>
 
-        {full_name && <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">{full_name}</p>}
+        {full_name && <p className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight">{full_name}</p>}
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          {headline      && <span className="text-xs text-gray-600 dark:text-gray-400 leading-snug">{headline}</span>}
-          {industry       && <span className="text-xs text-gray-400 dark:text-gray-500">{headline ? '·' : ''} {industry}</span>}
+          {headline      && <span className="text-xs text-slate-600 dark:text-slate-400 leading-snug">{headline}</span>}
+          {industry       && <span className="text-xs text-slate-400 dark:text-slate-500">{headline ? '·' : ''} {industry}</span>}
         </div>
-        {location_name && <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{location_name}</p>}
+        {location_name && <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{location_name}</p>}
       </div>
 
       {/* ── Error on re-enrich ── */}
@@ -356,7 +356,7 @@ export default function LinkedInProfile({ contact }) {
         <>
           <Divider />
           <Section title="About">
-            <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">{summary}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 whitespace-pre-line leading-relaxed">{summary}</p>
           </Section>
         </>
       )}
@@ -371,14 +371,14 @@ export default function LinkedInProfile({ contact }) {
                 <div key={i} className="flex gap-2.5">
                   <OrgLogo url={exp.logo_url} fallback={titleCase(exp.company)} size={32} />
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 leading-snug">{titleCase(exp.title)}</p>
-                    {exp.company  && <p className="text-xs text-gray-600 dark:text-gray-400">{titleCase(exp.company)}</p>}
+                    <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 leading-snug">{titleCase(exp.title)}</p>
+                    {exp.company  && <p className="text-xs text-slate-600 dark:text-slate-400">{titleCase(exp.company)}</p>}
                     {dateRange(exp.starts_at, exp.ends_at) && (
-                      <p className="text-[11px] text-gray-500 dark:text-gray-500 mt-0.5">{dateRange(exp.starts_at, exp.ends_at)}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">{dateRange(exp.starts_at, exp.ends_at)}</p>
                     )}
-                    {exp.location && <p className="text-[11px] text-gray-500 dark:text-gray-500">{titleCase(exp.location)}</p>}
+                    {exp.location && <p className="text-[11px] text-slate-500 dark:text-slate-500">{titleCase(exp.location)}</p>}
                     {exp.description && (
-                      <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 leading-relaxed line-clamp-3">{exp.description}</p>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed line-clamp-3">{exp.description}</p>
                     )}
                   </div>
                 </div>
@@ -400,15 +400,15 @@ export default function LinkedInProfile({ contact }) {
                   <div key={i} className="flex gap-2.5">
                     <OrgLogo url={edu.logo_url} fallback={titleCase(edu.school)} size={32} />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 leading-snug">{titleCase(edu.school)}</p>
+                      <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 leading-snug">{titleCase(edu.school)}</p>
                       {degreeDisplay && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">{degreeDisplay}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">{degreeDisplay}</p>
                       )}
                       {dateRange(edu.starts_at, edu.ends_at) && (
-                        <p className="text-[11px] text-gray-500 dark:text-gray-500 mt-0.5">{dateRange(edu.starts_at, edu.ends_at)}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">{dateRange(edu.starts_at, edu.ends_at)}</p>
                       )}
                       {edu.description && (
-                        <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 leading-relaxed line-clamp-3">{edu.description}</p>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed line-clamp-3">{edu.description}</p>
                       )}
                     </div>
                   </div>
@@ -427,10 +427,10 @@ export default function LinkedInProfile({ contact }) {
             <div className="space-y-3">
               {certifications.map((cert, i) => (
                 <div key={i}>
-                  <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">{titleCase(cert.name)}</p>
-                  {cert.authority && <p className="text-xs text-gray-600 dark:text-gray-400">{titleCase(cert.authority)}</p>}
+                  <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{titleCase(cert.name)}</p>
+                  {cert.authority && <p className="text-xs text-slate-600 dark:text-slate-400">{titleCase(cert.authority)}</p>}
                   {cert.starts_at && (
-                    <p className="text-[11px] text-gray-500 dark:text-gray-500 mt-0.5">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">
                       Issued {fmtDate(cert.starts_at)}{cert.ends_at ? ` · Expires ${fmtDate(cert.ends_at)}` : ''}
                     </p>
                   )}
@@ -449,8 +449,8 @@ export default function LinkedInProfile({ contact }) {
             <div className="space-y-1.5">
               {languages.map((l, i) => (
                 <div key={i}>
-                  <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">{titleCase(l.name)}</p>
-                  {l.proficiency && <p className="text-[11px] text-gray-500 dark:text-gray-500">{l.proficiency}</p>}
+                  <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{titleCase(l.name)}</p>
+                  {l.proficiency && <p className="text-[11px] text-slate-500 dark:text-slate-500">{l.proficiency}</p>}
                 </div>
               ))}
             </div>
@@ -465,7 +465,7 @@ export default function LinkedInProfile({ contact }) {
           <Section title="Interests">
             <div className="flex flex-wrap gap-1.5">
               {interests.map((item, i) => (
-                <span key={i} className="text-[11px] bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full px-2.5 py-0.5">
+                <span key={i} className="text-[11px] bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full px-2.5 py-0.5">
                   {titleCase(item)}
                 </span>
               ))}
@@ -479,7 +479,7 @@ export default function LinkedInProfile({ contact }) {
         <>
           <Divider />
           <div className="px-5 py-2 flex items-center justify-end">
-            <span className="text-[10px] text-gray-400 dark:text-gray-500">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500">
               Enriched {new Date(enriched_at).toLocaleDateString()}
             </span>
           </div>

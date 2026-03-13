@@ -54,7 +54,7 @@ function ContactSearch({ contacts, selected, onToggle }) {
         </div>
       )}
       <div className="relative" ref={ref}>
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           value={query}
           onChange={e => { setQuery(e.target.value); setOpen(true) }}
@@ -63,23 +63,23 @@ function ContactSearch({ contacts, selected, onToggle }) {
           className="input pl-9"
         />
         {open && query && (
-          <div className="absolute z-20 top-full mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          <div className="absolute z-20 top-full mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
             {matches.length === 0 ? (
-              <p className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">No contacts found</p>
+              <p className="px-3 py-2 text-sm text-slate-400 dark:text-slate-500">No contacts found</p>
             ) : (
               matches.slice(0, 8).map(c => (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => { onToggle(c.id); setQuery(''); setOpen(false) }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
                 >
                   <div className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
                     <span className="text-[10px] font-semibold text-brand-700 dark:text-brand-300">{(c.firstName || '')[0]}{(c.lastName || '')[0]}</span>
                   </div>
                   <div className="min-w-0">
-                    <span className="text-gray-700 dark:text-gray-300">{fullName(c)}</span>
-                    {c.title && <span className="text-gray-400 dark:text-gray-500 text-xs ml-1.5">· {c.title}</span>}
+                    <span className="text-slate-700 dark:text-slate-300">{fullName(c)}</span>
+                    {c.title && <span className="text-slate-400 dark:text-slate-500 text-xs ml-1.5">· {c.title}</span>}
                   </div>
                 </button>
               ))
@@ -177,7 +177,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       {/* Financial metrics */}
       <details className="group">
-        <summary className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 py-1">Financial Details</summary>
+        <summary className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 py-1">Financial Details</summary>
         <div className="mt-3 space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div>
@@ -233,7 +233,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
 
       {/* Capital stack */}
       <details className="group">
-        <summary className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 py-1">Capital Stack</summary>
+        <summary className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 py-1">Capital Stack</summary>
         <div className="mt-3 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -363,7 +363,7 @@ function DealInvestorsPanel({ dealId, dealInvestors, investorCompanies, contacts
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Investor Tracking ({linked.length})</h3>
+        <h3 className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Investor Tracking ({linked.length})</h3>
         <button onClick={() => setAdding(!adding)} className="btn-ghost text-xs px-2 py-1"><Plus size={13} /> Add</button>
       </div>
 
@@ -371,7 +371,7 @@ function DealInvestorsPanel({ dealId, dealInvestors, investorCompanies, contacts
         <form onSubmit={handleAdd} className="space-y-2 mb-3">
           <div className="flex gap-2 items-end">
             <div className="flex-1">
-              <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Investor Company <span className="text-red-500">*</span></label>
+              <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Investor Company <span className="text-red-500">*</span></label>
               <SearchableSelect
                 value={newCompanyId}
                 onChange={(v) => { setNewCompanyId(v); setNewContactId('') }}
@@ -380,20 +380,20 @@ function DealInvestorsPanel({ dealId, dealInvestors, investorCompanies, contacts
               />
             </div>
             <div>
-              <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Status</label>
+              <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Status</label>
               <select value={newStatus} onChange={e => setNewStatus(e.target.value)} className="input w-28">
                 {INVESTOR_STATUSES.map(s => <option key={s} value={s}>{formatInvestorStatus(s)}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Bid</label>
+              <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Bid</label>
               <NumericInput value={newBid} onChange={setNewBid} decimals placeholder="$" className="w-28" />
             </div>
             <button type="submit" className="btn-primary py-2">Add</button>
           </div>
           {newCompanyId && companyContacts.length > 0 && (
             <div>
-              <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Point of Contact (optional)</label>
+              <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Point of Contact (optional)</label>
               <select value={newContactId} onChange={e => setNewContactId(e.target.value)} className="input w-full">
                 <option value="">— None —</option>
                 {companyContacts.map(c => <option key={c.id} value={c.id}>{fullName(c)}{c.title ? ` — ${c.title}` : ''}</option>)}
@@ -404,7 +404,7 @@ function DealInvestorsPanel({ dealId, dealInvestors, investorCompanies, contacts
       )}
 
       {linked.length === 0 && !adding && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">No investors tracked yet</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">No investors tracked yet</p>
       )}
 
       {linked.length > 0 && (
@@ -413,20 +413,20 @@ function DealInvestorsPanel({ dealId, dealInvestors, investorCompanies, contacts
             const contact = contacts.find(c => c.id === di.contactId)
             const company = companies.find(c => c.id === di.companyId)
             return (
-              <div key={di.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/30">
+              <div key={di.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-700/30">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{company?.name || (contact ? fullName(contact) : 'Unknown')}</p>
-                  {contact && <p className="text-[11px] text-gray-400 dark:text-gray-500">{fullName(contact)}{contact.title ? ` — ${contact.title}` : ''}</p>}
-                  {di.bidAmount && <p className="text-[11px] text-gray-500 dark:text-gray-400">Bid: {formatCurrency(di.bidAmount)}</p>}
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{company?.name || (contact ? fullName(contact) : 'Unknown')}</p>
+                  {contact && <p className="text-[11px] text-slate-400 dark:text-slate-500">{fullName(contact)}{contact.title ? ` — ${contact.title}` : ''}</p>}
+                  {di.bidAmount && <p className="text-[11px] text-slate-500 dark:text-slate-400">Bid: {formatCurrency(di.bidAmount)}</p>}
                 </div>
                 <select
                   value={di.status}
                   onChange={e => updateDealInvestor(di.id, { status: e.target.value })}
-                  className={clsx('badge text-[11px] border-0 cursor-pointer pr-5 appearance-auto', INVESTOR_STATUS_COLORS[di.status] || 'bg-gray-100 text-gray-600')}
+                  className={clsx('badge text-[11px] border-0 cursor-pointer pr-5 appearance-auto', INVESTOR_STATUS_COLORS[di.status] || 'bg-slate-100 text-slate-600')}
                 >
                   {INVESTOR_STATUSES.map(s => <option key={s} value={s}>{formatInvestorStatus(s)}</option>)}
                 </select>
-                <button onClick={() => { if (confirm('Remove?')) deleteDealInvestor(di.id) }} className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
+                <button onClick={() => { if (confirm('Remove?')) deleteDealInvestor(di.id) }} className="text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400">
                   <Trash2 size={13} />
                 </button>
               </div>
@@ -446,7 +446,7 @@ function DealDetail() {
   const [editing, setEditing] = useState(false)
 
   const deal = getProperty(id)
-  if (!deal) return <div className="p-8 text-gray-400 dark:text-gray-500">Deal not found.</div>
+  if (!deal) return <div className="p-8 text-slate-400 dark:text-slate-500">Deal not found.</div>
 
   const owner   = getCompany(deal.ownerCompanyId)
   const tenant  = getCompany(deal.tenantCompanyId)
@@ -460,7 +460,7 @@ function DealDetail() {
 
   return (
     <div className="px-8 py-8">
-      <Link to="/properties" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
+      <Link to="/properties" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-6">
         <ArrowLeft size={15} /> Deals
       </Link>
 
@@ -470,7 +470,7 @@ function DealDetail() {
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-2">
                 {deal.status && (
-                  <span className={clsx('badge text-sm px-3 py-1', DEAL_STATUS_COLORS[deal.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+                  <span className={clsx('badge text-sm px-3 py-1', DEAL_STATUS_COLORS[deal.status] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                     {formatDealStatus(deal.status)}
                   </span>
                 )}
@@ -480,72 +480,72 @@ function DealDetail() {
                 <button onClick={handleDelete} className="btn-ghost p-2 hover:text-red-500"><Trash2 size={14} /></button>
               </div>
             </div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{deal.name || deal.address}</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{deal.name || deal.address}</h2>
             {deal.dealType && (
-              <span className={clsx('badge mt-1', DEAL_TYPE_COLORS[deal.dealType] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>
+              <span className={clsx('badge mt-1', DEAL_TYPE_COLORS[deal.dealType] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
                 {formatDealType(deal.dealType)}
               </span>
             )}
             {deal.name && deal.address && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 flex items-start gap-1.5">
-                <MapPin size={13} className="text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" /> {deal.address}
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 flex items-start gap-1.5">
+                <MapPin size={13} className="text-slate-400 dark:text-slate-500 mt-0.5 flex-shrink-0" /> {deal.address}
               </p>
             )}
 
-            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
+            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2">
               {deal.dealValue && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Deal value</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">${Number(deal.dealValue).toLocaleString()}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Deal value</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">${Number(deal.dealValue).toLocaleString()}</span>
                 </div>
               )}
               {deal.size && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Size</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{Number(deal.size).toLocaleString()} {deal.sizeUnit}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Size</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{Number(deal.size).toLocaleString()} {deal.sizeUnit}</span>
                 </div>
               )}
             </div>
 
             {/* Financial metrics */}
             {(deal.capRate || deal.noi || deal.pricePerSf || deal.ltv || deal.dscr || deal.askingPrice) && (
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-2">
-                {deal.capRate && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Cap rate</span><span className="font-medium text-gray-900 dark:text-gray-100">{formatPercent(deal.capRate)}</span></div>}
-                {deal.noi && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">NOI</span><span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(deal.noi)}</span></div>}
-                {deal.pricePerSf && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">$/SF</span><span className="font-medium text-gray-900 dark:text-gray-100">{formatPSF(deal.pricePerSf)}</span></div>}
-                {deal.askingPrice && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Asking</span><span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(deal.askingPrice)}</span></div>}
-                {deal.ltv && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">LTV</span><span className="font-medium text-gray-900 dark:text-gray-100">{formatPercent(deal.ltv)}</span></div>}
-                {deal.dscr && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">DSCR</span><span className="font-medium text-gray-900 dark:text-gray-100">{Number(deal.dscr).toFixed(2)}x</span></div>}
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 grid grid-cols-2 gap-2">
+                {deal.capRate && <div className="flex justify-between text-sm"><span className="text-slate-500 dark:text-slate-400">Cap rate</span><span className="font-medium text-slate-900 dark:text-slate-100">{formatPercent(deal.capRate)}</span></div>}
+                {deal.noi && <div className="flex justify-between text-sm"><span className="text-slate-500 dark:text-slate-400">NOI</span><span className="font-medium text-slate-900 dark:text-slate-100">{formatCurrency(deal.noi)}</span></div>}
+                {deal.pricePerSf && <div className="flex justify-between text-sm"><span className="text-slate-500 dark:text-slate-400">$/SF</span><span className="font-medium text-slate-900 dark:text-slate-100">{formatPSF(deal.pricePerSf)}</span></div>}
+                {deal.askingPrice && <div className="flex justify-between text-sm"><span className="text-slate-500 dark:text-slate-400">Asking</span><span className="font-medium text-slate-900 dark:text-slate-100">{formatCurrency(deal.askingPrice)}</span></div>}
+                {deal.ltv && <div className="flex justify-between text-sm"><span className="text-slate-500 dark:text-slate-400">LTV</span><span className="font-medium text-slate-900 dark:text-slate-100">{formatPercent(deal.ltv)}</span></div>}
+                {deal.dscr && <div className="flex justify-between text-sm"><span className="text-slate-500 dark:text-slate-400">DSCR</span><span className="font-medium text-slate-900 dark:text-slate-100">{Number(deal.dscr).toFixed(2)}x</span></div>}
               </div>
             )}
 
             {/* Capital stack */}
             {(deal.seniorDebtAmount || deal.mezzAmount || deal.prefEquityAmount || deal.jvEquityAmount) && (
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <p className="text-xs text-gray-400 dark:text-gray-500 mb-2 font-semibold uppercase tracking-wider">Capital Stack</p>
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <p className="text-xs text-slate-400 dark:text-slate-500 mb-2 font-semibold uppercase tracking-wider">Capital Stack</p>
                 <div className="space-y-1.5">
                   {deal.seniorDebtAmount && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">Senior debt</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(deal.seniorDebtAmount)} {deal.seniorDebtRate ? `@ ${Number(deal.seniorDebtRate).toFixed(2)}%` : ''}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Senior debt</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">{formatCurrency(deal.seniorDebtAmount)} {deal.seniorDebtRate ? `@ ${Number(deal.seniorDebtRate).toFixed(2)}%` : ''}</span>
                     </div>
                   )}
                   {deal.mezzAmount && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">Mezzanine</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(deal.mezzAmount)} {deal.mezzRate ? `@ ${Number(deal.mezzRate).toFixed(2)}%` : ''}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Mezzanine</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">{formatCurrency(deal.mezzAmount)} {deal.mezzRate ? `@ ${Number(deal.mezzRate).toFixed(2)}%` : ''}</span>
                     </div>
                   )}
                   {deal.prefEquityAmount && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">Pref equity</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(deal.prefEquityAmount)} {deal.prefEquityRate ? `@ ${Number(deal.prefEquityRate).toFixed(2)}%` : ''}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Pref equity</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">{formatCurrency(deal.prefEquityAmount)} {deal.prefEquityRate ? `@ ${Number(deal.prefEquityRate).toFixed(2)}%` : ''}</span>
                     </div>
                   )}
                   {deal.jvEquityAmount && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">JV equity</span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(deal.jvEquityAmount)}</span>
+                      <span className="text-slate-500 dark:text-slate-400">JV equity</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">{formatCurrency(deal.jvEquityAmount)}</span>
                     </div>
                   )}
                 </div>
@@ -571,10 +571,10 @@ function DealDetail() {
             )}
 
             {(owner || tenant || lender) && (
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2">
                 {owner && (
                   <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Owner / Sponsor</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Owner / Sponsor</p>
                     <Link to={`/companies/${owner.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400 flex items-center gap-1.5">
                       <Building2 size={13} /> {owner.name}
                     </Link>
@@ -582,7 +582,7 @@ function DealDetail() {
                 )}
                 {tenant && (
                   <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Seller</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Seller</p>
                     <Link to={`/companies/${tenant.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400 flex items-center gap-1.5">
                       <Building2 size={13} /> {tenant.name}
                     </Link>
@@ -590,7 +590,7 @@ function DealDetail() {
                 )}
                 {lender && (
                   <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Lender</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Lender</p>
                     <Link to={`/companies/${lender.id}`} className="text-sm text-brand-600 hover:underline dark:text-brand-400 flex items-center gap-1.5">
                       <Building2 size={13} /> {lender.name}
                     </Link>
@@ -600,11 +600,11 @@ function DealDetail() {
             )}
 
             {keyContacts.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">Key contacts</p>
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">Key contacts</p>
                 <div className="space-y-2">
                   {keyContacts.map(c => (
-                    <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400">
+                    <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 text-sm text-slate-700 hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-400">
                       <div className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
                         <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{(c.firstName || '')[0]}{(c.lastName || '')[0]}</span>
                       </div>
@@ -616,15 +616,15 @@ function DealDetail() {
             )}
 
             {deal.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                 {deal.tags.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
               </div>
             )}
 
             {deal.notes && (
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Notes</p>
-                <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{deal.notes}</p>
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Notes</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{deal.notes}</p>
               </div>
             )}
           </div>
@@ -650,14 +650,14 @@ function DealDetail() {
 function NextStepCell({ dealId }) {
   const { remindersFor } = useCRM()
   const pending = remindersFor('propertyId', dealId).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
-  if (pending.length === 0) return <span className="text-gray-300 dark:text-gray-600">—</span>
+  if (pending.length === 0) return <span className="text-slate-300 dark:text-slate-600">—</span>
   const next = pending[0]
   const overdue = isOverdue(next.dueDate)
   const today = isDueToday(next.dueDate)
   return (
     <div className="min-w-0">
-      <p className="text-sm text-gray-700 dark:text-gray-300 truncate">{next.title}</p>
-      <p className={clsx('text-[11px] flex items-center gap-1', overdue ? 'text-red-500' : today ? 'text-orange-500' : 'text-gray-400 dark:text-gray-500')}>
+      <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{next.title}</p>
+      <p className={clsx('text-[11px] flex items-center gap-1', overdue ? 'text-red-500' : today ? 'text-orange-500' : 'text-slate-400 dark:text-slate-500')}>
         <Calendar size={10} /> {formatDate(next.dueDate)}
       </p>
     </div>
@@ -725,7 +725,7 @@ export default function Properties() {
 
       <div className="flex gap-3 mb-6">
         <div className="relative flex-1 max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search deals..." className="input pl-9" />
         </div>
         <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-44">
@@ -744,7 +744,7 @@ export default function Properties() {
         <div className="card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+              <tr className="border-b border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
                 {[
                   { field: 'name', label: 'Deal' },
                   { field: 'dealType', label: 'Type' },
@@ -757,49 +757,49 @@ export default function Properties() {
                 ].map(({ field, label, className = '' }) => (
                   <th key={label}
                     onClick={field ? () => handleSort(field) : undefined}
-                    className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-gray-700 dark:hover:text-gray-200', className)}>
+                    className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200', className)}>
                     {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
               {filtered.map(p => {
                 const owner = getCompany(p.ownerCompanyId)
                 const firstContact = (p.contactIds || []).length > 0 ? getContact(p.contactIds[0]) : null
                 return (
-                  <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                  <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                     <td className="px-4 py-3">
                       <Link to={`/properties/${p.id}`} className="block min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-brand-600 dark:hover:text-brand-400 truncate">{p.name || p.address}</p>
-                        {p.name && p.address && <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate mt-0.5">{p.address}</p>}
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-brand-600 dark:hover:text-brand-400 truncate">{p.name || p.address}</p>
+                        {p.name && p.address && <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate mt-0.5">{p.address}</p>}
                       </Link>
                     </td>
                     <td className="px-4 py-3">
                       {p.dealType ? (
-                        <span className={clsx('badge text-[11px]', DEAL_TYPE_COLORS[p.dealType] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{formatDealType(p.dealType)}</span>
+                        <span className={clsx('badge text-[11px]', DEAL_TYPE_COLORS[p.dealType] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{formatDealType(p.dealType)}</span>
                       ) : (
-                        <span className="text-gray-300 dark:text-gray-600">—</span>
+                        <span className="text-slate-300 dark:text-slate-600">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={clsx('badge text-[11px]', DEAL_STATUS_COLORS[p.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{formatDealStatus(p.status)}</span>
+                      <span className={clsx('badge text-[11px]', DEAL_STATUS_COLORS[p.status] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>{formatDealStatus(p.status)}</span>
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {p.dealValue ? formatCurrency(p.dealValue) : <span className="text-gray-300 dark:text-gray-600 font-normal">—</span>}
+                    <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">
+                      {p.dealValue ? formatCurrency(p.dealValue) : <span className="text-slate-300 dark:text-slate-600 font-normal">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       {owner ? (
-                        <Link to={`/companies/${owner.id}`} className="text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 truncate block">{owner.name}</Link>
+                        <Link to={`/companies/${owner.id}`} className="text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 truncate block">{owner.name}</Link>
                       ) : (
-                        <span className="text-gray-300 dark:text-gray-600">—</span>
+                        <span className="text-slate-300 dark:text-slate-600">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {firstContact ? (
-                        <Link to={`/contacts/${firstContact.id}`} className="text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 truncate block">{fullName(firstContact)}</Link>
+                        <Link to={`/contacts/${firstContact.id}`} className="text-sm text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 truncate block">{fullName(firstContact)}</Link>
                       ) : (
-                        <span className="text-gray-300 dark:text-gray-600">—</span>
+                        <span className="text-slate-300 dark:text-slate-600">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -809,10 +809,10 @@ export default function Properties() {
                       {p.tags?.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {p.tags.slice(0, 3).map(t => <span key={t} className="badge text-[11px] bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{t}</span>)}
-                          {p.tags.length > 3 && <span className="text-[11px] text-gray-400 dark:text-gray-500">+{p.tags.length - 3}</span>}
+                          {p.tags.length > 3 && <span className="text-[11px] text-slate-400 dark:text-slate-500">+{p.tags.length - 3}</span>}
                         </div>
                       ) : (
-                        <span className="text-gray-300 dark:text-gray-600">—</span>
+                        <span className="text-slate-300 dark:text-slate-600">—</span>
                       )}
                     </td>
                   </tr>

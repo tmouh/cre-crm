@@ -48,25 +48,25 @@ export default function OutlookMessages({ email }) {
 
   return (
     <div className="card overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
         <div className="flex items-center gap-2">
           <Mail size={15} className="text-blue-500" />
-          <h3 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Outlook Messages</h3>
+          <h3 className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Outlook Messages</h3>
           {messages.length > 0 && (
-            <span className="text-[11px] text-gray-400 dark:text-gray-500">({messages.length})</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">({messages.length})</span>
           )}
         </div>
       </div>
 
-      <div className="divide-y divide-gray-50 dark:divide-gray-700/30">
+      <div className="divide-y divide-slate-50 dark:divide-slate-700/30">
         {!checked ? (
           <div className="px-5 py-8 text-center">
-            <Loader2 size={20} className="animate-spin text-gray-300 dark:text-gray-600 mx-auto" />
+            <Loader2 size={20} className="animate-spin text-slate-300 dark:text-slate-600 mx-auto" />
           </div>
         ) : !email ? (
           <div className="px-5 py-8 text-center">
-            <Mail size={22} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-            <p className="text-sm text-gray-400 dark:text-gray-500">No email address on this contact</p>
+            <Mail size={22} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+            <p className="text-sm text-slate-400 dark:text-slate-500">No email address on this contact</p>
           </div>
         ) : !account ? (
           <div className="px-5 py-8 text-center">
@@ -78,7 +78,7 @@ export default function OutlookMessages({ email }) {
                 <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
               </svg>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Connect Microsoft to see email history</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Connect Microsoft to see email history</p>
             <button onClick={handleConnect} className="btn-secondary text-xs">
               <Mail size={13} /> Sign in with Microsoft
             </button>
@@ -86,7 +86,7 @@ export default function OutlookMessages({ email }) {
         ) : loading ? (
           <div className="px-5 py-8 text-center">
             <Loader2 size={20} className="animate-spin text-blue-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-400 dark:text-gray-500">Fetching emails...</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500">Fetching emails...</p>
           </div>
         ) : error ? (
           <div className="px-5 py-6 text-center">
@@ -95,33 +95,33 @@ export default function OutlookMessages({ email }) {
           </div>
         ) : messages.length === 0 ? (
           <div className="px-5 py-8 text-center">
-            <Mail size={22} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-            <p className="text-sm text-gray-400 dark:text-gray-500">No emails in the last 90 days</p>
+            <Mail size={22} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+            <p className="text-sm text-slate-400 dark:text-slate-500">No emails in the last 90 days</p>
           </div>
         ) : (
           <>
             {displayed.map(msg => (
-              <div key={msg.id} className="px-5 py-3 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+              <div key={msg.id} className="px-5 py-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                 <div className="flex items-start gap-2">
                   <button
                     onClick={() => setExpanded(expanded === msg.id ? null : msg.id)}
                     className="mt-0.5 flex-shrink-0"
                   >
                     {expanded === msg.id
-                      ? <ChevronDown size={13} className="text-gray-400" />
-                      : <ChevronRight size={13} className="text-gray-400" />
+                      ? <ChevronDown size={13} className="text-slate-400" />
+                      : <ChevronRight size={13} className="text-slate-400" />
                     }
                   </button>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <button
                         onClick={() => setExpanded(expanded === msg.id ? null : msg.id)}
-                        className={clsx('text-sm truncate text-left', expanded === msg.id ? 'font-semibold text-gray-900 dark:text-gray-100' : 'font-medium text-gray-700 dark:text-gray-300')}
+                        className={clsx('text-sm truncate text-left', expanded === msg.id ? 'font-semibold text-slate-900 dark:text-slate-100' : 'font-medium text-slate-700 dark:text-slate-300')}
                       >
                         {msg.subject || '(no subject)'}
                       </button>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
                           {formatMessageDate(msg.receivedDateTime)}
                         </span>
                         <a
@@ -129,23 +129,23 @@ export default function OutlookMessages({ email }) {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
-                          className="text-gray-400 hover:text-blue-500 dark:text-gray-500 dark:hover:text-blue-400 transition-colors"
+                          className="text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors"
                           title="Open in Outlook"
                         >
                           <ExternalLink size={12} />
                         </a>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                       {msg.from?.emailAddress?.name || msg.from?.emailAddress?.address || ''}
                     </p>
                     {expanded === msg.id && msg.bodyPreview && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 whitespace-pre-wrap leading-relaxed">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 whitespace-pre-wrap leading-relaxed">
                         {msg.bodyPreview}
                       </p>
                     )}
                     {expanded !== msg.id && msg.bodyPreview && (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
                         {msg.bodyPreview}
                       </p>
                     )}
