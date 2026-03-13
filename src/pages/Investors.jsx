@@ -397,6 +397,10 @@ export default function Investors() {
         actions={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add LP Investor</button>}
       />
 
+      <p className="text-sm text-gray-500 dark:text-gray-400 -mt-3 mb-6 max-w-2xl">
+        This page shows contacts whose function is set to "LP Investor." To add someone here, create a contact and set their function to LP Investor — or use the button above. Investment criteria like capital type, target markets, and deal size are stored on the contact and used to match investors to deals.
+      </p>
+
       <div className="flex gap-3 mb-6">
         <div className="relative flex-1 max-w-sm">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
