@@ -9,10 +9,10 @@ import { isOverdue, isDueToday } from '../utils/helpers'
 const NAV = [
   { to: '/',                label: 'Dashboard',         Icon: LayoutDashboard },
   { to: '/reminders',       label: 'Reminders',        Icon: Bell },
-  { to: '/contacts',        label: 'Contacts',          Icon: Users, children: [
+  { to: '/contacts',        label: 'Contacts',          Icon: Users },
+  { to: '/companies',       label: 'Companies',         Icon: Building2, children: [
     { to: '/investors', label: 'LP Investors', Icon: Users2 },
   ]},
-  { to: '/companies',       label: 'Companies',         Icon: Building2 },
   { to: '/properties',      label: 'Deals',             Icon: Briefcase },
   { to: '/pipeline',        label: 'Pipeline',          Icon: Kanban },
   { to: '/comps',           label: 'Comps',             Icon: Database },
@@ -50,7 +50,7 @@ export default function Sidebar() {
   const urgent = reminders.filter(r => r.status !== 'done' && (isOverdue(r.dueDate) || isDueToday(r.dueDate))).length
 
   const childRouteActive = location.pathname.startsWith('/investors')
-  const [contactsExpanded, setContactsExpanded] = useState(childRouteActive)
+  const [companiesExpanded, setCompaniesExpanded] = useState(childRouteActive)
 
   return (
     <aside className="w-[220px] flex-shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200/80 dark:border-gray-700/80 flex flex-col h-screen sticky top-0">
@@ -89,16 +89,16 @@ export default function Sidebar() {
                     )}
                   </NavLink>
                   <button
-                    onClick={() => setContactsExpanded(p => !p)}
+                    onClick={() => setCompaniesExpanded(p => !p)}
                     className={clsx(
                       'p-1.5 rounded-md transition-colors flex-shrink-0 -ml-1',
                       'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-800'
                     )}
                   >
-                    <ChevronDown size={14} className={clsx('transition-transform duration-200', !contactsExpanded && '-rotate-90')} />
+                    <ChevronDown size={14} className={clsx('transition-transform duration-200', !companiesExpanded && '-rotate-90')} />
                   </button>
                 </div>
-                {contactsExpanded && (
+                {companiesExpanded && (
                   <div className="ml-5 mt-0.5 space-y-0.5">
                     {children.map(child => (
                       <NavLink

@@ -343,20 +343,21 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
 }
 
 // ---- Deal Investors Panel ----
-function DealInvestorsPanel({ dealId, dealInvestors, investorContacts, contacts, companies, addDealInvestor, updateDealInvestor, deleteDealInvestor }) {
+function DealInvestorsPanel({ dealId, dealInvestors, investorCompanies, contacts, companies, addDealInvestor, updateDealInvestor, deleteDealInvestor }) {
   const [adding, setAdding] = useState(false)
+  const [newCompanyId, setNewCompanyId] = useState('')
   const [newContactId, setNewContactId] = useState('')
   const [newStatus, setNewStatus] = useState('contacted')
   const [newBid, setNewBid] = useState('')
 
   const linked = dealInvestors.filter(di => di.propertyId === dealId)
+  const companyContacts = newCompanyId ? contacts.filter(c => c.companyId === newCompanyId) : []
 
   async function handleAdd(e) {
     e.preventDefault()
-    if (!newContactId) return
-    const contact = contacts.find(c => c.id === newContactId)
-    await addDealInvestor({ propertyId: dealId, contactId: newContactId, companyId: contact?.companyId || null, status: newStatus, bidAmount: newBid || null })
-    setNewContactId(''); setNewStatus('contacted'); setNewBid(''); setAdding(false)
+    if (!newCompanyId) return
+    await addDealInvestor({ propertyId: dealId, companyId: newCompanyId, contactId: newContactId || null, status: newStatus, bidAmount: newBid || null })
+    setNewCompanyId(''); setNewContactId(''); setNewStatus('contacted'); setNewBid(''); setAdding(false)
   }
 
   return (
@@ -367,30 +368,38 @@ function DealInvestorsPanel({ dealId, dealInvestors, investorContacts, contacts,
       </div>
 
       {adding && (
-        <form onSubmit={handleAdd} className="flex gap-2 mb-3 items-end">
-          <div className="flex-1">
-            <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">LP Investor <span className="text-red-500">*</span></label>
-            <SearchableSelect
-              value={newContactId}
-              onChange={setNewContactId}
-              options={investorContacts.sort((a, b) => fullName(a).localeCompare(fullName(b))).map(c => {
-                const co = companies.find(co => co.id === c.companyId)
-                return { id: c.id, label: `${fullName(c)}${co ? ` (${co.name})` : ''}` }
-              })}
-              placeholder="Select LP investor..."
-            />
+        <form onSubmit={handleAdd} className="space-y-2 mb-3">
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Investor Company <span className="text-red-500">*</span></label>
+              <SearchableSelect
+                value={newCompanyId}
+                onChange={(v) => { setNewCompanyId(v); setNewContactId('') }}
+                options={investorCompanies.sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(c => ({ id: c.id, label: c.name }))}
+                placeholder="Select investor company..."
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Status</label>
+              <select value={newStatus} onChange={e => setNewStatus(e.target.value)} className="input w-28">
+                {INVESTOR_STATUSES.map(s => <option key={s} value={s}>{formatInvestorStatus(s)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Bid</label>
+              <NumericInput value={newBid} onChange={setNewBid} decimals placeholder="$" className="w-28" />
+            </div>
+            <button type="submit" className="btn-primary py-2">Add</button>
           </div>
-          <div>
-            <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Status</label>
-            <select value={newStatus} onChange={e => setNewStatus(e.target.value)} className="input w-28">
-              {INVESTOR_STATUSES.map(s => <option key={s} value={s}>{formatInvestorStatus(s)}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Bid</label>
-            <NumericInput value={newBid} onChange={setNewBid} decimals placeholder="$" className="w-28" />
-          </div>
-          <button type="submit" className="btn-primary py-2">Add</button>
+          {newCompanyId && companyContacts.length > 0 && (
+            <div>
+              <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Point of Contact (optional)</label>
+              <select value={newContactId} onChange={e => setNewContactId(e.target.value)} className="input w-full">
+                <option value="">— None —</option>
+                {companyContacts.map(c => <option key={c.id} value={c.id}>{fullName(c)}{c.title ? ` — ${c.title}` : ''}</option>)}
+              </select>
+            </div>
+          )}
         </form>
       )}
 
@@ -406,8 +415,8 @@ function DealInvestorsPanel({ dealId, dealInvestors, investorContacts, contacts,
             return (
               <div key={di.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/30">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{contact ? fullName(contact) : company?.name || 'Unknown'}</p>
-                  {contact && company && <p className="text-[11px] text-gray-400 dark:text-gray-500">{company.name}</p>}
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{company?.name || (contact ? fullName(contact) : 'Unknown')}</p>
+                  {contact && <p className="text-[11px] text-gray-400 dark:text-gray-500">{fullName(contact)}{contact.title ? ` — ${contact.title}` : ''}</p>}
                   {di.bidAmount && <p className="text-[11px] text-gray-500 dark:text-gray-400">Bid: {formatCurrency(di.bidAmount)}</p>}
                 </div>
                 <select
@@ -433,7 +442,7 @@ function DealInvestorsPanel({ dealId, dealInvestors, investorContacts, contacts,
 function DealDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getProperty, getCompany, getContact, updateProperty, deleteProperty, dealInvestors, addDealInvestor, updateDealInvestor, deleteDealInvestor, companies, investorContacts, contacts } = useCRM()
+  const { getProperty, getCompany, getContact, updateProperty, deleteProperty, dealInvestors, addDealInvestor, updateDealInvestor, deleteDealInvestor, companies, investorCompanies, contacts } = useCRM()
   const [editing, setEditing] = useState(false)
 
   const deal = getProperty(id)
@@ -622,7 +631,7 @@ function DealDetail() {
         </div>
 
         <div className="col-span-2 space-y-4">
-          <DealInvestorsPanel dealId={id} dealInvestors={dealInvestors} investorContacts={investorContacts} contacts={contacts} companies={companies} addDealInvestor={addDealInvestor} updateDealInvestor={updateDealInvestor} deleteDealInvestor={deleteDealInvestor} />
+          <DealInvestorsPanel dealId={id} dealInvestors={dealInvestors} investorCompanies={investorCompanies} contacts={contacts} companies={companies} addDealInvestor={addDealInvestor} updateDealInvestor={updateDealInvestor} deleteDealInvestor={deleteDealInvestor} />
           <ReminderList propertyId={id} />
           <ActivityFeed propertyId={id} />
         </div>

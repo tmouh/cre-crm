@@ -351,10 +351,10 @@ export function CRMProvider({ children }) {
     setComps(prev => prev.filter(c => c.id !== id))
   }, [])
 
-  // ─── INVESTOR CONTACTS (derived from contacts with contactFunction='lp-investor') ─
-  const investorContacts = useMemo(() =>
-    contacts.filter(c => c.contactFunction === 'lp-investor'),
-    [contacts]
+  // ─── INVESTOR COMPANIES (derived from companies with type='investor') ─────
+  const investorCompanies = useMemo(() =>
+    companies.filter(c => c.type === 'investor'),
+    [companies]
   )
 
   // ─── DEAL INVESTORS ────────────────────────────────────────────────────
@@ -437,7 +437,7 @@ export function CRMProvider({ children }) {
   return (
     <CRMContext.Provider value={{
       contacts, companies, properties, reminders, activities, teamMembers,
-      comps, investors, investorContacts, dealInvestors, automations,
+      comps, investors, investorCompanies, dealInvestors, automations,
       loading, error,
       deletedContacts, deletedCompanies, deletedProperties, deletedReminders,
       addContact, updateContact, deleteContact, restoreContact, purgeContact,

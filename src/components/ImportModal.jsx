@@ -47,6 +47,17 @@ const CONTACT_ALIASES = {
   linkedIn:            ['linkedin','linkedinurl'],
   tags:                ['tags','tag'],
   notes:               ['notes','note','comments'],
+}
+
+const COMPANY_ALIASES = {
+  name:                ['name','companyname','organization'],
+  type:                ['type','companytype'],
+  address:             ['address','addr'],
+  phone:               ['phone','tel','telephone'],
+  email:               ['email','emailaddress'],
+  website:             ['website','url','web'],
+  tags:                ['tags','tag'],
+  notes:               ['notes','note','comments'],
   capitalType:         ['capitaltype','capital','investmenttype'],
   propertyTypes:       ['propertytypes','targetpropertytypes','assettypes'],
   minDealSize:         ['mindealsize','minsize','minimumsize'],
@@ -54,17 +65,6 @@ const CONTACT_ALIASES = {
   targetMarkets:       ['targetmarkets','markets','market'],
   targetReturns:       ['targetreturns','returns','irr'],
   investmentCriteria:  ['investmentcriteria','criteria'],
-}
-
-const COMPANY_ALIASES = {
-  name:    ['name','companyname','organization'],
-  type:    ['type','companytype'],
-  address: ['address','addr'],
-  phone:   ['phone','tel','telephone'],
-  email:   ['email','emailaddress'],
-  website: ['website','url','web'],
-  tags:    ['tags','tag'],
-  notes:   ['notes','note','comments'],
 }
 
 const PROPERTY_ALIASES = {
@@ -118,14 +118,21 @@ function getCell(row, map, field) {
 function rowToCompany(row, map) {
   const v = (f) => getCell(row, map, f)
   return {
-    name:    v('name'),
-    type:    v('type') || 'other',
-    address: v('address'),
-    phone:   v('phone'),
-    email:   v('email'),
-    website: v('website'),
-    tags:    v('tags') ? v('tags').split(';').map(t => t.trim()).filter(Boolean) : [],
-    notes:   v('notes'),
+    name:               v('name'),
+    type:               v('type') || 'other',
+    address:            v('address'),
+    phone:              v('phone'),
+    email:              v('email'),
+    website:            v('website'),
+    tags:               v('tags') ? v('tags').split(';').map(t => t.trim()).filter(Boolean) : [],
+    notes:              v('notes'),
+    capitalType:        v('capitalType') || '',
+    propertyTypes:      v('propertyTypes') ? v('propertyTypes').split(';').map(t => t.trim()).filter(Boolean) : [],
+    minDealSize:        v('minDealSize') ? Number(v('minDealSize').replace(/[$,]/g, '')) : '',
+    maxDealSize:        v('maxDealSize') ? Number(v('maxDealSize').replace(/[$,]/g, '')) : '',
+    targetMarkets:      v('targetMarkets') ? v('targetMarkets').split(';').map(t => t.trim()).filter(Boolean) : [],
+    targetReturns:      v('targetReturns') || '',
+    investmentCriteria: v('investmentCriteria') || '',
   }
 }
 
@@ -148,13 +155,6 @@ function rowToContact(row, map, companies) {
     tags:               v('tags') ? v('tags').split(';').map(t => t.trim()).filter(Boolean) : [],
     notes:              v('notes'),
     ownerIds:           [],
-    capitalType:        v('capitalType') || '',
-    propertyTypes:      v('propertyTypes') ? v('propertyTypes').split(';').map(t => t.trim()).filter(Boolean) : [],
-    minDealSize:        v('minDealSize') ? Number(v('minDealSize').replace(/[$,]/g, '')) : '',
-    maxDealSize:        v('maxDealSize') ? Number(v('maxDealSize').replace(/[$,]/g, '')) : '',
-    targetMarkets:      v('targetMarkets') ? v('targetMarkets').split(';').map(t => t.trim()).filter(Boolean) : [],
-    targetReturns:      v('targetReturns') || '',
-    investmentCriteria: v('investmentCriteria') || '',
   }
 }
 
@@ -301,14 +301,14 @@ export default function ImportModal({ entity, onClose }) {
 
               {entity === 'contacts' && (
                 <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
-                  Recognised columns: <span className="font-mono">firstName*, lastName*, title, function, company, email, phone, mobile, linkedIn, tags, notes, capitalType, propertyTypes, minDealSize, maxDealSize, targetMarkets, targetReturns, investmentCriteria</span>
-                  <br />* Required. For <span className="font-mono">company</span>, use the exact company name. For <span className="font-mono">function</span>, valid values: lp-investor, broker, developer, lender, owner-operator, tenant, attorney, accountant, property-manager, other. Tags, propertyTypes, and targetMarkets separated by semicolons. Set function to <span className="font-mono">lp-investor</span> for LP Investor contacts.
+                  Recognised columns: <span className="font-mono">firstName*, lastName*, title, function, company, email, phone, mobile, linkedIn, tags, notes</span>
+                  <br />* Required. For <span className="font-mono">company</span>, use the exact company name. For <span className="font-mono">function</span>, valid values: lp-investor, broker, developer, lender, owner-operator, tenant, attorney, accountant, property-manager, other. Tags separated by semicolons.
                 </p>
               )}
               {entity === 'companies' && (
                 <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
-                  Recognised columns: <span className="font-mono">name*, type, address, phone, email, website, tags, notes</span>
-                  <br />* Required. Valid types: owner, tenant, investor, developer, broker, lender, other. Tags separated by semicolons.
+                  Recognised columns: <span className="font-mono">name*, type, address, phone, email, website, tags, notes, capitalType, propertyTypes, minDealSize, maxDealSize, targetMarkets, targetReturns, investmentCriteria</span>
+                  <br />* Required. Valid types: owner, tenant, investor, developer, broker, lender, other. Tags, propertyTypes, and targetMarkets separated by semicolons. Investment fields (capitalType, etc.) apply to companies with type <span className="font-mono">investor</span>.
                 </p>
               )}
               {entity === 'properties' && (

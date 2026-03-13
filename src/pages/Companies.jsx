@@ -3,9 +3,10 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, X, CheckSquare, ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
-import { COMPANY_TYPES, COMPANY_TYPE_COLORS, companyInitials, formatDate, fullName } from '../utils/helpers'
+import { COMPANY_TYPES, COMPANY_TYPE_COLORS, ASSET_TYPES, CAPITAL_TYPES, companyInitials, formatDate, fullName, formatAssetType, formatCapitalType } from '../utils/helpers'
 import Modal from '../components/Modal'
 import TagInput from '../components/TagInput'
+import NumericInput from '../components/NumericInput'
 import ActivityFeed from '../components/ActivityFeed'
 import ReminderList from '../components/ReminderList'
 import EmptyState from '../components/EmptyState'
@@ -68,9 +69,13 @@ function TypeCombobox({ value, onChange, disabled, allTypes }) {
   )
 }
 
-const BLANK = { name: '', type: '', address: '', phone: '', email: '', website: '', notes: '', tags: [] }
+const BLANK = { name: '', type: '', address: '', phone: '', email: '', website: '', notes: '', tags: [], capitalType: '', propertyTypes: [], minDealSize: '', maxDealSize: '', targetMarkets: [], targetReturns: '', investmentCriteria: '' }
 
-function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
+function toggleArrayItem(arr, item) {
+  return arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item]
+}
+
+export function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
   const { companies } = useCRM()
   const [form, setForm] = useState({ ...BLANK, ...initial })
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
@@ -116,6 +121,65 @@ function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
         <label className="label">Notes</label>
         <textarea value={form.notes} onChange={f('notes')} rows={3} className="input resize-y" placeholder="Background, relationship notes..." />
       </div>
+
+      {/* Investment Profile — only when type is 'investor' */}
+      {form.type === 'investor' && (
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2 space-y-4">
+          <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">Investment Profile</p>
+
+          <div>
+            <label className="label">Capital Type</label>
+            <select value={form.capitalType} onChange={f('capitalType')} className="input">
+              <option value="">Select…</option>
+              {CAPITAL_TYPES.map(t => <option key={t} value={t}>{formatCapitalType(t)}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="label">Target Property Types</label>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {ASSET_TYPES.map(t => (
+                <button key={t} type="button"
+                  onClick={() => setForm(p => ({ ...p, propertyTypes: toggleArrayItem(p.propertyTypes || [], t) }))}
+                  className={clsx('badge cursor-pointer transition-colors',
+                    (form.propertyTypes || []).includes(t)
+                      ? 'bg-brand-600 text-white dark:bg-brand-500'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                  )}>
+                  {formatAssetType(t)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Min Deal Size ($)</label>
+              <NumericInput value={form.minDealSize} onChange={v => setForm(p => ({ ...p, minDealSize: v }))} placeholder="1,000,000" />
+            </div>
+            <div>
+              <label className="label">Max Deal Size ($)</label>
+              <NumericInput value={form.maxDealSize} onChange={v => setForm(p => ({ ...p, maxDealSize: v }))} placeholder="50,000,000" />
+            </div>
+          </div>
+
+          <div>
+            <label className="label">Target Markets</label>
+            <TagInput tags={form.targetMarkets || []} onChange={(tags) => setForm(p => ({ ...p, targetMarkets: tags }))} placeholder="Add market (e.g. NYC, Dallas)…" />
+          </div>
+
+          <div>
+            <label className="label">Target Returns</label>
+            <input value={form.targetReturns} onChange={f('targetReturns')} className="input" placeholder="e.g. 15-20% IRR, 8% cash-on-cash" />
+          </div>
+
+          <div>
+            <label className="label">Investment Criteria</label>
+            <textarea value={form.investmentCriteria} onChange={f('investmentCriteria')} rows={3} className="input resize-y" placeholder="Detailed investment parameters, preferences, restrictions..." />
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-2 pt-2">
         <button type="submit" className="btn-primary flex-1">Save Company</button>
         <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
@@ -227,6 +291,59 @@ function CompanyDetail() {
               )}
             </div>
           </div>
+
+          {/* Investment Profile — only for investor companies */}
+          {company.type === 'investor' && (company.capitalType || (company.propertyTypes || []).length > 0 || company.minDealSize || company.maxDealSize || (company.targetMarkets || []).length > 0 || company.targetReturns || company.investmentCriteria) && (
+            <div className="card p-5">
+              <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-3 uppercase tracking-wide">Investment Profile</p>
+              <div className="space-y-3">
+                {company.capitalType && (
+                  <div>
+                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Capital Type</p>
+                    <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{formatCapitalType(company.capitalType)}</span>
+                  </div>
+                )}
+                {(company.propertyTypes || []).length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Property Types</p>
+                    <div className="flex flex-wrap gap-1">
+                      {company.propertyTypes.map(t => <span key={t} className="badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">{formatAssetType(t)}</span>)}
+                    </div>
+                  </div>
+                )}
+                {(company.minDealSize || company.maxDealSize) && (
+                  <div>
+                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Deal Size Range</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {company.minDealSize ? `$${Number(company.minDealSize).toLocaleString()}` : '—'}
+                      {' — '}
+                      {company.maxDealSize ? `$${Number(company.maxDealSize).toLocaleString()}` : '—'}
+                    </p>
+                  </div>
+                )}
+                {(company.targetMarkets || []).length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Target Markets</p>
+                    <div className="flex flex-wrap gap-1">
+                      {company.targetMarkets.map(m => <span key={m} className="badge bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300">{m}</span>)}
+                    </div>
+                  </div>
+                )}
+                {company.targetReturns && (
+                  <div>
+                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Target Returns</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{company.targetReturns}</p>
+                  </div>
+                )}
+                {company.investmentCriteria && (
+                  <div>
+                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Investment Criteria</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{company.investmentCriteria}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Contacts — always visible */}
           <div className="card p-4">

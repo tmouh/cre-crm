@@ -4,10 +4,9 @@ import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, 
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
-import { fullName, initials, formatDate, daysDiff, formatCurrency, CONTACT_FUNCTIONS, formatContactFunction, ASSET_TYPES, CAPITAL_TYPES, formatAssetType, formatCapitalType } from '../utils/helpers'
+import { fullName, initials, formatDate, daysDiff, CONTACT_FUNCTIONS, formatContactFunction } from '../utils/helpers'
 import Modal from '../components/Modal'
 import TagInput from '../components/TagInput'
-import NumericInput from '../components/NumericInput'
 import ActivityFeed from '../components/ActivityFeed'
 import ReminderList from '../components/ReminderList'
 import EmptyState from '../components/EmptyState'
@@ -30,9 +29,9 @@ class LinkedInErrorBoundary extends Component {
   }
 }
 
-const BLANK = { firstName: '', lastName: '', title: '', contactFunction: '', companyId: '', email: '', phone: '', mobile: '', linkedIn: '', notes: '', tags: [], ownerIds: [], capitalType: '', propertyTypes: [], minDealSize: '', maxDealSize: '', targetMarkets: [], targetReturns: '', investmentCriteria: '' }
+const BLANK = { firstName: '', lastName: '', title: '', contactFunction: '', companyId: '', email: '', phone: '', mobile: '', linkedIn: '', notes: '', tags: [], ownerIds: [] }
 
-function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
+export function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
   const { addCompany, teamMembers } = useCRM()
   const { user } = useAuth()
 
@@ -47,13 +46,6 @@ function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
       ownerIds: p.ownerIds.includes(id)
         ? p.ownerIds.filter(o => o !== id)
         : [...p.ownerIds, id],
-    }))
-  }
-
-  function toggleArrayItem(field, val) {
-    setForm(p => ({
-      ...p,
-      [field]: (p[field] || []).includes(val) ? p[field].filter(v => v !== val) : [...(p[field] || []), val]
     }))
   }
 
@@ -143,53 +135,6 @@ function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
         <label className="label">Notes</label>
         <textarea value={form.notes} onChange={f('notes')} rows={3} className="input resize-y" placeholder="Background, preferences, how you met..." />
       </div>
-
-      {/* Investment profile fields — only shown for LP Investor contacts */}
-      {form.contactFunction === 'lp-investor' && (
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2 space-y-4">
-          <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Investment Profile</p>
-          <div>
-            <label className="label">Capital type</label>
-            <select value={form.capitalType || ''} onChange={f('capitalType')} className="input">
-              <option value="">— Select —</option>
-              {CAPITAL_TYPES.map(t => <option key={t} value={t}>{formatCapitalType(t)}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="label">Target property types</label>
-            <div className="flex flex-wrap gap-1.5">
-              {ASSET_TYPES.map(t => (
-                <button key={t} type="button" onClick={() => toggleArrayItem('propertyTypes', t)}
-                  className={clsx('badge cursor-pointer transition-colors', (form.propertyTypes || []).includes(t) ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400')}>
-                  {formatAssetType(t)}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Min deal size ($)</label>
-              <NumericInput value={form.minDealSize} onChange={v => setForm(p => ({ ...p, minDealSize: v }))} decimals placeholder="0" />
-            </div>
-            <div>
-              <label className="label">Max deal size ($)</label>
-              <NumericInput value={form.maxDealSize} onChange={v => setForm(p => ({ ...p, maxDealSize: v }))} decimals placeholder="0" />
-            </div>
-          </div>
-          <div>
-            <label className="label">Target markets</label>
-            <TagInput tags={form.targetMarkets || []} onChange={(v) => setForm(p => ({ ...p, targetMarkets: v }))} placeholder="Add market..." />
-          </div>
-          <div>
-            <label className="label">Target returns</label>
-            <input value={form.targetReturns || ''} onChange={f('targetReturns')} className="input" placeholder="e.g. 15-20% IRR, 8% cash-on-cash" />
-          </div>
-          <div>
-            <label className="label">Investment criteria</label>
-            <textarea value={form.investmentCriteria || ''} onChange={f('investmentCriteria')} rows={3} className="input resize-y" placeholder="Key investment parameters..." />
-          </div>
-        </div>
-      )}
 
       <div className="flex gap-2 pt-2">
         <button type="submit" className="btn-primary flex-1">Save Contact</button>
@@ -328,48 +273,6 @@ function ContactDetail() {
               </div>
             )}
 
-            {/* Investment profile for LP Investors */}
-            {contact.contactFunction === 'lp-investor' && (contact.capitalType || contact.propertyTypes?.length || contact.minDealSize || contact.targetMarkets?.length || contact.targetReturns || contact.investmentCriteria) && (
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-3">
-                <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Investment Profile</p>
-                {contact.capitalType && (
-                  <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Capital type</p>
-                    <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{formatCapitalType(contact.capitalType)}</span>
-                  </div>
-                )}
-                {contact.propertyTypes?.length > 0 && (
-                  <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Target property types</p>
-                    <div className="flex flex-wrap gap-1">{contact.propertyTypes.map(t => <span key={t} className="badge bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{formatAssetType(t)}</span>)}</div>
-                  </div>
-                )}
-                {(contact.minDealSize || contact.maxDealSize) && (
-                  <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Deal size range</p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatCurrency(contact.minDealSize)} – {formatCurrency(contact.maxDealSize)}</p>
-                  </div>
-                )}
-                {contact.targetMarkets?.length > 0 && (
-                  <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Target markets</p>
-                    <div className="flex flex-wrap gap-1">{contact.targetMarkets.map(m => <span key={m} className="badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">{m}</span>)}</div>
-                  </div>
-                )}
-                {contact.targetReturns && (
-                  <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Target returns</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{contact.targetReturns}</p>
-                  </div>
-                )}
-                {contact.investmentCriteria && (
-                  <div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Investment criteria</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{contact.investmentCriteria}</p>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Relevant Deals */}
