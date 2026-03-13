@@ -16,7 +16,7 @@ function AutomationForm({ initial = BLANK, onSubmit, onCancel }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setSaving(true)
-    try { await onSubmit(form) } catch { setSaving(false) }
+    try { await onSubmit(form) } catch { /* parent handles errors */ } finally { setSaving(false) }
   }
 
   return (

@@ -31,6 +31,7 @@ function CompForm({ initial = BLANK, onSubmit, onCancel, properties }) {
       await onSubmit({ ...form, saleDate: form.saleDate ? new Date(form.saleDate + 'T00:00:00').toISOString() : null })
     } catch (err) {
       setError(err?.message || 'Failed to save comp.')
+    } finally {
       setSaving(false)
     }
   }
