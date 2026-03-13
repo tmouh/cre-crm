@@ -3,151 +3,15 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { Plus, Search, ArrowLeft, Edit2, Trash2, Users2, Building2, Target, Phone, Mail } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
-import { useAuth } from '../context/AuthContext'
-import { ASSET_TYPES, CAPITAL_TYPES, CONTACT_FUNCTIONS, formatAssetType, formatCapitalType, formatCurrency, formatContactFunction, fullName, initials, formatDate } from '../utils/helpers'
+import { CAPITAL_TYPES, formatAssetType, formatCapitalType, formatCurrency, fullName, initials } from '../utils/helpers'
 import Modal from '../components/Modal'
-import TagInput from '../components/TagInput'
-import NumericInput from '../components/NumericInput'
-import SearchableSelect from '../components/SearchableSelect'
-import CompanyCombobox from '../components/CompanyCombobox'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import ReminderList from '../components/ReminderList'
 import ActivityFeed from '../components/ActivityFeed'
+import { ContactForm } from './Contacts'
 
-const BLANK = {
-  firstName: '', lastName: '', title: '', contactFunction: 'lp-investor', companyId: '',
-  email: '', phone: '', mobile: '', linkedIn: '', notes: '', tags: [], ownerIds: [],
-  capitalType: '', propertyTypes: [], minDealSize: '', maxDealSize: '',
-  targetMarkets: [], targetReturns: '', investmentCriteria: '',
-}
-
-function InvestorForm({ initial = BLANK, onSubmit, onCancel }) {
-  const { addCompany, teamMembers } = useCRM()
-  const { user } = useAuth()
-  const defaultOwnerIds = !initial.id ? (user ? [user.id] : []) : (initial.ownerIds || [])
-  const [form, setForm] = useState({ ...BLANK, ...initial, ownerIds: defaultOwnerIds })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
-
-  function toggleArrayItem(field, val) {
-    setForm(p => ({
-      ...p,
-      [field]: (p[field] || []).includes(val) ? p[field].filter(v => v !== val) : [...(p[field] || []), val]
-    }))
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setError('')
-    if (!form.firstName.trim() && !form.lastName.trim()) { setError('Name is required.'); return }
-    setSaving(true)
-    try { await onSubmit({ ...form, contactFunction: 'lp-investor' }) } catch (err) { setError(err?.message || 'Failed to save.'); setSaving(false) }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>}
-
-      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact Info</p>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="label">First name <span className="text-red-500">*</span></label>
-          <input value={form.firstName} onChange={f('firstName')} className="input" required />
-        </div>
-        <div>
-          <label className="label">Last name <span className="text-red-500">*</span></label>
-          <input value={form.lastName} onChange={f('lastName')} className="input" required />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="label">Title / Role</label>
-          <input value={form.title} onChange={f('title')} className="input" placeholder="e.g. Managing Director" />
-        </div>
-        <div>
-          <label className="label">Company</label>
-          <CompanyCombobox
-            value={form.companyId}
-            onChange={(id) => setForm(p => ({ ...p, companyId: id }))}
-            onCreateAndSelect={async (name) => {
-              const c = await addCompany({ name, type: 'investor' })
-              setForm(p => ({ ...p, companyId: c.id }))
-            }}
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="label">Email</label>
-          <input type="email" value={form.email} onChange={f('email')} className="input" placeholder="name@company.com" />
-        </div>
-        <div>
-          <label className="label">Phone</label>
-          <input value={form.phone} onChange={f('phone')} className="input" placeholder="212-555-0100" />
-        </div>
-      </div>
-
-      <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2 space-y-4">
-        <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Investment Profile</p>
-        <div>
-          <label className="label">Capital type</label>
-          <select value={form.capitalType || ''} onChange={f('capitalType')} className="input">
-            <option value="">— Select —</option>
-            {CAPITAL_TYPES.map(t => <option key={t} value={t}>{formatCapitalType(t)}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="label">Target property types</label>
-          <div className="flex flex-wrap gap-1.5">
-            {ASSET_TYPES.map(t => (
-              <button key={t} type="button" onClick={() => toggleArrayItem('propertyTypes', t)}
-                className={clsx('badge cursor-pointer transition-colors', (form.propertyTypes || []).includes(t) ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400')}>
-                {formatAssetType(t)}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Min deal size ($)</label>
-            <NumericInput value={form.minDealSize} onChange={v => setForm(p => ({ ...p, minDealSize: v }))} decimals placeholder="0" />
-          </div>
-          <div>
-            <label className="label">Max deal size ($)</label>
-            <NumericInput value={form.maxDealSize} onChange={v => setForm(p => ({ ...p, maxDealSize: v }))} decimals placeholder="0" />
-          </div>
-        </div>
-        <div>
-          <label className="label">Target markets</label>
-          <TagInput tags={form.targetMarkets || []} onChange={(v) => setForm(p => ({ ...p, targetMarkets: v }))} placeholder="Add market..." />
-        </div>
-        <div>
-          <label className="label">Target returns</label>
-          <input value={form.targetReturns || ''} onChange={f('targetReturns')} className="input" placeholder="e.g. 15-20% IRR, 8% cash-on-cash" />
-        </div>
-        <div>
-          <label className="label">Investment criteria</label>
-          <textarea value={form.investmentCriteria || ''} onChange={f('investmentCriteria')} rows={3} className="input resize-y" placeholder="Key investment parameters..." />
-        </div>
-      </div>
-
-      <div>
-        <label className="label">Tags</label>
-        <TagInput tags={form.tags || []} onChange={(tags) => setForm(p => ({ ...p, tags }))} />
-      </div>
-      <div>
-        <label className="label">Notes</label>
-        <textarea value={form.notes} onChange={f('notes')} rows={2} className="input resize-y" />
-      </div>
-      <div className="flex gap-2 pt-2">
-        <button type="submit" disabled={saving} className="btn-primary flex-1 disabled:opacity-60">{saving ? 'Saving…' : 'Save LP Investor'}</button>
-        <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
-      </div>
-    </form>
-  )
-}
+const LP_INVESTOR_INITIAL = { contactFunction: 'lp-investor' }
 
 // ─── Detail view ────────────────────────────────────────────────────────────────
 function InvestorDetail() {
@@ -261,7 +125,8 @@ function InvestorDetail() {
           {/* Deal activity */}
           {linkedDeals.length > 0 && (
             <div className="card p-5">
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">Deal activity ({linkedDeals.length})</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Deal Activity ({linkedDeals.length})</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">Deals this investor is linked to or participating in.</p>
               <div className="space-y-2">
                 {linkedDeals.map(d => (
                   <div key={d.id} className="flex items-center justify-between">
@@ -283,7 +148,7 @@ function InvestorDetail() {
 
       {editing && (
         <Modal title="Edit LP Investor" onClose={() => setEditing(false)} size="lg" disableBackdropClose>
-          <InvestorForm initial={contact} onSubmit={async (form) => { await updateContact(id, form); setEditing(false) }} onCancel={() => setEditing(false)} />
+          <ContactForm initial={contact} onSubmit={async (form) => { await updateContact(id, form); setEditing(false) }} onCancel={() => setEditing(false)} />
         </Modal>
       )}
     </div>
@@ -314,10 +179,11 @@ function InvestorMatchPanel({ properties, investorContacts, getCompany }) {
 
   return (
     <div className="card p-5">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-1">
         <Target size={15} className="text-brand-500" />
         <h3 className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Investor Matching</h3>
       </div>
+      <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">Select a deal to find LP investors whose criteria (property type, deal size, target markets) align with it. Green dots show match strength.</p>
       <select value={selectedDeal} onChange={e => setSelectedDeal(e.target.value)} className="input mb-3">
         <option value="">Select a deal to match...</option>
         {properties.filter(p => p.status !== 'dead' && p.status !== 'closed').map(p => (
@@ -397,7 +263,7 @@ export default function Investors() {
         actions={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add LP Investor</button>}
       />
 
-      <p className="text-sm text-gray-500 dark:text-gray-400 -mt-3 mb-6 max-w-2xl">
+      <p className="text-sm text-gray-500 dark:text-gray-400 -mt-3 mb-6">
         This page shows contacts whose function is set to "LP Investor." To add someone here, create a contact and set their function to LP Investor — or use the button above. Investment criteria like capital type, target markets, and deal size are stored on the contact and used to match investors to deals.
       </p>
 
@@ -502,7 +368,7 @@ export default function Investors() {
 
       {showAdd && (
         <Modal title="Add LP Investor" onClose={() => setShowAdd(false)} size="lg" disableBackdropClose>
-          <InvestorForm onSubmit={async (form) => { await addContact(form); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
+          <ContactForm initial={LP_INVESTOR_INITIAL} onSubmit={async (form) => { await addContact({ ...form, contactFunction: 'lp-investor' }); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
         </Modal>
       )}
     </div>
