@@ -36,17 +36,24 @@ function norm(s) { return s.toLowerCase().replace(/[\s_\-]/g, '') }
 
 // ─── Column alias maps ────────────────────────────────────────────────────────
 const CONTACT_ALIASES = {
-  firstName:       ['firstname','first','fname'],
-  lastName:        ['lastname','last','lname'],
-  title:           ['title','jobtitle','role'],
-  contactFunction: ['function','contactfunction','type','contacttype'],
-  company:         ['company','companyname','organization','org'],
-  email:           ['email','emailaddress'],
-  phone:           ['phone','phonenumber','tel','telephone'],
-  mobile:          ['mobile','cell','cellphone'],
-  linkedIn:        ['linkedin','linkedinurl'],
-  tags:            ['tags','tag'],
-  notes:           ['notes','note','comments'],
+  firstName:           ['firstname','first','fname'],
+  lastName:            ['lastname','last','lname'],
+  title:               ['title','jobtitle','role'],
+  contactFunction:     ['function','contactfunction','type','contacttype'],
+  company:             ['company','companyname','organization','org'],
+  email:               ['email','emailaddress'],
+  phone:               ['phone','phonenumber','tel','telephone'],
+  mobile:              ['mobile','cell','cellphone'],
+  linkedIn:            ['linkedin','linkedinurl'],
+  tags:                ['tags','tag'],
+  notes:               ['notes','note','comments'],
+  capitalType:         ['capitaltype','capital','investmenttype'],
+  propertyTypes:       ['propertytypes','targetpropertytypes','assettypes'],
+  minDealSize:         ['mindealsize','minsize','minimumsize'],
+  maxDealSize:         ['maxdealsize','maxsize','maximumsize'],
+  targetMarkets:       ['targetmarkets','markets','market'],
+  targetReturns:       ['targetreturns','returns','irr'],
+  investmentCriteria:  ['investmentcriteria','criteria'],
 }
 
 const COMPANY_ALIASES = {
@@ -129,18 +136,25 @@ function rowToContact(row, map, companies) {
     ? (companies.find(c => c.name.toLowerCase() === compName.toLowerCase())?.id || '')
     : ''
   return {
-    firstName:       v('firstName'),
-    lastName:        v('lastName'),
-    title:           v('title'),
-    contactFunction: v('contactFunction') || '',
+    firstName:          v('firstName'),
+    lastName:           v('lastName'),
+    title:              v('title'),
+    contactFunction:    v('contactFunction') || '',
     companyId,
-    email:           v('email'),
-    phone:           v('phone'),
-    mobile:          v('mobile'),
-    linkedIn:        v('linkedIn'),
-    tags:            v('tags') ? v('tags').split(';').map(t => t.trim()).filter(Boolean) : [],
-    notes:           v('notes'),
-    ownerIds:        [],
+    email:              v('email'),
+    phone:              v('phone'),
+    mobile:             v('mobile'),
+    linkedIn:           v('linkedIn'),
+    tags:               v('tags') ? v('tags').split(';').map(t => t.trim()).filter(Boolean) : [],
+    notes:              v('notes'),
+    ownerIds:           [],
+    capitalType:        v('capitalType') || '',
+    propertyTypes:      v('propertyTypes') ? v('propertyTypes').split(';').map(t => t.trim()).filter(Boolean) : [],
+    minDealSize:        v('minDealSize') ? Number(v('minDealSize').replace(/[$,]/g, '')) : '',
+    maxDealSize:        v('maxDealSize') ? Number(v('maxDealSize').replace(/[$,]/g, '')) : '',
+    targetMarkets:      v('targetMarkets') ? v('targetMarkets').split(';').map(t => t.trim()).filter(Boolean) : [],
+    targetReturns:      v('targetReturns') || '',
+    investmentCriteria: v('investmentCriteria') || '',
   }
 }
 
@@ -287,8 +301,8 @@ export default function ImportModal({ entity, onClose }) {
 
               {entity === 'contacts' && (
                 <p className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
-                  Recognised columns: <span className="font-mono">firstName*, lastName*, title, function, company, email, phone, mobile, linkedIn, tags, notes</span>
-                  <br />* Required. For <span className="font-mono">company</span>, use the exact company name. For <span className="font-mono">function</span>, valid values: lp-investor, broker, developer, lender, owner-operator, tenant, attorney, accountant, property-manager, other. Tags separated by semicolons.
+                  Recognised columns: <span className="font-mono">firstName*, lastName*, title, function, company, email, phone, mobile, linkedIn, tags, notes, capitalType, propertyTypes, minDealSize, maxDealSize, targetMarkets, targetReturns, investmentCriteria</span>
+                  <br />* Required. For <span className="font-mono">company</span>, use the exact company name. For <span className="font-mono">function</span>, valid values: lp-investor, broker, developer, lender, owner-operator, tenant, attorney, accountant, property-manager, other. Tags, propertyTypes, and targetMarkets separated by semicolons. Set function to <span className="font-mono">lp-investor</span> for LP Investor contacts.
                 </p>
               )}
               {entity === 'companies' && (

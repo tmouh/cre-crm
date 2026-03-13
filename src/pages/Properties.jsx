@@ -343,9 +343,9 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
 }
 
 // ---- Deal Investors Panel ----
-function DealInvestorsPanel({ dealId, dealInvestors, companies, addDealInvestor, updateDealInvestor, deleteDealInvestor }) {
+function DealInvestorsPanel({ dealId, dealInvestors, investorContacts, contacts, companies, addDealInvestor, updateDealInvestor, deleteDealInvestor }) {
   const [adding, setAdding] = useState(false)
-  const [newCompanyId, setNewCompanyId] = useState('')
+  const [newContactId, setNewContactId] = useState('')
   const [newStatus, setNewStatus] = useState('contacted')
   const [newBid, setNewBid] = useState('')
 
@@ -353,9 +353,10 @@ function DealInvestorsPanel({ dealId, dealInvestors, companies, addDealInvestor,
 
   async function handleAdd(e) {
     e.preventDefault()
-    if (!newCompanyId) return
-    await addDealInvestor({ propertyId: dealId, companyId: newCompanyId, status: newStatus, bidAmount: newBid || null })
-    setNewCompanyId(''); setNewStatus('contacted'); setNewBid(''); setAdding(false)
+    if (!newContactId) return
+    const contact = contacts.find(c => c.id === newContactId)
+    await addDealInvestor({ propertyId: dealId, contactId: newContactId, companyId: contact?.companyId || null, status: newStatus, bidAmount: newBid || null })
+    setNewContactId(''); setNewStatus('contacted'); setNewBid(''); setAdding(false)
   }
 
   return (
@@ -368,12 +369,15 @@ function DealInvestorsPanel({ dealId, dealInvestors, companies, addDealInvestor,
       {adding && (
         <form onSubmit={handleAdd} className="flex gap-2 mb-3 items-end">
           <div className="flex-1">
-            <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Company <span className="text-red-500">*</span></label>
+            <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">LP Investor <span className="text-red-500">*</span></label>
             <SearchableSelect
-              value={newCompanyId}
-              onChange={setNewCompanyId}
-              options={companies.sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ id: c.id, label: c.name }))}
-              placeholder="Select company..."
+              value={newContactId}
+              onChange={setNewContactId}
+              options={investorContacts.sort((a, b) => fullName(a).localeCompare(fullName(b))).map(c => {
+                const co = companies.find(co => co.id === c.companyId)
+                return { id: c.id, label: `${fullName(c)}${co ? ` (${co.name})` : ''}` }
+              })}
+              placeholder="Select LP investor..."
             />
           </div>
           <div>
@@ -397,11 +401,13 @@ function DealInvestorsPanel({ dealId, dealInvestors, companies, addDealInvestor,
       {linked.length > 0 && (
         <div className="space-y-2">
           {linked.map(di => {
+            const contact = contacts.find(c => c.id === di.contactId)
             const company = companies.find(c => c.id === di.companyId)
             return (
               <div key={di.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/30">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{company?.name || 'Unknown'}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{contact ? fullName(contact) : company?.name || 'Unknown'}</p>
+                  {contact && company && <p className="text-[11px] text-gray-400 dark:text-gray-500">{company.name}</p>}
                   {di.bidAmount && <p className="text-[11px] text-gray-500 dark:text-gray-400">Bid: {formatCurrency(di.bidAmount)}</p>}
                 </div>
                 <select
@@ -427,7 +433,7 @@ function DealInvestorsPanel({ dealId, dealInvestors, companies, addDealInvestor,
 function DealDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getProperty, getCompany, getContact, updateProperty, deleteProperty, dealInvestors, addDealInvestor, updateDealInvestor, deleteDealInvestor, companies } = useCRM()
+  const { getProperty, getCompany, getContact, updateProperty, deleteProperty, dealInvestors, addDealInvestor, updateDealInvestor, deleteDealInvestor, companies, investorContacts, contacts } = useCRM()
   const [editing, setEditing] = useState(false)
 
   const deal = getProperty(id)
@@ -616,7 +622,7 @@ function DealDetail() {
         </div>
 
         <div className="col-span-2 space-y-4">
-          <DealInvestorsPanel dealId={id} dealInvestors={dealInvestors} companies={companies} addDealInvestor={addDealInvestor} updateDealInvestor={updateDealInvestor} deleteDealInvestor={deleteDealInvestor} />
+          <DealInvestorsPanel dealId={id} dealInvestors={dealInvestors} investorContacts={investorContacts} contacts={contacts} companies={companies} addDealInvestor={addDealInvestor} updateDealInvestor={updateDealInvestor} deleteDealInvestor={deleteDealInvestor} />
           <ReminderList propertyId={id} />
           <ActivityFeed propertyId={id} />
         </div>

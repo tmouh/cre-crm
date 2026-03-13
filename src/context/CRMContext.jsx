@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { db, seedDatabase } from '../lib/supabase'
 
 const CRMContext = createContext(null)
@@ -351,22 +351,11 @@ export function CRMProvider({ children }) {
     setComps(prev => prev.filter(c => c.id !== id))
   }, [])
 
-  // ─── INVESTORS ─────────────────────────────────────────────────────────
-  const addInvestor = useCallback(async (investor) => {
-    const rec = await db.investors.insert(investor)
-    setInvestors(prev => [...prev, rec])
-    return rec
-  }, [])
-
-  const updateInvestor = useCallback(async (id, patch) => {
-    const rec = await db.investors.update(id, patch)
-    setInvestors(prev => prev.map(i => i.id === id ? rec : i))
-  }, [])
-
-  const deleteInvestor = useCallback(async (id) => {
-    await db.investors.softDelete(id)
-    setInvestors(prev => prev.filter(i => i.id !== id))
-  }, [])
+  // ─── INVESTOR CONTACTS (derived from contacts with contactFunction='lp-investor') ─
+  const investorContacts = useMemo(() =>
+    contacts.filter(c => c.contactFunction === 'lp-investor'),
+    [contacts]
+  )
 
   // ─── DEAL INVESTORS ────────────────────────────────────────────────────
   const addDealInvestor = useCallback(async (di) => {
@@ -448,7 +437,7 @@ export function CRMProvider({ children }) {
   return (
     <CRMContext.Provider value={{
       contacts, companies, properties, reminders, activities, teamMembers,
-      comps, investors, dealInvestors, automations,
+      comps, investors, investorContacts, dealInvestors, automations,
       loading, error,
       deletedContacts, deletedCompanies, deletedProperties, deletedReminders,
       addContact, updateContact, deleteContact, restoreContact, purgeContact,
@@ -457,7 +446,6 @@ export function CRMProvider({ children }) {
       addReminder, updateReminder, completeReminder, uncompleteReminder, deleteReminder, restoreReminder, purgeReminder,
       addActivity, updateActivity, deleteActivity,
       addComp, updateComp, deleteComp,
-      addInvestor, updateInvestor, deleteInvestor,
       addDealInvestor, updateDealInvestor, deleteDealInvestor,
       addAutomation, updateAutomation, deleteAutomation,
       undoStack, undoLastDelete, dismissUndo,
