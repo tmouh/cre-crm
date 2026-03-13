@@ -442,37 +442,48 @@ export async function getOnlineMeetings(count = 25) {
 // ─── Sync utility ──────────────────────────────────────────────────────────────
 
 /**
- * Check which Graph capabilities are available based on current token scopes.
- * Returns an object with boolean flags for each capability.
+ * Check which Graph capabilities are available by attempting a silent token
+ * acquisition for each scope group independently.
+ *
+ * Azure AD's access token `scp` claim only includes the scopes that were
+ * explicitly requested — not all previously-consented scopes. So we must
+ * probe each group separately to get an accurate picture of what's granted.
  */
 export async function checkCapabilities() {
-  const capabilities = {
-    mail: false,
-    calendar: false,
-    contacts: false,
-    files: false,
-    people: false,
-    teams: false,
-    presence: false,
-    meetings: false,
-  }
-
+  const none = { mail: false, calendar: false, contacts: false, files: false, people: false, teams: false, presence: false, meetings: false }
   try {
-    // Try a lightweight call for each capability
-    const checks = [
-      graphGet('/me/messages?$top=1&$select=id').then(() => { capabilities.mail = true }).catch(() => {}),
-      graphGet('/me/calendar?$select=id').then(() => { capabilities.calendar = true }).catch(() => {}),
-      graphGet('/me/contacts?$top=1&$select=id').then(() => { capabilities.contacts = true }).catch(() => {}),
-      graphGet('/me/drive/root?$select=id').then(() => { capabilities.files = true }).catch(() => {}),
-      graphGet('/me/people?$top=1').then(() => { capabilities.people = true }).catch(() => {}),
-      graphGet('/me/joinedTeams?$top=1&$select=id').then(() => { capabilities.teams = true }).catch(() => {}),
-      graphGetBeta('/me/presence').then(() => { capabilities.presence = true }).catch(() => {}),
-      graphGet('/me/onlineMeetings?$top=1&$select=id').then(() => { capabilities.meetings = true }).catch(() => {}),
-    ]
-    await Promise.allSettled(checks)
-  } catch { /* best-effort */ }
+    await ensureInit()
+    const accounts = msalInstance.getAllAccounts()
+    if (!accounts.length) return none
 
-  return capabilities
+    const account = accounts[0]
+
+    // Try acquiring a token for a given scope set silently.
+    // Returns true if granted, false if not yet consented or admin consent required.
+    async function hasScope(scopes) {
+      try {
+        await msalInstance.acquireTokenSilent({ scopes, account })
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    const [mail, calendar, contacts, files, people, teams, presence, meetings] = await Promise.all([
+      hasScope(['Mail.Read']),
+      hasScope(['Calendars.Read']),
+      hasScope(['Contacts.Read']),
+      hasScope(['Files.Read']),
+      hasScope(['People.Read']),
+      hasScope(['Team.ReadBasic.All']),  // delegated; may need admin consent on tenant
+      hasScope(['Presence.Read']),
+      hasScope(['OnlineMeetings.Read']),
+    ])
+
+    return { mail, calendar, contacts, files, people, teams, presence, meetings }
+  } catch {
+    return none
+  }
 }
 
 /**

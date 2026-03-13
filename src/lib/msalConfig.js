@@ -33,8 +33,8 @@ export const TEAMS_SCOPES = ['Team.ReadBasic.All', 'Chat.Read', 'Channel.ReadBas
 // Presence
 export const PRESENCE_SCOPES = ['Presence.Read']
 
-// Online meetings
-export const MEETINGS_SCOPES = ['OnlineMeetings.Read.All']
+// Online meetings — use delegated OnlineMeetings.Read (not .All, which is application-only)
+export const MEETINGS_SCOPES = ['OnlineMeetings.Read']
 
 // All scopes combined for full integration
 export const ALL_GRAPH_SCOPES = [
