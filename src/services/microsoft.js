@@ -120,6 +120,24 @@ async function graphGetBeta(path, scopes) {
 export async function signInMicrosoft(fullScopes = false) {
   await ensureInit()
   const scopes = fullScopes ? graphScopesFull : graphScopes
+
+  // If already signed in and requesting more scopes, use popup incremental consent
+  // instead of loginRedirect (which would navigate away and return to a blank page).
+  const existingAccounts = msalInstance.getAllAccounts()
+  if (fullScopes && existingAccounts.length > 0) {
+    try {
+      await msalInstance.acquireTokenPopup({
+        scopes: scopes.scopes,
+        account: existingAccounts[0],
+        prompt: 'consent',
+      })
+      return
+    } catch (err) {
+      // Popup blocked or closed — fall through to redirect
+      if (err?.errorCode === 'user_cancelled') throw err
+    }
+  }
+
   await msalInstance.loginRedirect(scopes)
 }
 
@@ -448,6 +466,8 @@ export async function checkCapabilities() {
       graphGet('/me/drive/root?$select=id').then(() => { capabilities.files = true }).catch(() => {}),
       graphGet('/me/people?$top=1').then(() => { capabilities.people = true }).catch(() => {}),
       graphGet('/me/joinedTeams?$top=1&$select=id').then(() => { capabilities.teams = true }).catch(() => {}),
+      graphGetBeta('/me/presence').then(() => { capabilities.presence = true }).catch(() => {}),
+      graphGet('/me/onlineMeetings?$top=1&$select=id').then(() => { capabilities.meetings = true }).catch(() => {}),
     ]
     await Promise.allSettled(checks)
   } catch { /* best-effort */ }

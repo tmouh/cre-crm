@@ -210,6 +210,14 @@ export function MicrosoftProvider({ children }) {
 
   const connect = useCallback(async (fullScopes = false) => {
     await signInMicrosoft(fullScopes)
+    // If incremental consent was handled via popup (no redirect), re-check capabilities
+    // so the Settings page updates immediately without a page reload.
+    if (fullScopes) {
+      try {
+        const caps = await checkCapabilities()
+        setCapabilities(caps)
+      } catch { /* best-effort */ }
+    }
   }, [])
 
   const disconnect = useCallback(async () => {
