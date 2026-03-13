@@ -83,7 +83,7 @@ function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-4">
       <div>
-        <label className="label">Company name *</label>
+        <label className="label">Company name <span className="text-red-500">*</span></label>
         <input value={form.name} onChange={f('name')} className="input" required placeholder="Acme Properties LLC" />
       </div>
       <div>

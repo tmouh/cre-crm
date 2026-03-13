@@ -20,7 +20,7 @@ function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ ...form, dueDate: form.dueDate ? new Date(form.dueDate + 'T09:00:00').toISOString() : '' }) }} className="space-y-4">
       <div>
-        <label className="label">Task *</label>
+        <label className="label">Task <span className="text-red-500">*</span></label>
         <input value={form.title} onChange={f('title')} className="input" required placeholder="e.g. Follow up on LOI status" />
       </div>
       <div className="grid grid-cols-3 gap-3">
@@ -38,7 +38,7 @@ function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
           </select>
         </div>
         <div>
-          <label className="label">Due date *</label>
+          <label className="label">Due date <span className="text-red-500">*</span></label>
           <input type="date" value={form.dueDate} onChange={f('dueDate')} className="input" required />
         </div>
       </div>

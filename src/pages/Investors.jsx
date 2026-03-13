@@ -16,6 +16,7 @@ const BLANK = { companyId: '', contactId: '', propertyTypes: [], minDealSize: ''
 function InvestorForm({ initial = BLANK, onSubmit, onCancel, companies, contacts }) {
   const [form, setForm] = useState({ ...BLANK, ...initial })
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   function toggleArrayItem(field, val) {
@@ -27,14 +28,17 @@ function InvestorForm({ initial = BLANK, onSubmit, onCancel, companies, contacts
 
   async function handleSubmit(e) {
     e.preventDefault()
+    setError('')
+    if (!form.companyId) { setError('Company is required.'); return }
     setSaving(true)
-    try { await onSubmit(form) } catch { setSaving(false) }
+    try { await onSubmit(form) } catch(err) { setError(err?.message || 'Failed to save investor.'); setSaving(false) }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>}
       <div>
-        <label className="label">Company *</label>
+        <label className="label">Company <span className="text-red-500">*</span></label>
         <SearchableSelect
           value={form.companyId}
           onChange={v => setForm(p => ({ ...p, companyId: v }))}

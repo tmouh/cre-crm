@@ -53,11 +53,11 @@ function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="label">First name *</label>
+          <label className="label">First name <span className="text-red-500">*</span></label>
           <input value={form.firstName} onChange={f('firstName')} className="input" required />
         </div>
         <div>
-          <label className="label">Last name *</label>
+          <label className="label">Last name <span className="text-red-500">*</span></label>
           <input value={form.lastName} onChange={f('lastName')} className="input" required />
         </div>
       </div>

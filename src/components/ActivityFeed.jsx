@@ -95,6 +95,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
               )
             })}
           </div>
+          <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Description <span className="text-red-500">*</span></label>
           <textarea autoFocus value={text} onChange={e => setText(e.target.value)}
             placeholder="What happened?" rows={3} className="input text-sm resize-y" />
           <div className="flex items-center gap-2 mt-2">

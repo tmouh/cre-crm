@@ -123,7 +123,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="label">Address *</label>
+        <label className="label">Address <span className="text-red-500">*</span></label>
         <AddressAutocomplete
           value={form.address}
           onChange={setField('address')}
@@ -143,7 +143,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
           </select>
         </div>
         <div>
-          <label className="label">Status *</label>
+          <label className="label">Status <span className="text-red-500">*</span></label>
           <select value={form.status} onChange={f('status')} required className="input">
             <option value="">— Select —</option>
             {DEAL_STATUSES.map(s => <option key={s} value={s}>{formatDealStatus(s)}</option>)}
@@ -368,6 +368,7 @@ function DealInvestorsPanel({ dealId, dealInvestors, companies, addDealInvestor,
       {adding && (
         <form onSubmit={handleAdd} className="flex gap-2 mb-3 items-end">
           <div className="flex-1">
+            <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Company <span className="text-red-500">*</span></label>
             <SearchableSelect
               value={newCompanyId}
               onChange={setNewCompanyId}
@@ -375,10 +376,16 @@ function DealInvestorsPanel({ dealId, dealInvestors, companies, addDealInvestor,
               placeholder="Select company..."
             />
           </div>
-          <select value={newStatus} onChange={e => setNewStatus(e.target.value)} className="input w-28">
-            {INVESTOR_STATUSES.map(s => <option key={s} value={s}>{formatInvestorStatus(s)}</option>)}
-          </select>
-          <NumericInput value={newBid} onChange={setNewBid} decimals placeholder="Bid $" className="w-28" />
+          <div>
+            <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Status</label>
+            <select value={newStatus} onChange={e => setNewStatus(e.target.value)} className="input w-28">
+              {INVESTOR_STATUSES.map(s => <option key={s} value={s}>{formatInvestorStatus(s)}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Bid</label>
+            <NumericInput value={newBid} onChange={setNewBid} decimals placeholder="$" className="w-28" />
+          </div>
           <button type="submit" className="btn-primary py-2">Add</button>
         </form>
       )}
