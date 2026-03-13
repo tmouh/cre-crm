@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, X, CheckSquare, ChevronDown } from 'lucide-react'
+import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, X, CheckSquare, ChevronDown, AlertTriangle } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { COMPANY_TYPES, COMPANY_TYPE_COLORS, ASSET_TYPES, CAPITAL_TYPES, companyInitials, formatDate, fullName, formatAssetType, formatCapitalType } from '../utils/helpers'
@@ -13,6 +13,8 @@ import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import ImportModal from '../components/ImportModal'
 import DuplicateCheckModal from '../components/DuplicateCheckModal'
+import DuplicateScanModal from '../components/DuplicateScanModal'
+import { useDuplicates } from '../hooks/useDuplicates'
 
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
 
@@ -542,10 +544,12 @@ export default function Companies() {
   if (id) return <CompanyDetail />
 
   const { companies, contacts, addCompany, updateCompany, deleteCompany } = useCRM()
+  const { companyDuplicates } = useDuplicates()
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [showDupScan, setShowDupScan] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [showBulkEdit, setShowBulkEdit] = useState(false)
   const [dupCheck, setDupCheck] = useState(null) // { newData, existing }
@@ -668,6 +672,15 @@ export default function Companies() {
         actions={
           <div className="flex gap-2">
             <button onClick={() => setShowImport(true)} className="btn-secondary"><Upload size={15} /> Import CSV</button>
+            {companyDuplicates.length > 0 && (
+              <button onClick={() => setShowDupScan(true)} className="btn-secondary flex items-center gap-1.5 relative">
+                <AlertTriangle size={14} className="text-amber-500" />
+                Duplicates
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {companyDuplicates.length}
+                </span>
+              </button>
+            )}
             <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Company</button>
           </div>
         }
@@ -866,6 +879,14 @@ export default function Companies() {
 
       {showBulkEdit && (
         <BulkEditModal selected={selected} onClose={handleBulkEditClose} onSave={handleBulkEdit} />
+      )}
+
+      {showDupScan && (
+        <DuplicateScanModal
+          entityType="company"
+          pairs={companyDuplicates}
+          onClose={() => setShowDupScan(false)}
+        />
       )}
     </div>
   )

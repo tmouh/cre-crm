@@ -1,6 +1,6 @@
 import { useState, Component } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
@@ -18,8 +18,10 @@ import CompanyCombobox from '../components/CompanyCombobox'
 import ImportModal from '../components/ImportModal'
 import OutlookImport from '../components/OutlookImport'
 import DuplicateCheckModal from '../components/DuplicateCheckModal'
+import DuplicateScanModal from '../components/DuplicateScanModal'
 import LinkedInProfile from '../components/LinkedInProfile'
 import CommunicationHeatmap from '../components/CommunicationHeatmap'
+import { useDuplicates } from '../hooks/useDuplicates'
 
 // Prevents a LinkedIn section crash from taking down the whole contact page
 class LinkedInErrorBoundary extends Component {
@@ -326,10 +328,12 @@ export default function Contacts() {
 
   const { contacts, companies, addContact, updateContact, getCompany, teamMembers } = useCRM()
   const { contactHealth } = useIntelligence()
+  const { contactDuplicates } = useDuplicates()
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showOutlookImport, setShowOutlookImport] = useState(false)
+  const [showDupScan, setShowDupScan] = useState(false)
   const [filterCompany, setFilterCompany] = useState('')
   const [filterOwner, setFilterOwner] = useState('')
   const [filterFunction, setFilterFunction] = useState('')
@@ -391,6 +395,15 @@ export default function Contacts() {
         actions={
           <div className="flex gap-2">
             <button onClick={() => setShowImport(true)} className="btn-secondary"><Upload size={15} /> Import CSV</button>
+            {contactDuplicates.length > 0 && (
+              <button onClick={() => setShowDupScan(true)} className="btn-secondary flex items-center gap-1.5 relative">
+                <AlertTriangle size={14} className="text-amber-500" />
+                Duplicates
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {contactDuplicates.length}
+                </span>
+              </button>
+            )}
             <button onClick={() => setShowOutlookImport(true)} className="btn-secondary flex items-center gap-1.5">
               <svg viewBox="0 0 21 21" className="w-3.5 h-3.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
                 <rect x="1"  y="1"  width="9" height="9" fill="#f25022"/>
@@ -586,6 +599,14 @@ export default function Contacts() {
 
       {showOutlookImport && (
         <OutlookImport onClose={() => setShowOutlookImport(false)} />
+      )}
+
+      {showDupScan && (
+        <DuplicateScanModal
+          entityType="contact"
+          pairs={contactDuplicates}
+          onClose={() => setShowDupScan(false)}
+        />
       )}
     </div>
   )
