@@ -122,9 +122,9 @@ export default function Dashboard() {
         </Link>
       )}
 
-      <div className="grid grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-[2fr_1fr] gap-10 items-start">
         {/* Left: reminders */}
-        <div className="col-span-2 space-y-8">
+        <div className="space-y-8">
           {/* Overdue */}
           {overdue.length > 0 && (
             <section>

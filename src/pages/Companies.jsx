@@ -432,6 +432,8 @@ export default function Companies() {
   const [selected, setSelected] = useState(new Set())
   const [showBulkEdit, setShowBulkEdit] = useState(false)
   const [dupCheck, setDupCheck] = useState(null) // { newData, existing }
+  const [sortField, setSortField] = useState('name')
+  const [sortDir, setSortDir] = useState('asc')
   const [barStuck, setBarStuck] = useState(false)
   const observerRef = useRef(null)
   const barSentinelRef = useCallback(node => {
@@ -457,12 +459,30 @@ export default function Companies() {
     }
   }, [])
 
+  function handleSort(field) {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir('asc') }
+  }
+
   const filtered = useMemo(() => companies.filter(c => {
     const q = search.toLowerCase()
     const matches = !q || c.name.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q)
     const type = !filterType || c.type === filterType
     return matches && type
-  }).sort((a, b) => a.name.localeCompare(b.name)), [companies, search, filterType])
+  }).sort((a, b) => {
+    let cmp = 0
+    switch (sortField) {
+      case 'name': cmp = a.name.localeCompare(b.name); break
+      case 'type': cmp = (a.type || '').localeCompare(b.type || ''); break
+      case 'contacts': {
+        const ca = contacts.filter(ct => ct.companyId === a.id).length
+        const cb = contacts.filter(ct => ct.companyId === b.id).length
+        cmp = ca - cb; break
+      }
+      default: cmp = 0
+    }
+    return sortDir === 'asc' ? cmp : -cmp
+  }), [companies, contacts, search, filterType, sortField, sortDir])
 
   const allVisibleSelected = filtered.length > 0 && filtered.every(c => selected.has(c.id))
 
@@ -600,11 +620,19 @@ export default function Companies() {
                     className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600"
                   />
                 </th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Company</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Type</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Description</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Contacts</th>
-                <th className="text-left px-4 pr-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Tags</th>
+                {[
+                  { field: 'name', label: 'Company', className: 'px-5' },
+                  { field: 'type', label: 'Type' },
+                  { field: null, label: 'Description' },
+                  { field: 'contacts', label: 'Contacts' },
+                  { field: null, label: 'Tags', className: 'pr-6' },
+                ].map(({ field, label, className = '' }) => (
+                  <th key={label}
+                    onClick={field ? () => handleSort(field) : undefined}
+                    className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-gray-700 dark:hover:text-gray-200', className)}>
+                    {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">

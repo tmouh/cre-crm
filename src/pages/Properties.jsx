@@ -654,6 +654,13 @@ export default function Properties() {
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [dupCheck, setDupCheck] = useState(null)
+  const [sortField, setSortField] = useState('name')
+  const [sortDir, setSortDir] = useState('asc')
+
+  function handleSort(field) {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir(field === 'dealValue' ? 'desc' : 'asc') }
+  }
 
   const filtered = properties.filter(p => {
     const q = search.toLowerCase()
@@ -661,7 +668,25 @@ export default function Properties() {
     const type   = !filterType   || p.dealType === filterType
     const status = !filterStatus || p.status   === filterStatus
     return matches && type && status
-  }).sort((a, b) => (a.name || a.address || '').localeCompare(b.name || b.address || ''))
+  }).sort((a, b) => {
+    let cmp = 0
+    switch (sortField) {
+      case 'name': cmp = (a.name || a.address || '').localeCompare(b.name || b.address || ''); break
+      case 'dealType': cmp = (a.dealType || '').localeCompare(b.dealType || ''); break
+      case 'status': cmp = (a.status || '').localeCompare(b.status || ''); break
+      case 'dealValue': {
+        const va = Number(a.dealValue) || 0, vb = Number(b.dealValue) || 0
+        cmp = va - vb; break
+      }
+      case 'company': {
+        const ca = getCompany(a.ownerCompanyId)?.name || ''
+        const cb = getCompany(b.ownerCompanyId)?.name || ''
+        cmp = ca.localeCompare(cb); break
+      }
+      default: cmp = 0
+    }
+    return sortDir === 'asc' ? cmp : -cmp
+  })
 
   return (
     <div className="px-8 py-8">
@@ -698,13 +723,22 @@ export default function Properties() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Deal</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Company</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Key Contact</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Next Step</th>
-                <th className="text-left px-4 pr-6 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tags</th>
+                {[
+                  { field: 'name', label: 'Deal' },
+                  { field: 'dealType', label: 'Type' },
+                  { field: 'status', label: 'Status' },
+                  { field: 'dealValue', label: 'Value' },
+                  { field: 'company', label: 'Company' },
+                  { field: null, label: 'Key Contact' },
+                  { field: null, label: 'Next Step' },
+                  { field: null, label: 'Tags', className: 'pr-6' },
+                ].map(({ field, label, className = '' }) => (
+                  <th key={label}
+                    onClick={field ? () => handleSort(field) : undefined}
+                    className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-gray-700 dark:hover:text-gray-200', className)}>
+                    {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -728,6 +762,9 @@ export default function Properties() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={clsx('badge text-[11px]', DEAL_STATUS_COLORS[p.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}>{formatDealStatus(p.status)}</span>
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {p.dealValue ? formatCurrency(p.dealValue) : <span className="text-gray-300 dark:text-gray-600 font-normal">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       {owner ? (

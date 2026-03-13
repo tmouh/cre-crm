@@ -271,12 +271,34 @@ export default function Investors() {
   const [filterType, setFilterType] = useState('')
   const [showAdd, setShowAdd] = useState(false)
 
+  const [sortField, setSortField] = useState('company')
+  const [sortDir, setSortDir] = useState('asc')
+
+  function handleSort(field) {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir(field === 'minDealSize' ? 'desc' : 'asc') }
+  }
+
   const filtered = investors.filter(inv => {
     const company = companies.find(c => c.id === inv.companyId)
     const q = search.toLowerCase()
     const matchSearch = !q || company?.name?.toLowerCase().includes(q) || inv.capitalType?.toLowerCase().includes(q) || inv.targetMarkets?.some(m => m.toLowerCase().includes(q))
     const matchType = !filterType || inv.capitalType === filterType
     return matchSearch && matchType
+  }).sort((a, b) => {
+    let cmp = 0
+    switch (sortField) {
+      case 'company': {
+        const ca = companies.find(c => c.id === a.companyId)?.name || ''
+        const cb = companies.find(c => c.id === b.companyId)?.name || ''
+        cmp = ca.localeCompare(cb); break
+      }
+      case 'capitalType': cmp = (a.capitalType || '').localeCompare(b.capitalType || ''); break
+      case 'minDealSize': cmp = (Number(a.minDealSize) || 0) - (Number(b.minDealSize) || 0); break
+      case 'markets': cmp = (a.targetMarkets?.[0] || '').localeCompare(b.targetMarkets?.[0] || ''); break
+      default: cmp = 0
+    }
+    return sortDir === 'asc' ? cmp : -cmp
   })
 
   return (
@@ -287,48 +309,80 @@ export default function Investors() {
         actions={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={15} /> Add Investor</button>}
       />
 
+      <div className="flex gap-3 mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search investors..." className="input pl-9" />
+        </div>
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-40">
+          <option value="">All types</option>
+          {CAPITAL_TYPES.map(t => <option key={t} value={t}>{formatCapitalType(t)}</option>)}
+        </select>
+      </div>
+
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2">
-          <div className="flex gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search investors..." className="input pl-9" />
-            </div>
-            <select value={filterType} onChange={e => setFilterType(e.target.value)} className="input w-40">
-              <option value="">All types</option>
-              {CAPITAL_TYPES.map(t => <option key={t} value={t}>{formatCapitalType(t)}</option>)}
-            </select>
-          </div>
-
           {filtered.length === 0 ? (
             <EmptyState icon={Users2} title="No investors found" action={<button onClick={() => setShowAdd(true)} className="btn-primary"><Plus size={14} /> Add Investor</button>} />
           ) : (
-            <div className="space-y-2">
-              {filtered.map(inv => {
-                const company = companies.find(c => c.id === inv.companyId)
-                return (
-                  <Link key={inv.id} to={`/investors/${inv.id}`} className="card p-4 flex items-center gap-4 hover:shadow-md transition-all">
-                    <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                      <Building2 size={17} className="text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{company?.name || 'Unknown'}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        {inv.capitalType && <span className="badge text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{formatCapitalType(inv.capitalType)}</span>}
-                        {inv.propertyTypes?.slice(0, 3).map(t => <span key={t} className="badge text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{formatAssetType(t)}</span>)}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      {(inv.minDealSize || inv.maxDealSize) && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{formatCurrency(inv.minDealSize)} – {formatCurrency(inv.maxDealSize)}</p>
-                      )}
-                      {inv.targetMarkets?.length > 0 && (
-                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{inv.targetMarkets.slice(0, 2).join(', ')}</p>
-                      )}
-                    </div>
-                  </Link>
-                )
-              })}
+            <div className="card overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+                    {[
+                      { field: 'company', label: 'Company' },
+                      { field: 'capitalType', label: 'Capital Type' },
+                      { field: null, label: 'Property Types' },
+                      { field: 'minDealSize', label: 'Deal Size' },
+                      { field: 'markets', label: 'Markets' },
+                    ].map(({ field, label, className = '' }) => (
+                      <th key={label}
+                        onClick={field ? () => handleSort(field) : undefined}
+                        className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-gray-700 dark:hover:text-gray-200', className)}>
+                        {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                  {filtered.map(inv => {
+                    const company = companies.find(c => c.id === inv.companyId)
+                    return (
+                      <tr key={inv.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                        <td className="px-4 py-3">
+                          <Link to={`/investors/${inv.id}`} className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-brand-600 dark:hover:text-brand-400">
+                            {company?.name || 'Unknown'}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3">
+                          {inv.capitalType ? (
+                            <span className="badge text-[11px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{formatCapitalType(inv.capitalType)}</span>
+                          ) : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {inv.propertyTypes?.slice(0, 3).map(t => <span key={t} className="badge text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{formatAssetType(t)}</span>)}
+                            {(inv.propertyTypes?.length || 0) > 3 && <span className="text-[10px] text-gray-400">+{inv.propertyTypes.length - 3}</span>}
+                            {!inv.propertyTypes?.length && <span className="text-gray-300 dark:text-gray-600">—</span>}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                          {(inv.minDealSize || inv.maxDealSize) ? (
+                            <>{formatCurrency(inv.minDealSize)} – {formatCurrency(inv.maxDealSize)}</>
+                          ) : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {inv.targetMarkets?.slice(0, 2).map(m => <span key={m} className="badge text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">{m}</span>)}
+                            {(inv.targetMarkets?.length || 0) > 2 && <span className="text-[10px] text-gray-400">+{inv.targetMarkets.length - 2}</span>}
+                            {!inv.targetMarkets?.length && <span className="text-gray-300 dark:text-gray-600">—</span>}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

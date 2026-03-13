@@ -1,6 +1,6 @@
 import { useState, Component } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, ArrowUpDown } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
@@ -311,8 +311,14 @@ export default function Contacts() {
   const [showImport, setShowImport] = useState(false)
   const [showOutlookImport, setShowOutlookImport] = useState(false)
   const [filterCompany, setFilterCompany] = useState('')
-  const [sortBy, setSortBy] = useState('name')
+  const [sortField, setSortField] = useState('name')
+  const [sortDir, setSortDir] = useState('asc')
   const [dupCheck, setDupCheck] = useState(null)
+
+  function handleSort(field) {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir(field === 'lastTouch' || field === 'dateAdded' ? 'desc' : 'asc') }
+  }
 
   const filtered = contacts.filter(c => {
     const q = search.toLowerCase()
@@ -320,28 +326,23 @@ export default function Contacts() {
     const comp = !filterCompany || c.companyId === filterCompany
     return matches && comp
   }).sort((a, b) => {
-    switch (sortBy) {
-      case 'name': return fullName(a).localeCompare(fullName(b))
+    let cmp = 0
+    switch (sortField) {
+      case 'name': cmp = fullName(a).localeCompare(fullName(b)); break
       case 'company': {
         const ca = getCompany(a.companyId)?.name || ''
         const cb = getCompany(b.companyId)?.name || ''
-        return ca.localeCompare(cb) || fullName(a).localeCompare(fullName(b))
+        cmp = ca.localeCompare(cb) || fullName(a).localeCompare(fullName(b)); break
       }
+      case 'title': cmp = (a.title || '').localeCompare(b.title || ''); break
       case 'lastTouch': {
-        const da = a.lastContacted || ''
-        const db = b.lastContacted || ''
-        if (!da && !db) return 0
-        if (!da) return 1
-        if (!db) return -1
-        return db.localeCompare(da)
+        const da = a.lastContacted || '', db = b.lastContacted || ''
+        if (!da && !db) cmp = 0; else if (!da) cmp = 1; else if (!db) cmp = -1; else cmp = da.localeCompare(db); break
       }
-      case 'dateAdded': {
-        const da = a.createdAt || ''
-        const db = b.createdAt || ''
-        return db.localeCompare(da)
-      }
-      default: return 0
+      case 'dateAdded': cmp = (a.createdAt || '').localeCompare(b.createdAt || ''); break
+      default: cmp = 0
     }
+    return sortDir === 'asc' ? cmp : -cmp
   })
 
   async function handleAdd(form) {
@@ -389,12 +390,6 @@ export default function Contacts() {
           <option value="">All companies</option>
           {[...companies].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="input w-44">
-          <option value="name">Sort by name</option>
-          <option value="company">Sort by company</option>
-          <option value="lastTouch">Sort by last touch</option>
-          <option value="dateAdded">Sort by date added</option>
-        </select>
       </div>
 
       {filtered.length === 0 ? (
@@ -404,12 +399,21 @@ export default function Contacts() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Name</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Company</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Contact</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Last touch</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Owners</th>
-                <th className="text-left px-4 pr-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Tags</th>
+                {[
+                  { field: 'name', label: 'Name', className: 'px-5' },
+                  { field: 'company', label: 'Company' },
+                  { field: 'title', label: 'Title' },
+                  { field: null, label: 'Contact' },
+                  { field: 'lastTouch', label: 'Last touch' },
+                  { field: null, label: 'Owners' },
+                  { field: null, label: 'Tags', className: 'pr-6' },
+                ].map(({ field, label, className = '' }) => (
+                  <th key={label}
+                    onClick={field ? () => handleSort(field) : undefined}
+                    className={clsx('text-left px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider select-none', field && 'cursor-pointer hover:text-gray-700 dark:hover:text-gray-200', className)}>
+                    {label} {sortField === field && (sortDir === 'asc' ? '↑' : '↓')}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
@@ -426,16 +430,16 @@ export default function Contacts() {
                         <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
                           <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{initials(c)}</span>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-brand-600 dark:hover:text-brand-400">{fullName(c)}</p>
-                          {c.title && <p className="text-xs text-gray-400 dark:text-gray-500">{c.title}</p>}
-                        </div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-brand-600 dark:hover:text-brand-400">{fullName(c)}</p>
                       </Link>
                     </td>
                     <td className="px-4 py-3.5">
                       {company ? (
                         <Link to={`/companies/${company.id}`} className="text-sm text-gray-600 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">{company.name}</Link>
                       ) : <span className="text-sm text-gray-300 dark:text-gray-600">—</span>}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      {c.title ? <span className="text-sm text-gray-600 dark:text-gray-400">{c.title}</span> : <span className="text-sm text-gray-300 dark:text-gray-600">—</span>}
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex gap-2">
