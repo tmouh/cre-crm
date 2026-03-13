@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Component } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, ArrowUpDown } from 'lucide-react'
 import clsx from 'clsx'
@@ -18,6 +18,16 @@ import ImportModal from '../components/ImportModal'
 import OutlookImport from '../components/OutlookImport'
 import DuplicateCheckModal from '../components/DuplicateCheckModal'
 import LinkedInProfile from '../components/LinkedInProfile'
+
+// Prevents a LinkedIn section crash from taking down the whole contact page
+class LinkedInErrorBoundary extends Component {
+  state = { crashed: false }
+  static getDerivedStateFromError() { return { crashed: true } }
+  render() {
+    if (this.state.crashed) return null
+    return this.props.children
+  }
+}
 
 const BLANK = { firstName: '', lastName: '', title: '', companyId: '', email: '', phone: '', mobile: '', linkedIn: '', notes: '', tags: [], ownerIds: [] }
 
@@ -242,7 +252,9 @@ function ContactDetail() {
             )}
           </div>
 
-          <LinkedInProfile contact={contact} />
+          <LinkedInErrorBoundary key={contact.id}>
+            <LinkedInProfile contact={contact} />
+          </LinkedInErrorBoundary>
 
           {/* Related properties */}
           {relatedProps.length > 0 && (

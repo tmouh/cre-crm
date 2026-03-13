@@ -17,7 +17,7 @@ const ACRONYMS    = new Set([
 ])
 
 function titleCase(str) {
-  if (!str) return str
+  if (!str || typeof str !== 'string') return str || null
   return str.replace(/\b\w[\w'']*\b/g, (word, offset) => {
     const lower = word.toLowerCase()
     if (ACRONYMS.has(lower)) return word.toUpperCase()
@@ -43,7 +43,7 @@ const DEGREE_ALIASES = {
 function cleanDegreeDisplay(degreeStr, fieldStr) {
   // Gather all parts from both degree and field strings
   const raw = [degreeStr, fieldStr]
-    .filter(Boolean)
+    .filter(s => s && typeof s === 'string')
     .flatMap(s => s.split(',').map(p => p.trim().toLowerCase()).filter(Boolean))
 
   if (raw.length === 0) return null
@@ -143,10 +143,8 @@ export default function LinkedInProfile({ contact }) {
         const found = map.get(contact.email.toLowerCase())
         if (!found) return
 
-        // Save the discovered URL to the contact
-        await updateContact(contact.id, { linkedIn: found })
-        // Then immediately enrich from PDL
-        if (!cancelled) await enrich(found)
+        // Save the discovered URL to the contact (do NOT auto-enrich via PDL)
+        if (!cancelled) await updateContact(contact.id, { linkedIn: found })
       } catch {
         // Auto-detect is best-effort — fail silently
       } finally {
