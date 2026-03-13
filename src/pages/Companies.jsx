@@ -51,7 +51,7 @@ function TypeCombobox({ value, onChange, disabled, allTypes }) {
         <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
       </div>
       {open && !disabled && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 overflow-hidden max-h-48 overflow-y-auto">
           {filtered.length === 0 && !showCreate && <p className="px-3 py-2.5 text-sm text-slate-400 dark:text-slate-500">No types found</p>}
           {filtered.map(t => (
             <button key={t} type="button" onMouseDown={e => e.preventDefault()} onClick={() => select(t)}
@@ -233,7 +233,7 @@ function CompanyDetail() {
   }
 
   return (
-    <div className="px-8 py-8">
+    <div className="h-full flex flex-col animate-fade-in">
       {/* Page header */}
       <Link to="/companies" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-5">
         <ArrowLeft size={15} /> Companies
@@ -357,7 +357,7 @@ function CompanyDetail() {
                   const ini = `${(c.firstName || '')[0] || ''}${(c.lastName || '')[0] || ''}`
                   return (
                     <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 group">
-                      <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
+                      <div className="w-7 h-7 bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
                         <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">{ini}</span>
                       </div>
                       <div className="min-w-0 flex-1">
@@ -463,7 +463,7 @@ function BulkEditModal({ selected, onClose, onSave }) {
     return (
       <Modal title="Bulk Edit" onClose={onClose} size="md" disableBackdropClose>
         <div className="flex flex-col items-center justify-center py-8 space-y-3">
-          <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+          <div className="w-14 h-14 bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
             <svg className="w-7 h-7 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -665,7 +665,7 @@ export default function Companies() {
   }
 
   return (
-    <div className="px-8 py-8">
+    <div className="h-full flex flex-col animate-fade-in">
       <PageHeader
         title="Companies"
         subtitle={`${companies.length} compan${companies.length !== 1 ? 'ies' : 'y'}`}
@@ -676,7 +676,7 @@ export default function Companies() {
               <button onClick={() => setShowDupScan(true)} className="btn-secondary flex items-center gap-1.5 relative">
                 <AlertTriangle size={14} className="text-amber-500" />
                 Duplicates
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">
                   {companyDuplicates.length}
                 </span>
               </button>
@@ -718,7 +718,7 @@ export default function Companies() {
       )}
       {selected.size > 0 && barStuck && (
         <div className="fixed top-4 left-[220px] right-0 z-50 px-8 pointer-events-none">
-          <div className="flex items-center gap-3 rounded-xl bg-white dark:bg-slate-800 border border-brand-200 dark:border-brand-700 px-5 py-3 shadow-lg pointer-events-auto">
+          <div className="flex items-center gap-3 rounded-xl bg-white dark:bg-slate-800 border border-brand-200 dark:border-brand-700 px-5 py-3 pointer-events-auto">
             <CheckSquare size={16} className="text-brand-600 dark:text-brand-400" />
             <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{selected.size} selected</span>
             <div className="flex-1" />
@@ -782,7 +782,7 @@ export default function Companies() {
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         <Link to={`/companies/${c.id}`} onClick={() => { const m = document.querySelector('main'); if (m) sessionStorage.setItem('companies-scroll', m.scrollTop) }} className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
+                          <div className="w-8 h-8 bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
                             <span className="text-xs font-bold text-brand-700 dark:text-brand-300">{companyInitials(c)}</span>
                           </div>
                           <div className="min-w-0">
