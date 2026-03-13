@@ -76,11 +76,13 @@ export default function OutlookAttachments({ email }) {
   return (
     <div className="card overflow-hidden">
       <div className="os-zone-header">
-        <Paperclip size={13} className="text-amber-500" />
-        <h3 className="os-zone-title">Attachments</h3>
-        {attachments.length > 0 && (
-          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">({attachments.length})</span>
-        )}
+        <div className="flex items-center gap-1.5">
+          <Paperclip size={12} className="text-slate-400 dark:text-slate-500" />
+          <span className="os-zone-title">Outlook Attachments</span>
+          {attachments.length > 0 && (
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">({attachments.length})</span>
+          )}
+        </div>
       </div>
 
       <div className="divide-y divide-slate-50 dark:divide-slate-700/30">
