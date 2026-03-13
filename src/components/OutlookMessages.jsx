@@ -3,6 +3,21 @@ import { Mail, Loader2, ChevronDown, ChevronRight, AlertCircle, ExternalLink } f
 import clsx from 'clsx'
 import { getMicrosoftAccount, getEmailsForContact, signInMicrosoft } from '../lib/graphClient'
 import { db, supabase } from '../lib/supabase'
+import { useCRM } from '../context/CRMContext'
+
+// Strip raw long URLs from bodyPreview and decode HTML entities
+function cleanBodyPreview(text) {
+  if (!text) return ''
+  return text
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/https?:\/\/\S{30,}/g, '[link]')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
 
 const INITIAL_SHOW = 5
 
@@ -13,6 +28,7 @@ function formatMessageDate(iso) {
 }
 
 export default function OutlookMessages({ email, contactId }) {
+  const { getContact, updateContact } = useCRM()
   const [account, setAccount] = useState(null)
   const [checked, setChecked] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -56,12 +72,12 @@ export default function OutlookMessages({ email, contactId }) {
               (a.receivedDateTime || '') > (b.receivedDateTime || '') ? a : b
             )
             if (latest.receivedDateTime) {
-              await supabase
-                .from('contacts')
-                .update({ last_contacted: latest.receivedDateTime })
-                .eq('id', contactId)
-                .lt('last_contacted', latest.receivedDateTime)
-                .catch(() => {})
+              const contact = getContact(contactId)
+              const currentLast = contact?.lastContacted || ''
+              if (latest.receivedDateTime > currentLast) {
+                // Update both DB and in-memory CRMContext state
+                await updateContact(contactId, { lastContacted: latest.receivedDateTime }).catch(() => {})
+              }
             }
           }
         }
@@ -175,12 +191,12 @@ export default function OutlookMessages({ email, contactId }) {
                     </p>
                     {expanded === msg.id && msg.bodyPreview && (
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 whitespace-pre-wrap leading-relaxed">
-                        {msg.bodyPreview}
+                        {cleanBodyPreview(msg.bodyPreview)}
                       </p>
                     )}
                     {expanded !== msg.id && msg.bodyPreview && (
                       <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                        {msg.bodyPreview}
+                        {cleanBodyPreview(msg.bodyPreview)}
                       </p>
                     )}
                   </div>

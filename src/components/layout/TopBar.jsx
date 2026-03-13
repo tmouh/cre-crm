@@ -3,7 +3,7 @@ import clsx from 'clsx'
 
 export default function TopBar({ title, subtitle, onSearchOpen, onQuickCreate, microsoftConnected }) {
   return (
-    <header className="h-[52px] flex items-center justify-between px-6 border-b border-slate-200/80 dark:border-slate-700/30 bg-white/60 dark:bg-surface-0/60 backdrop-blur-sm sticky top-0 z-20 flex-shrink-0">
+    <header className="h-[52px] flex items-center justify-between px-6 border-b border-slate-200/80 dark:border-slate-700/30 bg-white/80 dark:bg-surface-0 backdrop-blur-sm sticky top-0 z-20 flex-shrink-0">
       {/* Left: Page title */}
       <div className="flex items-center gap-3 min-w-0">
         <div className="min-w-0">

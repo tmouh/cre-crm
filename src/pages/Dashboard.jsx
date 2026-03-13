@@ -159,15 +159,38 @@ export default function Dashboard() {
           {isConnected && upcomingEvents.length > 0 && (
             <Panel title="Upcoming Meetings" icon={Calendar}>
               <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                {upcomingEvents.slice(0, 5).map(evt => (
-                  <div key={evt.id} className="px-4 py-2.5">
-                    <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{evt.subject}</p>
-                    <p className="text-2xs text-slate-400 dark:text-slate-500 mt-0.5">
-                      {evt.start?.dateTime ? formatDate(evt.start.dateTime) : ''}
-                      {evt.location?.displayName ? ` · ${evt.location.displayName}` : ''}
-                    </p>
-                  </div>
-                ))}
+                {upcomingEvents.slice(0, 5).map(evt => {
+                  const joinUrl = evt.onlineMeeting?.joinUrl
+                  const inner = (
+                    <div className="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                      <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{evt.subject}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-2xs text-slate-400 dark:text-slate-500 flex-1">
+                          {evt.start?.dateTime ? formatDate(evt.start.dateTime) : ''}
+                          {evt.location?.displayName ? ` · ${evt.location.displayName}` : ''}
+                        </p>
+                        {joinUrl && (
+                          <a
+                            href={joinUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="text-2xs font-medium text-brand-600 dark:text-brand-400 hover:underline flex-shrink-0"
+                          >
+                            Join
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )
+                  return evt.webLink ? (
+                    <a key={evt.id} href={evt.webLink} target="_blank" rel="noopener noreferrer" className="block">
+                      {inner}
+                    </a>
+                  ) : (
+                    <div key={evt.id}>{inner}</div>
+                  )
+                })}
               </div>
             </Panel>
           )}
