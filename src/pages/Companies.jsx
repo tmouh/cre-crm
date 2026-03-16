@@ -80,6 +80,8 @@ function toggleArrayItem(arr, item) {
 export function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
   const { companies } = useCRM()
   const [form, setForm] = useState({ ...BLANK, ...initial })
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   const allTypes = [...new Set([...COMPANY_TYPES, ...companies.map(c => c.type).filter(Boolean)])].sort((a, b) => {
@@ -87,8 +89,22 @@ export function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
     if (aBuiltin && !bBuiltin) return -1; if (!aBuiltin && bBuiltin) return 1; return a.localeCompare(b)
   })
 
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSaveError(null)
+    setSaving(true)
+    try {
+      await onSubmit(form)
+    } catch (err) {
+      setSaveError(err?.message || 'Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800">{saveError}</p>}
       <div>
         <label className="v-label">Company name <span className="text-red-500">*</span></label>
         <input value={form.name} onChange={f('name')} className="v-input" required placeholder="Acme Properties LLC" />
@@ -183,8 +199,8 @@ export function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
       )}
 
       <div className="flex gap-2 pt-1">
-        <button type="submit" className="v-btn-primary flex-1">Save Company</button>
-        <button type="button" onClick={onCancel} className="v-btn-secondary">Cancel</button>
+        <button type="submit" disabled={saving} className="v-btn-primary flex-1 disabled:opacity-60">{saving ? 'Saving…' : 'Save Company'}</button>
+        <button type="button" onClick={onCancel} disabled={saving} className="v-btn-secondary">Cancel</button>
       </div>
     </form>
   )

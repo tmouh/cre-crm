@@ -24,7 +24,6 @@ import TagInput from '../components/TagInput'
 import ActivityFeed from '../components/ActivityFeed'
 import ReminderList from '../components/ReminderList'
 import CompanyCombobox from '../components/CompanyCombobox'
-import SearchableSelect from '../components/SearchableSelect'
 
 const BLANK = {
   name: '', address: '', dealType: '', propertyType: '', size: '', sizeUnit: 'SF',
@@ -37,14 +36,41 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
   const { user } = useAuth()
   const defaultOwnerIds = initial === BLANK ? (user ? [user.id] : []) : (initial.ownerIds || [])
   const [form, setForm] = useState({ ...BLANK, ...initial, ownerIds: defaultOwnerIds })
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
+  const [contactQuery, setContactQuery] = useState('')
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   function toggleOwner(id) {
     setForm(p => ({ ...p, ownerIds: p.ownerIds.includes(id) ? p.ownerIds.filter(o => o !== id) : [...p.ownerIds, id] }))
   }
 
+  function toggleContact(id) {
+    setForm(p => ({ ...p, contactIds: (p.contactIds || []).includes(id) ? p.contactIds.filter(c => c !== id) : [...(p.contactIds || []), id] }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSaveError(null)
+    setSaving(true)
+    try {
+      await onSubmit(form)
+    } catch (err) {
+      setSaveError(err?.message || 'Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const selectedContacts = (form.contactIds || []).map(id => contacts.find(c => c.id === id)).filter(Boolean)
+  const filteredContacts = contacts.filter(c =>
+    !(form.contactIds || []).includes(c.id) &&
+    fullName(c).toLowerCase().includes(contactQuery.toLowerCase())
+  )
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800">{saveError}</p>}
       <div>
         <label className="v-label">Deal name <span className="text-red-500">*</span></label>
         <input value={form.name} onChange={f('name')} className="v-input" required placeholder="e.g. 1440 Broadway Acquisition" />
@@ -105,12 +131,34 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       <div>
         <label className="v-label">Related contacts</label>
-        <SearchableSelect
-          options={contacts.map(c => ({ value: c.id, label: fullName(c), sub: c.title || c.email || '' }))}
-          selected={form.contactIds || []}
-          onChange={(ids) => setForm(p => ({ ...p, contactIds: ids }))}
-          multiple placeholder="Search contacts..."
+        {selectedContacts.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-1.5">
+            {selectedContacts.map(c => (
+              <span key={c.id} className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 text-[11px] font-medium">
+                {fullName(c)}
+                <button type="button" onClick={() => toggleContact(c.id)} className="hover:bg-brand-200 dark:hover:bg-brand-800 p-0.5">
+                  <span className="text-[10px] leading-none">✕</span>
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <input
+          value={contactQuery}
+          onChange={e => setContactQuery(e.target.value)}
+          className="v-input"
+          placeholder="Search contacts to add..."
         />
+        {contactQuery && filteredContacts.length > 0 && (
+          <div className="border border-[var(--border)] border-t-0 max-h-36 overflow-y-auto bg-white dark:bg-surface-100">
+            {filteredContacts.slice(0, 8).map(c => (
+              <button key={c.id} type="button" onClick={() => { toggleContact(c.id); setContactQuery('') }}
+                className="w-full text-left px-3 py-1.5 text-[11px] text-slate-700 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-brand-900/20">
+                {fullName(c)}{c.title && <span className="text-slate-400 ml-1.5">· {c.title}</span>}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       {teamMembers.length > 0 && (
         <div>
@@ -131,11 +179,11 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       <div>
         <label className="v-label">Notes</label>
-        <textarea value={form.notes} onChange={f('notes')} rows={3} className="v-textarea" />
+        <textarea value={form.notes} onChange={f('notes')} rows={3} className="v-input resize-y" />
       </div>
       <div className="flex gap-2 pt-2">
-        <button type="submit" className="v-btn-primary flex-1">Save Deal</button>
-        <button type="button" onClick={onCancel} className="v-btn-secondary">Cancel</button>
+        <button type="submit" disabled={saving} className="v-btn-primary flex-1 disabled:opacity-60">{saving ? 'Saving…' : 'Save Deal'}</button>
+        <button type="button" onClick={onCancel} disabled={saving} className="v-btn-secondary">Cancel</button>
       </div>
     </form>
   )

@@ -14,11 +14,27 @@ const BLANK = { title: '', type: 'call', dueDate: '', priority: 'medium', contac
 function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
   const { contacts, companies, properties, addContact, addCompany, addProperty } = useCRM()
   const [form, setForm] = useState({ ...BLANK, ...initial, dueDate: initial.dueDate ? initial.dueDate.slice(0, 10) : '' })
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
   const setField = (k) => (v) => setForm(p => ({ ...p, [k]: v }))
 
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSaveError(null)
+    setSaving(true)
+    try {
+      await onSubmit({ ...form, dueDate: form.dueDate ? new Date(form.dueDate + 'T09:00:00').toISOString() : '' })
+    } catch (err) {
+      setSaveError(err?.message || 'Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ ...form, dueDate: form.dueDate ? new Date(form.dueDate + 'T09:00:00').toISOString() : '' }) }} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800">{saveError}</p>}
       <div>
         <label className="v-label">Task <span className="text-red-500">*</span></label>
         <input value={form.title} onChange={f('title')} className="v-input" required placeholder="e.g. Follow up on LOI status" />
@@ -94,8 +110,8 @@ function ReminderForm({ initial = BLANK, onSubmit, onCancel }) {
         <textarea value={form.notes} onChange={f('notes')} rows={2} className="v-input resize-y" placeholder="Context or instructions..." />
       </div>
       <div className="flex gap-2 pt-1">
-        <button type="submit" className="v-btn-primary flex-1">Save Reminder</button>
-        <button type="button" onClick={onCancel} className="v-btn-secondary">Cancel</button>
+        <button type="submit" disabled={saving} className="v-btn-primary flex-1 disabled:opacity-60">{saving ? 'Saving…' : 'Save Reminder'}</button>
+        <button type="button" onClick={onCancel} disabled={saving} className="v-btn-secondary">Cancel</button>
       </div>
     </form>
   )

@@ -121,21 +121,17 @@ export async function signInMicrosoft(fullScopes = false) {
   await ensureInit()
   const scopes = fullScopes ? graphScopesFull : graphScopes
 
-  // If already signed in and requesting more scopes, use popup incremental consent
-  // instead of loginRedirect (which would navigate away and return to a blank page).
+  // If already signed in and requesting more scopes, ONLY use popup for incremental
+  // consent — never loginRedirect, which navigates away and returns to a blank page.
   const existingAccounts = msalInstance.getAllAccounts()
   if (fullScopes && existingAccounts.length > 0) {
-    try {
-      await msalInstance.acquireTokenPopup({
-        scopes: scopes.scopes,
-        account: existingAccounts[0],
-        prompt: 'consent',
-      })
-      return
-    } catch (err) {
-      // Popup blocked or closed — fall through to redirect
-      if (err?.errorCode === 'user_cancelled') throw err
-    }
+    await msalInstance.acquireTokenPopup({
+      scopes: scopes.scopes,
+      account: existingAccounts[0],
+      prompt: 'consent',
+    })
+    // Throws on popup blocked, user_cancelled, or other errors — caller handles it.
+    return
   }
 
   await msalInstance.loginRedirect(scopes)
