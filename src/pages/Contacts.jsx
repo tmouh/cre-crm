@@ -37,9 +37,12 @@ const BLANK = { firstName: '', lastName: '', title: '', contactFunction: '', com
 
 export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibility = 'shared' }) {
   const { addCompany, teamMembers } = useCRM()
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
 
-  const defaultOwnerIds = initial === BLANK ? (user ? [user.id] : []) : (initial.ownerIds || [])
+  const isNewContact = initial === BLANK
+  const isOwner = isNewContact || (initial.ownerIds || []).includes(user?.id)
+
+  const defaultOwnerIds = isNewContact ? (user ? [user.id] : []) : (initial.ownerIds || [])
   const [form, setForm] = useState({
     ...BLANK,
     ...initial,
@@ -75,9 +78,14 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
     }
   }
 
+  // Determine whether the owners section is editable
+  const ownersEditable = isNewContact || isAdmin
+
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800">{saveError}</p>}
+
+      {/* ── Basic info header ── */}
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="v-label">First name <span className="text-red-500">*</span></label>
@@ -94,23 +102,16 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
           <input value={form.title} onChange={f('title')} className="v-input" placeholder="e.g. VP Real Estate" />
         </div>
         <div>
-          <label className="v-label">Function</label>
-          <select value={form.contactFunction || ''} onChange={f('contactFunction')} className="v-select">
-            <option value="">— Select —</option>
-            {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
-          </select>
+          <label className="v-label">Company</label>
+          <CompanyCombobox
+            value={form.companyId}
+            onChange={(id) => setForm(p => ({ ...p, companyId: id }))}
+            onCreateAndSelect={async (name) => {
+              const c = await addCompany({ name, type: 'other' })
+              setForm(p => ({ ...p, companyId: c.id }))
+            }}
+          />
         </div>
-      </div>
-      <div>
-        <label className="v-label">Company</label>
-        <CompanyCombobox
-          value={form.companyId}
-          onChange={(id) => setForm(p => ({ ...p, companyId: id }))}
-          onCreateAndSelect={async (name) => {
-            const c = await addCompany({ name, type: 'other' })
-            setForm(p => ({ ...p, companyId: c.id }))
-          }}
-        />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
@@ -133,39 +134,131 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
         </div>
       </div>
 
-      {/* Visibility toggle */}
-      <div>
-        <label className="v-label">Visibility</label>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setForm(p => ({ ...p, visibility: 'private' }))}
-            className={clsx('flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-medium border transition-colors',
-              form.visibility === 'private'
-                ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
-                : 'border-[var(--border)] text-slate-500 hover:border-slate-400 dark:text-slate-400'
-            )}
-          >
-            <Lock size={11} /> Personal (private)
-          </button>
-          <button
-            type="button"
-            onClick={() => setForm(p => ({ ...p, visibility: 'shared' }))}
-            className={clsx('flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-medium border transition-colors',
-              form.visibility === 'shared'
-                ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
-                : 'border-[var(--border)] text-slate-500 hover:border-slate-400 dark:text-slate-400'
-            )}
-          >
-            <Users size={11} /> Shared (CRM)
-          </button>
+      {/* ── 3-column section ── */}
+      <div className="grid grid-cols-3 gap-3">
+        {/* Personal column */}
+        <div className="border border-[var(--border)] p-2.5 space-y-2">
+          <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono flex items-center gap-1">
+            <Lock size={9} /> Personal
+          </p>
+          <div>
+            <label className="v-label">Notes <span className="text-[9px] font-normal text-slate-400 dark:text-slate-500 ml-1">(private to you)</span></label>
+            <textarea value={form.notes} onChange={f('notes')} rows={4} className="v-input resize-y" placeholder="Background, preferences, how you met..." />
+          </div>
+          <div>
+            <label className="v-label">Tags</label>
+            <TagInput tags={form.tags || []} onChange={(tags) => setForm(p => ({ ...p, tags }))} />
+          </div>
         </div>
-        {form.visibility === 'private' && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Only visible to you (and other owners listed below).</p>}
-        {form.visibility === 'shared' && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Visible in the shared CRM. Appears in your Personal list too.</p>}
+
+        {/* Shared column */}
+        <div className={clsx('border p-2.5 space-y-2', form.visibility === 'shared' ? 'border-brand-200 dark:border-brand-800 bg-brand-50/40 dark:bg-brand-900/10' : 'border-[var(--border)] opacity-40')}>
+          <p className="text-[10px] font-semibold text-brand-600 dark:text-brand-400 uppercase tracking-wide font-mono flex items-center gap-1">
+            <Users size={9} /> Shared
+          </p>
+          {form.visibility === 'shared' ? (
+            <>
+              <div>
+                <label className="v-label">Shared Notes</label>
+                <textarea value={form.sharedNotes} onChange={f('sharedNotes')} rows={4} className="v-input resize-y" placeholder="Team-facing notes..." />
+              </div>
+              <div>
+                <label className="v-label">Shared Cell Phone(s)</label>
+                <TagInput tags={form.sharedCellPhones || []} onChange={(t) => setForm(p => ({ ...p, sharedCellPhones: t }))} placeholder="Add phone number..." />
+              </div>
+              <div>
+                <label className="v-label">Shared Personal Email(s)</label>
+                <TagInput tags={form.sharedPersonalEmails || []} onChange={(t) => setForm(p => ({ ...p, sharedPersonalEmails: t }))} placeholder="Add email address..." />
+              </div>
+            </>
+          ) : (
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">Set visibility to Shared to enable shared fields.</p>
+          )}
+        </div>
+
+        {/* Investor column */}
+        <div className="border border-[var(--border)] p-2.5 space-y-2">
+          <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Investor</p>
+          <div>
+            <label className="v-label">Function</label>
+            <select value={form.contactFunction || ''} onChange={f('contactFunction')} className="v-select">
+              <option value="">— Select —</option>
+              {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
+            </select>
+          </div>
+        </div>
       </div>
 
-      {/* Shared-with users — only when visibility=shared */}
-      {form.visibility === 'shared' && teamMembers.length > 0 && (
+      {/* ── Owners — directly above Visibility ── */}
+      {teamMembers.length > 0 && (
+        <div>
+          <label className="v-label">Owners</label>
+          {ownersEditable ? (
+            <div className="border border-[var(--border)] p-1.5 space-y-0.5 max-h-24 overflow-y-auto">
+              {teamMembers.map(m => (
+                <label key={m.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-100 px-1.5 py-0.5">
+                  <input
+                    type="checkbox"
+                    checked={form.ownerIds.includes(m.id)}
+                    onChange={() => toggleOwner(m.id)}
+                  />
+                  <span className="text-slate-700 dark:text-slate-300">{m.displayName || m.email}</span>
+                  {m.id === user?.id && <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">(you)</span>}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <div className="border border-[var(--border)] p-1.5 flex flex-wrap gap-1.5">
+              {(form.ownerIds || []).map(id => {
+                const m = teamMembers.find(t => t.id === id)
+                return m ? (
+                  <span key={id} className="text-[11px] text-slate-600 dark:text-slate-300 bg-surface-100 dark:bg-surface-200 px-2 py-0.5 border border-[var(--border)]">
+                    {m.displayName || m.email}{m.id === user?.id ? ' (you)' : ''}
+                  </span>
+                ) : null
+              })}
+              {form.ownerIds.length === 0 && <span className="text-[10px] text-slate-400 dark:text-slate-500">No owners assigned</span>}
+            </div>
+          )}
+          {!ownersEditable && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Only admins can change owners after a contact is created.</p>}
+        </div>
+      )}
+
+      {/* ── Visibility — only for owners ── */}
+      {isOwner && (
+        <div>
+          <label className="v-label">Visibility</label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setForm(p => ({ ...p, visibility: 'private' }))}
+              className={clsx('flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-medium border transition-colors',
+                form.visibility === 'private'
+                  ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
+                  : 'border-[var(--border)] text-slate-500 hover:border-slate-400 dark:text-slate-400'
+              )}
+            >
+              <Lock size={11} /> Personal (private)
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm(p => ({ ...p, visibility: 'shared' }))}
+              className={clsx('flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-medium border transition-colors',
+                form.visibility === 'shared'
+                  ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
+                  : 'border-[var(--border)] text-slate-500 hover:border-slate-400 dark:text-slate-400'
+              )}
+            >
+              <Users size={11} /> Shared (CRM)
+            </button>
+          </div>
+          {form.visibility === 'private' && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Only visible to you (and other owners listed above).</p>}
+          {form.visibility === 'shared' && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Visible in the shared CRM. Appears in your Personal list too.</p>}
+        </div>
+      )}
+
+      {/* ── Share with — only for owners when visibility=shared ── */}
+      {isOwner && form.visibility === 'shared' && teamMembers.length > 0 && (
         <div>
           <label className="v-label">Share with (leave blank for all team members)</label>
           <div className="border border-[var(--border)] p-1.5 space-y-0.5 max-h-24 overflow-y-auto">
@@ -177,7 +270,6 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                   onChange={() => {
                     setForm(p => {
                       if (p.sharedWith.length === 0) {
-                        // Currently "all" — switch to specific: everyone except this one
                         return { ...p, sharedWith: teamMembers.filter(tm => tm.id !== m.id).map(tm => tm.id) }
                       }
                       const next = p.sharedWith.includes(m.id)
@@ -193,53 +285,6 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
             ))}
           </div>
           {form.sharedWith.length === 0 && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">All team members can see this contact.</p>}
-        </div>
-      )}
-
-      {teamMembers.length > 0 && (
-        <div>
-          <label className="v-label">Owners</label>
-          <div className="border border-[var(--border)] p-1.5 space-y-0.5 max-h-24 overflow-y-auto">
-            {teamMembers.map(m => (
-              <label key={m.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-100 px-1.5 py-0.5">
-                <input
-                  type="checkbox"
-                  checked={form.ownerIds.includes(m.id)}
-                  onChange={() => toggleOwner(m.id)}
-                />
-                <span className="text-slate-700 dark:text-slate-300">{m.displayName || m.email}</span>
-                {m.id === user?.id && <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">(you)</span>}
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div>
-        <label className="v-label">Tags</label>
-        <TagInput tags={form.tags || []} onChange={(tags) => setForm(p => ({ ...p, tags }))} />
-      </div>
-      <div>
-        <label className="v-label">Notes {form.visibility === 'shared' ? <span className="text-[9px] font-normal text-slate-400 dark:text-slate-500 ml-1">(private to you)</span> : ''}</label>
-        <textarea value={form.notes} onChange={f('notes')} rows={3} className="v-input resize-y" placeholder="Background, preferences, how you met..." />
-      </div>
-
-      {/* Shared fields — only when visibility=shared */}
-      {form.visibility === 'shared' && (
-        <div className="border border-brand-200 dark:border-brand-800 bg-brand-50/40 dark:bg-brand-900/10 p-3 space-y-2">
-          <p className="text-[10px] font-semibold text-brand-600 dark:text-brand-400 uppercase tracking-wide font-mono flex items-center gap-1"><Users size={10} /> Shared fields (visible to all with access)</p>
-          <div>
-            <label className="v-label">Shared Notes</label>
-            <textarea value={form.sharedNotes} onChange={f('sharedNotes')} rows={2} className="v-input resize-y" placeholder="Team-facing notes visible to all shared users..." />
-          </div>
-          <div>
-            <label className="v-label">Shared Cell Phone(s)</label>
-            <TagInput tags={form.sharedCellPhones || []} onChange={(t) => setForm(p => ({ ...p, sharedCellPhones: t }))} placeholder="Add phone number..." />
-          </div>
-          <div>
-            <label className="v-label">Shared Personal Email(s)</label>
-            <TagInput tags={form.sharedPersonalEmails || []} onChange={(t) => setForm(p => ({ ...p, sharedPersonalEmails: t }))} placeholder="Add email address..." />
-          </div>
         </div>
       )}
 
@@ -578,6 +623,7 @@ export default function Contacts() {
   if (id) return <ContactDetail />
 
   const { sharedContacts: contacts, companies, addContact, updateContact, getCompany, teamMembers } = useCRM()
+  const { isAdmin } = useAuth()
   const { contactHealth } = useIntelligence()
   const { contactDuplicates } = useDuplicates()
   const [search, setSearch] = useState('')
@@ -839,7 +885,8 @@ export default function Contacts() {
             if (dupCheck.newData.tags?.length) {
               merged.tags = [...new Set([...(dupCheck.existing.tags || []), ...dupCheck.newData.tags])]
             }
-            if (dupCheck.newData.ownerIds?.length) {
+            // Only admins can add new owners via merge; non-admins preserve existing owners
+            if (isAdmin && dupCheck.newData.ownerIds?.length) {
               merged.ownerIds = [...new Set([...(dupCheck.existing.ownerIds || []), ...dupCheck.newData.ownerIds])]
             }
             await updateContact(dupCheck.existing.id, merged)
