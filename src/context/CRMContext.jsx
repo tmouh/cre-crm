@@ -93,10 +93,11 @@ export function CRMProvider({ children }) {
 
   // ─── CONTACTS ─────────────────────────────────────────────────────────────
   const addContact = useCallback(async (contact) => {
-    const rec = await db.contacts.insert(contact)
+    const withOwner = { ...contact, ownerIds: [...new Set([...(contact.ownerIds || []), ...(user ? [user.id] : [])])] }
+    const rec = await db.contacts.insert(withOwner)
     setContacts(prev => [...prev, rec])
     return rec
-  }, [])
+  }, [user])
 
   const updateContact = useCallback(async (id, patch) => {
     const rec = await db.contacts.update(id, patch)

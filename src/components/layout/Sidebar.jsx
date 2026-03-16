@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Building2, Briefcase, Bell, LogOut, Settings,
   Trash2, Map, Kanban, Database, Users2, Zap, BarChart3, ChevronDown,
   Activity, FolderOpen, Search, PanelLeftClose, PanelLeft,
-  Sun, Moon, Monitor, UserCircle, Building,
+  Sun, Moon, Monitor, UserCircle,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../../context/CRMContext'
@@ -24,8 +24,7 @@ const NAV_SECTIONS = [
   {
     label: 'Personal',
     items: [
-      { to: '/personal/contacts',  label: 'My Contacts',  Icon: UserCircle },
-      { to: '/personal/companies', label: 'My Companies', Icon: Building },
+      { to: '/personal/contacts', label: 'My Contacts', Icon: UserCircle },
     ],
   },
   {

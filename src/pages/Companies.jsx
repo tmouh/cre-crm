@@ -1,9 +1,8 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, X, CheckSquare, ChevronDown, AlertTriangle, Lock, Users } from 'lucide-react'
+import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, X, CheckSquare, ChevronDown, AlertTriangle } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
-import { useAuth } from '../context/AuthContext'
 import { COMPANY_TYPES, COMPANY_TYPE_COLORS, ASSET_TYPES, CAPITAL_TYPES, companyInitials, formatDate, fullName, formatAssetType, formatCapitalType } from '../utils/helpers'
 import Modal from '../components/Modal'
 import TagInput from '../components/TagInput'
@@ -72,22 +71,15 @@ function TypeCombobox({ value, onChange, disabled, allTypes }) {
   )
 }
 
-const BLANK = { name: '', type: '', address: '', phone: '', email: '', website: '', notes: '', tags: [], capitalType: '', propertyTypes: [], minDealSize: '', maxDealSize: '', targetMarkets: [], targetReturns: '', investmentCriteria: '', visibility: 'shared', ownerIds: [], sharedWith: [] }
+const BLANK = { name: '', type: '', address: '', phone: '', email: '', website: '', notes: '', tags: [], capitalType: '', propertyTypes: [], minDealSize: '', maxDealSize: '', targetMarkets: [], targetReturns: '', investmentCriteria: '' }
 
 function toggleArrayItem(arr, item) {
   return arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item]
 }
 
-export function CompanyForm({ initial = BLANK, onSubmit, onCancel, defaultVisibility = 'shared' }) {
-  const { companies, teamMembers } = useCRM()
-  const { user } = useAuth()
-  const [form, setForm] = useState({
-    ...BLANK,
-    ...initial,
-    visibility: initial.visibility || defaultVisibility,
-    ownerIds: initial.ownerIds || (user ? [user.id] : []),
-    sharedWith: initial.sharedWith || [],
-  })
+export function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
+  const { companies } = useCRM()
+  const [form, setForm] = useState({ ...BLANK, ...initial })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
@@ -202,56 +194,6 @@ export function CompanyForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
           <div>
             <label className="v-label">Investment Criteria</label>
             <textarea value={form.investmentCriteria} onChange={f('investmentCriteria')} rows={3} className="v-input resize-y" placeholder="Detailed investment parameters, preferences, restrictions..." />
-          </div>
-        </div>
-      )}
-
-      {/* Visibility toggle */}
-      <div>
-        <label className="v-label">Visibility</label>
-        <div className="flex gap-2">
-          <button type="button"
-            onClick={() => setForm(p => ({ ...p, visibility: 'private' }))}
-            className={clsx('flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-medium border transition-colors',
-              form.visibility === 'private'
-                ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
-                : 'border-[var(--border)] text-slate-500 hover:border-slate-400 dark:text-slate-400'
-            )}>
-            <Lock size={11} /> Personal (private)
-          </button>
-          <button type="button"
-            onClick={() => setForm(p => ({ ...p, visibility: 'shared' }))}
-            className={clsx('flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-medium border transition-colors',
-              form.visibility === 'shared'
-                ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
-                : 'border-[var(--border)] text-slate-500 hover:border-slate-400 dark:text-slate-400'
-            )}>
-            <Users size={11} /> Shared (CRM)
-          </button>
-        </div>
-      </div>
-
-      {/* Owners */}
-      {teamMembers.length > 0 && (
-        <div>
-          <label className="v-label">Owners</label>
-          <div className="border border-[var(--border)] p-1.5 space-y-0.5 max-h-24 overflow-y-auto">
-            {teamMembers.map(m => (
-              <label key={m.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-100 px-1.5 py-0.5">
-                <input
-                  type="checkbox"
-                  checked={(form.ownerIds || []).includes(m.id)}
-                  onChange={() => setForm(p => ({
-                    ...p,
-                    ownerIds: (p.ownerIds || []).includes(m.id)
-                      ? (p.ownerIds || []).filter(id => id !== m.id)
-                      : [...(p.ownerIds || []), m.id],
-                  }))}
-                />
-                <span className="text-slate-700 dark:text-slate-300">{m.displayName || m.email}</span>
-                {m.id === user?.id && <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">(you)</span>}
-              </label>
-            ))}
           </div>
         </div>
       )}
@@ -616,7 +558,7 @@ export default function Companies() {
   const { id } = useParams()
   if (id) return <CompanyDetail />
 
-  const { sharedCompanies: companies, contacts, addCompany, updateCompany, deleteCompany } = useCRM()
+  const { companies, contacts, addCompany, updateCompany, deleteCompany } = useCRM()
   const { companyDuplicates } = useDuplicates()
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')

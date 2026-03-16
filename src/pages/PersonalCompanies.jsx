@@ -12,7 +12,10 @@ import { CompanyForm, CompanyDetail } from './Companies'
 export default function PersonalCompanies() {
   const { id } = useParams()
   if (id) return <CompanyDetail backTo="/personal/companies" />
+  return <PersonalCompaniesList />
+}
 
+function PersonalCompaniesList() {
   const { personalCompanies, contacts, addCompany, deleteCompany, teamMembers, shareCompanies, makeCompaniesPrivate } = useCRM()
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)

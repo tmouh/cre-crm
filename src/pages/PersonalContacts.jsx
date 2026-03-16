@@ -13,7 +13,10 @@ import { ContactForm, ContactDetail } from './Contacts'
 export default function PersonalContacts() {
   const { id } = useParams()
   if (id) return <ContactDetail backTo="/personal/contacts" />
+  return <PersonalContactsList />
+}
 
+function PersonalContactsList() {
   const { personalContacts, companies, addContact, deleteContact, getCompany, teamMembers, shareContacts, makeContactsPrivate } = useCRM()
   const { contactHealth } = useIntelligence()
   const [search, setSearch] = useState('')
