@@ -22,11 +22,13 @@ const PAGE_TITLES = {
   '/reports':          { title: 'Reports',          subtitle: 'Analytics & insights' },
   '/automations':      { title: 'Automations',      subtitle: 'Workflow rules' },
   '/settings':         { title: 'Settings',         subtitle: 'Configuration & integrations' },
-  '/recently-deleted': { title: 'Recently Deleted', subtitle: '15-day recovery window' },
+  '/recently-deleted':  { title: 'Recently Deleted', subtitle: '15-day recovery window' },
+  '/personal/contacts': { title: 'My Contacts',      subtitle: 'Your private & shared contacts' },
 }
 
 function getPageInfo(pathname) {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]
+  if (pathname.startsWith('/personal/contacts/')) return { title: 'Contact', subtitle: 'Detail view' }
   if (pathname.startsWith('/contacts/'))  return { title: 'Contact',  subtitle: 'Detail view' }
   if (pathname.startsWith('/companies/')) return { title: 'Company',  subtitle: 'Detail view' }
   if (pathname.startsWith('/deals/'))     return { title: 'Deal',     subtitle: 'Detail view' }
