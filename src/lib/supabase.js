@@ -316,6 +316,32 @@ export const db = {
     },
   },
 
+  // ─── Per-user private field overrides for shared contacts ──────────────
+  contactPrivateData: {
+    forUser: async (contactId, userId) => {
+      const { data, error } = await supabase
+        .from('contact_private_data')
+        .select('*')
+        .eq('contact_id', contactId)
+        .eq('user_id', userId)
+        .maybeSingle()
+      if (error) throw error
+      return data ? toCamel(data) : null
+    },
+    upsert: async (contactId, userId, patch) => {
+      const { data, error } = await supabase
+        .from('contact_private_data')
+        .upsert(
+          clean(toSnake({ contactId, userId, ...patch, updatedAt: new Date().toISOString() })),
+          { onConflict: 'contact_id,user_id' }
+        )
+        .select()
+        .single()
+      if (error) throw error
+      return toCamel(data)
+    },
+  },
+
   config: {
     isSeeded: async () => {
       const { data, error } = await supabase

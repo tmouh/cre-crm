@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { db, seedDatabase } from '../lib/supabase'
+import { useAuth } from './AuthContext'
 
 const CRMContext = createContext(null)
 
@@ -13,6 +14,9 @@ function calcLastContacted(contactId, activitiesList, remindersList) {
 }
 
 export function CRMProvider({ children }) {
+  // Safe to call here — CRMProvider is always a child of AuthProvider in App.jsx
+  const { user } = useAuth()
+
   const [contacts,       setContacts]       = useState([])
   const [companies,      setCompanies]      = useState([])
   const [properties,     setProperties]     = useState([])
@@ -360,6 +364,65 @@ export function CRMProvider({ children }) {
     [companies]
   )
 
+  // ─── PERSONAL vs SHARED derived views ────────────────────────────────────
+  // sharedContacts: visibility='shared', scoped to sharedWith (null=all team)
+  const sharedContacts = useMemo(() => {
+    if (!user) return contacts.filter(c => (c.visibility || 'shared') === 'shared')
+    return contacts.filter(c =>
+      (c.visibility || 'shared') === 'shared' &&
+      (!c.sharedWith || c.sharedWith.length === 0 || c.sharedWith.includes(user.id))
+    )
+  }, [contacts, user])
+
+  // personalContacts: all contacts the current user owns (private + shared they created)
+  const personalContacts = useMemo(() => {
+    if (!user) return []
+    return contacts.filter(c => (c.ownerIds || []).includes(user.id))
+  }, [contacts, user])
+
+  const sharedCompanies = useMemo(() => {
+    if (!user) return companies.filter(c => (c.visibility || 'shared') === 'shared')
+    return companies.filter(c =>
+      (c.visibility || 'shared') === 'shared' &&
+      (!c.sharedWith || c.sharedWith.length === 0 || c.sharedWith.includes(user.id))
+    )
+  }, [companies, user])
+
+  const personalCompanies = useMemo(() => {
+    if (!user) return []
+    return companies.filter(c => (c.ownerIds || []).includes(user.id))
+  }, [companies, user])
+
+  // Share contacts: set visibility='shared', optionally limit to specific users
+  const shareContacts = useCallback(async (ids, sharedWith) => {
+    for (const id of ids) {
+      const rec = await db.contacts.update(id, { visibility: 'shared', sharedWith: sharedWith || null })
+      setContacts(prev => prev.map(c => c.id === id ? rec : c))
+    }
+  }, [])
+
+  // Make contacts private again
+  const makeContactsPrivate = useCallback(async (ids) => {
+    for (const id of ids) {
+      const rec = await db.contacts.update(id, { visibility: 'private', sharedWith: null })
+      setContacts(prev => prev.map(c => c.id === id ? rec : c))
+    }
+  }, [])
+
+  const shareCompanies = useCallback(async (ids, sharedWith) => {
+    for (const id of ids) {
+      const rec = await db.companies.update(id, { visibility: 'shared', sharedWith: sharedWith || null })
+      setCompanies(prev => prev.map(c => c.id === id ? rec : c))
+    }
+  }, [])
+
+  const makeCompaniesPrivate = useCallback(async (ids) => {
+    for (const id of ids) {
+      const rec = await db.companies.update(id, { visibility: 'private', sharedWith: null })
+      setCompanies(prev => prev.map(c => c.id === id ? rec : c))
+    }
+  }, [])
+
   // ─── DEAL INVESTORS ────────────────────────────────────────────────────
   const addDealInvestor = useCallback(async (di) => {
     const rec = await db.dealInvestors.insert(di)
@@ -461,6 +524,9 @@ export function CRMProvider({ children }) {
       contacts, companies, properties, reminders, activities, teamMembers,
       comps, investors, investorCompanies, dealInvestors, automations,
       dealActivities,
+      // Personal vs Shared derived views
+      sharedContacts, personalContacts, sharedCompanies, personalCompanies,
+      shareContacts, makeContactsPrivate, shareCompanies, makeCompaniesPrivate,
       loading, error,
       deletedContacts, deletedCompanies, deletedProperties, deletedReminders,
       addContact, updateContact, deleteContact, restoreContact, purgeContact,
