@@ -114,6 +114,14 @@ export function MicrosoftProvider({ children }) {
       if (capabilities?.mail) {
         syncDealActivities(crmDataRef.current).catch(() => {})
       }
+      // Prune old data once per day to stay within Supabase free tier limits
+      const lastCleanup = localStorage.getItem('ms_last_cleanup')
+      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000
+      if (!lastCleanup || Number(lastCleanup) < oneDayAgo) {
+        localStorage.setItem('ms_last_cleanup', String(Date.now()))
+        db.webhookNotifications.deleteOld(7).catch(() => {})
+        db.emailInteractions.deleteOld(90).catch(() => {})
+      }
     } catch (err) {
       setSyncState(prev => ({ ...prev, syncing: false, error: err.message }))
     }

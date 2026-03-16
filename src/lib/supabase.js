@@ -116,13 +116,23 @@ export const db = {
       if (error) throw error
       return rows(data)
     },
-    getAll: async () => {
+    getAll: async (daysBack = 90) => {
+      const cutoff = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
       const { data, error } = await supabase
         .from('email_interactions')
         .select('*')
+        .gte('received_at', cutoff)
         .order('received_at', { ascending: false })
       if (error) throw error
       return rows(data)
+    },
+    deleteOld: async (daysOld = 90) => {
+      const cutoff = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000).toISOString()
+      const { error } = await supabase
+        .from('email_interactions')
+        .delete()
+        .lt('received_at', cutoff)
+      if (error) throw error
     },
     upsertBatch: async (items) => {
       if (!items.length) return
@@ -213,15 +223,26 @@ export const db = {
         .in('id', ids)
       if (error) throw error
     },
+    deleteOld: async (daysOld = 7) => {
+      const cutoff = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000).toISOString()
+      const { error } = await supabase
+        .from('webhook_notifications')
+        .delete()
+        .eq('processed', true)
+        .lt('received_at', cutoff)
+      if (error) throw error
+    },
   },
 
   // ─── Deal activities (smart email-to-activity layer) ────────────────────
   dealActivities: {
-    getAll: async () => {
+    getAll: async (daysBack = 180) => {
+      const cutoff = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
       const { data, error } = await supabase
         .from('deal_activities')
         .select('*')
         .neq('status', 'dismissed')
+        .gte('last_message_at', cutoff)
         .order('last_message_at', { ascending: false })
       if (error) throw error
       return rows(data)
