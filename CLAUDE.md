@@ -3,7 +3,7 @@
 ## Auto-deploy
 After every change (or batch of related changes):
 1. Run `npx vercel --prod` to deploy to production. Do not wait for the user to ask. The project is already linked to Vercel.
-2. Commit and push to GitHub (`git add`, `git commit`, `git push origin v2`). Do not wait for the user to ask. **Current working branch is `v2`.**
+2. Commit and push to GitHub (`git add`, `git commit`, `git push origin main`). Do not wait for the user to ask. **Current working branch is `main`.**
 
 ## Stack
 - React 18 + Vite 5, Tailwind CSS, React Router v6
