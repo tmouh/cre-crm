@@ -8,7 +8,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ArrowLeft, Edit2, Trash2, MapPin, Building2,
-  Users, Clock, ChevronRight, Briefcase, Mail, FileText, ArrowUpRight, ChevronDown, X,
+  Users, Clock, ChevronRight, Briefcase, Mail, FileText, ArrowUpRight, ChevronDown, X, Upload,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
@@ -21,6 +21,7 @@ import {
   PROPERTY_TYPES, formatAssetType,
 } from '../utils/helpers'
 import Modal from '../components/Modal'
+import ImportModal from '../components/ImportModal'
 import TagInput from '../components/TagInput'
 import ActivityFeed from '../components/ActivityFeed'
 import ReminderList from '../components/ReminderList'
@@ -736,6 +737,7 @@ export default function Deals() {
   const { dealMomentum } = useIntelligence()
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [filterStatus, setFilterStatus] = useState('')
   const [filterType, setFilterType] = useState('')
   const [sortField, setSortField] = useState('name')
@@ -777,7 +779,10 @@ export default function Deals() {
         <div>
           <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500">{properties.length} deal{properties.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={() => setShowAdd(true)} className="v-btn-primary"><Plus size={13} /> New Deal</button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowImport(true)} className="v-btn-secondary text-xs"><Upload size={13} /> Import</button>
+          <button onClick={() => setShowAdd(true)} className="v-btn-primary"><Plus size={13} /> New Deal</button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -869,6 +874,7 @@ export default function Deals() {
           <DealForm onSubmit={async (form) => { await addProperty(form); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
         </Modal>
       )}
+      {showImport && <ImportModal entity="deals" onClose={() => setShowImport(false)} />}
     </div>
   )
 }

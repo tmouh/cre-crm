@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Upload, X, CheckCircle, AlertCircle, Loader2, FileText } from 'lucide-react'
+import { Upload, X, CheckCircle, AlertCircle, Loader2, FileText, UserPlus } from 'lucide-react'
 import { useCRM } from '../context/CRMContext'
 
 // ─── CSV parser (handles quoted fields with commas inside) ─────────────────────
@@ -79,6 +79,21 @@ const PROPERTY_ALIASES = {
   tenantCompany:  ['tenantcompany','tenant','borrower'],
   tags:           ['tags','tag'],
   notes:          ['notes','note','comments'],
+}
+
+const DEAL_ALIASES = {
+  dealGroup:    ['group','dealgroup'],
+  name:         ['name','dealname'],
+  city:         ['city','cityregion','city/region','region'],
+  state:        ['state'],
+  status:       ['stage','status','dealstatus','dealstage'],
+  propertyType: ['propertytype','assettype'],
+  dealType:     ['dealtype','type'],
+  dealValue:    ['amount','dealvalue','value','price'],
+  contact:      ['contact','contactname'],
+  company:      ['company','companyname'],
+  notes:        ['notes','note','comments'],
+  tags:         ['tags','tag'],
 }
 
 const COMP_ALIASES = {
@@ -201,17 +216,51 @@ function rowToProperty(row, map, companies) {
   }
 }
 
+function rowToDeal(row, map, companies, contacts) {
+  const v = (f) => getCell(row, map, f)
+  const compName     = v('company')
+  const ownerCompanyId = compName
+    ? (companies.find(c => c.name.toLowerCase() === compName.toLowerCase())?.id || '') : ''
+  const contactName  = v('contact').trim()
+  const contactIds   = contactName
+    ? contacts.filter(c => {
+        const full = `${c.firstName} ${c.lastName}`.toLowerCase()
+        return full === contactName.toLowerCase()
+      }).map(c => c.id)
+    : []
+  return {
+    dealGroup:    v('dealGroup'),
+    name:         v('name'),
+    city:         v('city'),
+    state:        v('state'),
+    status:       v('status') || 'prospect',
+    propertyType: v('propertyType'),
+    dealType:     v('dealType'),
+    dealValue:    v('dealValue') ? Number(v('dealValue').replace(/[$,]/g, '')) : undefined,
+    ownerCompanyId,
+    contactIds,
+    notes:        v('notes'),
+    tags:         v('tags') ? v('tags').split(';').map(t => t.trim()).filter(Boolean) : [],
+    ownerIds:     [],
+    _rawContactName: contactName,
+  }
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
-const ENTITY_LABELS = { contacts: 'Contacts', companies: 'Companies', properties: 'Properties', comps: 'Comps' }
+const ENTITY_LABELS = { contacts: 'Contacts', companies: 'Companies', properties: 'Properties', comps: 'Comps', deals: 'Deals' }
 
 export default function ImportModal({ entity, onClose }) {
-  const { companies, addContact, addCompany, addProperty, addComp } = useCRM()
+  const { companies, contacts, addContact, addCompany, addProperty, addComp } = useCRM()
   const [rawText, setRawText]   = useState('')
-  const [phase, setPhase]       = useState('idle') // idle | preview | importing | done
+  const [phase, setPhase]       = useState('idle') // idle | preview | contact-review | importing | done
   const [parsed, setParsed]     = useState(null)   // { headers, rows, mapping, mapped }
   const [results, setResults]   = useState([])     // [{ ok, error }]
   const fileRef = useRef()
   const [hasHeaders, setHasHeaders] = useState(true)
+  // contact-review state
+  const [unmatchedContacts, setUnmatchedContacts] = useState([]) // [{ name, rows: [rowIdx] }]
+  const [contactAction, setContactAction] = useState('select')   // 'all' | 'none' | 'select'
+  const [selectedContacts, setSelectedContacts] = useState({})   // name -> bool
 
   function handleFile(e) {
     const file = e.target.files[0]
@@ -233,11 +282,11 @@ export default function ImportModal({ entity, onClose }) {
     const aliases = entity === 'contacts' ? CONTACT_ALIASES
       : entity === 'companies' ? COMPANY_ALIASES
       : entity === 'comps' ? COMP_ALIASES
+      : entity === 'deals' ? DEAL_ALIASES
       : PROPERTY_ALIASES
 
     const mapping = buildMapping(headers, aliases)
 
-    // Build human-readable preview rows (first 5)
     const preview = rows.slice(0, 5).map(r => {
       const obj = {}
       headers.forEach((h, i) => { obj[h] = r[i] || '' })
@@ -248,10 +297,39 @@ export default function ImportModal({ entity, onClose }) {
     setPhase('preview')
   }
 
-  async function handleImport() {
+  function handlePreviewContinue() {
+    if (entity !== 'deals') { handleImport(); return }
+    // Find contact names that don't match any existing contact
+    const { rows, mapping } = parsed
+    const nameMap = {}
+    rows.forEach((row, i) => {
+      const name = getCell(row, mapping, 'contact').trim()
+      if (!name) return
+      const matched = contacts.some(c =>
+        `${c.firstName} ${c.lastName}`.toLowerCase() === name.toLowerCase()
+      )
+      if (!matched) {
+        if (!nameMap[name]) nameMap[name] = []
+        nameMap[name].push(i)
+      }
+    })
+    const unmatched = Object.entries(nameMap).map(([name, rows]) => ({ name, rows }))
+    if (unmatched.length === 0) { handleImport(); return }
+    setUnmatchedContacts(unmatched)
+    const sel = {}
+    unmatched.forEach(u => { sel[u.name] = true })
+    setSelectedContacts(sel)
+    setContactAction('select')
+    setPhase('contact-review')
+  }
+
+  async function handleImport(newContactsByName = {}) {
     setPhase('importing')
     const { rows, mapping } = parsed
     const res = []
+
+    // Merge newly created contacts into local lookup
+    const allContacts = [...contacts, ...Object.values(newContactsByName)]
 
     for (const row of rows) {
       try {
@@ -268,6 +346,11 @@ export default function ImportModal({ entity, onClose }) {
           if (!obj.address) throw new Error('Missing address')
           if (!obj.salePrice) throw new Error('Missing sale price')
           await addComp(obj)
+        } else if (entity === 'deals') {
+          const obj = rowToDeal(row, mapping, companies, allContacts)
+          if (!obj.name) throw new Error('Missing name')
+          const { _rawContactName, ...dealObj } = obj
+          await addProperty(dealObj)
         } else {
           const obj = rowToProperty(row, mapping, companies)
           if (!obj.name) throw new Error('Missing name')
@@ -281,6 +364,26 @@ export default function ImportModal({ entity, onClose }) {
 
     setResults(res)
     setPhase('done')
+  }
+
+  async function handleContactReviewContinue() {
+    // Determine which names to create
+    let namesToCreate = []
+    if (contactAction === 'all') {
+      namesToCreate = unmatchedContacts.map(u => u.name)
+    } else if (contactAction === 'select') {
+      namesToCreate = unmatchedContacts.filter(u => selectedContacts[u.name]).map(u => u.name)
+    }
+    // Create minimal contact records and collect them
+    const newContactsByName = {}
+    for (const name of namesToCreate) {
+      const parts = name.trim().split(/\s+/)
+      const firstName = parts[0] || name
+      const lastName  = parts.slice(1).join(' ') || ''
+      const created = await addContact({ firstName, lastName, ownerIds: [], contactIds: [], tags: [] })
+      if (created) newContactsByName[name] = created
+    }
+    handleImport(newContactsByName)
   }
 
   const okCount  = results.filter(r => r.ok).length
@@ -344,6 +447,13 @@ export default function ImportModal({ entity, onClose }) {
                   <p>* Required. Dates: YYYY-MM-DD. Numbers without $ or %. Cap rate as decimal (5.25 = 5.25%). Tags separated by semicolons.</p>
                 </div>
               )}
+              {entity === 'deals' && (
+                <div className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 px-3 py-2.5 space-y-1.5">
+                  <p className="font-medium text-slate-500 dark:text-slate-400">Expected column order:</p>
+                  <p className="font-mono bg-white dark:bg-slate-800 px-2 py-1 border border-[var(--border)] text-[11px] overflow-x-auto whitespace-nowrap">name*, group, city/region, state, stage, property type, deal type, amount, contact, company, notes, tags</p>
+                  <p>* Required. <code className="font-mono">contact</code> = full name (First Last). <code className="font-mono">company</code> = exact company name. <code className="font-mono">stage</code>: prospect, engaged, under-loi, under-contract, due-diligence, closed, dead. Tags separated by semicolons.</p>
+                </div>
+              )}
 
               <textarea
                 value={rawText}
@@ -399,6 +509,61 @@ export default function ImportModal({ entity, onClose }) {
             </>
           )}
 
+          {/* ── Contact review ── */}
+          {phase === 'contact-review' && (
+            <div className="space-y-4">
+              <div className="flex items-start gap-2">
+                <UserPlus size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-slate-700 dark:text-slate-200">
+                  <span className="font-medium">{unmatchedContacts.length} contact name{unmatchedContacts.length !== 1 ? 's' : ''}</span> in the CSV don't match anyone in your database. Would you like to create new contact records for them?
+                </p>
+              </div>
+
+              {/* Action selector */}
+              <div className="flex gap-2">
+                {[
+                  { val: 'all',    label: 'Add all' },
+                  { val: 'select', label: 'Select which' },
+                  { val: 'none',   label: 'Skip all' },
+                ].map(opt => (
+                  <button
+                    key={opt.val}
+                    onClick={() => setContactAction(opt.val)}
+                    className={`px-3 py-1.5 text-xs border rounded transition-colors ${
+                      contactAction === opt.val
+                        ? 'bg-brand-600 text-white border-brand-600'
+                        : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-[var(--border)] hover:border-brand-400'
+                    }`}
+                  >{opt.label}</button>
+                ))}
+              </div>
+
+              {/* Selectable list (only shown in 'select' mode) */}
+              {contactAction === 'select' && (
+                <div className="border border-[var(--border)] divide-y divide-slate-100 dark:divide-slate-700 max-h-52 overflow-y-auto">
+                  {unmatchedContacts.map(u => (
+                    <label key={u.name} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!!selectedContacts[u.name]}
+                        onChange={e => setSelectedContacts(p => ({ ...p, [u.name]: e.target.checked }))}
+                      />
+                      <span className="text-sm text-slate-700 dark:text-slate-200">{u.name}</span>
+                      <span className="ml-auto text-[10px] text-slate-400">{u.rows.length} row{u.rows.length !== 1 ? 's' : ''}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {contactAction === 'all' && (
+                <p className="text-xs text-slate-500 dark:text-slate-400">All {unmatchedContacts.length} names will be created as new contacts before importing deals.</p>
+              )}
+              {contactAction === 'none' && (
+                <p className="text-xs text-slate-500 dark:text-slate-400">No new contacts will be created. Those deals will be imported without a linked contact.</p>
+              )}
+            </div>
+          )}
+
           {/* ── Importing ── */}
           {phase === 'importing' && (
             <div className="flex flex-col items-center gap-3 py-8">
@@ -444,8 +609,16 @@ export default function ImportModal({ entity, onClose }) {
           {phase === 'preview' && (
             <>
               <button onClick={() => setPhase('idle')} className="v-btn-secondary">Back</button>
-              <button onClick={handleImport} className="v-btn-primary">
+              <button onClick={handlePreviewContinue} className="v-btn-primary">
                 Import {parsed.rows.length} rows
+              </button>
+            </>
+          )}
+          {phase === 'contact-review' && (
+            <>
+              <button onClick={() => setPhase('preview')} className="v-btn-secondary">Back</button>
+              <button onClick={handleContactReviewContinue} className="v-btn-primary">
+                Continue
               </button>
             </>
           )}
