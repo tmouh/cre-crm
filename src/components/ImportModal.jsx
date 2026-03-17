@@ -211,6 +211,7 @@ export default function ImportModal({ entity, onClose }) {
   const [parsed, setParsed]     = useState(null)   // { headers, rows, mapping, mapped }
   const [results, setResults]   = useState([])     // [{ ok, error }]
   const fileRef = useRef()
+  const [hasHeaders, setHasHeaders] = useState(true)
 
   function handleFile(e) {
     const file = e.target.files[0]
@@ -221,8 +222,13 @@ export default function ImportModal({ entity, onClose }) {
   }
 
   function handlePreview() {
-    const { headers, rows } = parseCSV(rawText)
-    if (!headers.length || !rows.length) return
+    let { headers, rows } = parseCSV(rawText)
+    if (!headers.length) return
+    if (!hasHeaders) {
+      rows = [headers, ...rows]
+      headers = headers.map((_, i) => String.fromCharCode(65 + i))
+    }
+    if (!rows.length) return
 
     const aliases = entity === 'contacts' ? CONTACT_ALIASES
       : entity === 'companies' ? COMPANY_ALIASES
@@ -294,34 +300,49 @@ export default function ImportModal({ entity, onClose }) {
           {/* ── Idle: paste or upload ── */}
           {phase === 'idle' && (
             <>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Paste CSV text below or upload a <code>.csv</code> file. The first row must be a header row.
-                Column names are matched automatically (case-insensitive).
-              </p>
+              <div className="flex items-start justify-between gap-4">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Paste CSV text below or upload a <code>.csv</code> file.
+                  Column names are matched automatically (case-insensitive).
+                </p>
+                <label className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap flex-shrink-0 cursor-pointer mt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={hasHeaders}
+                    onChange={e => setHasHeaders(e.target.checked)}
+                    className="flex-shrink-0"
+                  />
+                  CSV has headers
+                </label>
+              </div>
 
               {entity === 'contacts' && (
-                <p className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
-                  Recognised columns: <span className="font-mono">firstName*, lastName*, title, function, company, email, phone, mobile, linkedIn, tags, notes</span>
-                  <br />* Required. For <span className="font-mono">company</span>, use the exact company name. For <span className="font-mono">function</span>, valid values: lp-investor, broker, developer, lender, owner-operator, tenant, attorney, accountant, property-manager, other. Tags separated by semicolons.
-                </p>
+                <div className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 px-3 py-2.5 space-y-1.5">
+                  <p className="font-medium text-slate-500 dark:text-slate-400">Expected column order:</p>
+                  <p className="font-mono bg-white dark:bg-slate-800 px-2 py-1 border border-[var(--border)] text-[11px] overflow-x-auto whitespace-nowrap">firstName*, lastName*, title, function, company, email, phone, mobile, linkedIn, tags, notes</p>
+                  <p>* Required. <code className="font-mono">company</code> = exact company name. <code className="font-mono">function</code>: lp-investor, broker, developer, lender, owner-operator, tenant, attorney, accountant, property-manager, other. Arrays separated by semicolons.</p>
+                </div>
               )}
               {entity === 'companies' && (
-                <p className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
-                  Recognised columns: <span className="font-mono">name*, type, address, phone, email, website, tags, notes, capitalType, propertyTypes, minDealSize, maxDealSize, targetMarkets, targetReturns, investmentCriteria</span>
-                  <br />* Required. Valid types: owner, tenant, investor, developer, broker, lender, other. Tags, propertyTypes, and targetMarkets separated by semicolons. Investment fields (capitalType, etc.) apply to companies with type <span className="font-mono">investor</span>.
-                </p>
+                <div className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 px-3 py-2.5 space-y-1.5">
+                  <p className="font-medium text-slate-500 dark:text-slate-400">Expected column order:</p>
+                  <p className="font-mono bg-white dark:bg-slate-800 px-2 py-1 border border-[var(--border)] text-[11px] overflow-x-auto whitespace-nowrap">name*, type, address, phone, email, website, tags, notes, capitalType, propertyTypes, minDealSize, maxDealSize, targetMarkets, targetReturns, investmentCriteria</p>
+                  <p>* Required. Types: owner, tenant, investor, developer, broker, lender, other. Arrays separated by semicolons.</p>
+                </div>
               )}
               {entity === 'properties' && (
-                <p className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
-                  Recognised columns: <span className="font-mono">name*, address, dealType, size, sizeUnit, status, dealValue, ownerCompany, tenantCompany, tags, notes</span>
-                  <br />* Required. For <span className="font-mono">ownerCompany / tenantCompany</span>, use exact company names. Tags separated by semicolons.
-                </p>
+                <div className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 px-3 py-2.5 space-y-1.5">
+                  <p className="font-medium text-slate-500 dark:text-slate-400">Expected column order:</p>
+                  <p className="font-mono bg-white dark:bg-slate-800 px-2 py-1 border border-[var(--border)] text-[11px] overflow-x-auto whitespace-nowrap">name*, address, dealType, size, sizeUnit, status, dealValue, ownerCompany, tenantCompany, tags, notes</p>
+                  <p>* Required. <code className="font-mono">ownerCompany / tenantCompany</code> = exact company names. Tags separated by semicolons.</p>
+                </div>
               )}
               {entity === 'comps' && (
-                <p className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
-                  Recognised columns: <span className="font-mono">address*, salePrice*, propertyType, saleDate, capRate, pricePerSf, noi, size, sizeUnit, buyer, seller, market, submarket, yearBuilt, tags, notes</span>
-                  <br />* Required. Dates as YYYY-MM-DD. Numbers without $ or %. Cap rate as a decimal (e.g. 5.25 for 5.25%). Tags separated by semicolons.
-                </p>
+                <div className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 px-3 py-2.5 space-y-1.5">
+                  <p className="font-medium text-slate-500 dark:text-slate-400">Expected column order:</p>
+                  <p className="font-mono bg-white dark:bg-slate-800 px-2 py-1 border border-[var(--border)] text-[11px] overflow-x-auto whitespace-nowrap">address*, salePrice*, propertyType, saleDate, capRate, pricePerSf, noi, size, sizeUnit, buyer, seller, market, submarket, yearBuilt, tags, notes</p>
+                  <p>* Required. Dates: YYYY-MM-DD. Numbers without $ or %. Cap rate as decimal (5.25 = 5.25%). Tags separated by semicolons.</p>
+                </div>
               )}
 
               <textarea

@@ -4,11 +4,11 @@
  * This is the same data model (properties table) with a "Deals" label.
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ArrowLeft, Edit2, Trash2, MapPin, Building2,
-  Users, Clock, ChevronRight, Briefcase, Mail, FileText, ArrowUpRight,
+  Users, Clock, ChevronRight, Briefcase, Mail, FileText, ArrowUpRight, ChevronDown, X,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
@@ -26,6 +26,7 @@ import ActivityFeed from '../components/ActivityFeed'
 import ReminderList from '../components/ReminderList'
 import CompanyCombobox from '../components/CompanyCombobox'
 import { getEmailsForContact, searchEmailsByKeyword } from '../services/microsoft'
+import { ContactForm } from './Contacts'
 
 const BLANK = {
   name: '', address: '', dealType: '', propertyType: '', size: '', sizeUnit: 'SF',
@@ -33,13 +34,71 @@ const BLANK = {
   contactIds: [], tags: [], notes: '', ownerIds: [],
 }
 
+function InlineSelect({ value, onChange, options, formatOption, placeholder = 'Select or type…' }) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const ref = useRef(null)
+  useEffect(() => {
+    function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+  const q = query.toLowerCase().trim()
+  const filtered = q ? options.filter(o => o.toLowerCase().includes(q)) : options
+  const hasExact = options.some(o => o.toLowerCase() === q)
+  const canCreate = q.length > 1 && !hasExact
+  function select(v) { onChange(v); setQuery(''); setOpen(false) }
+  const displayValue = value ? (formatOption ? formatOption(value) : value) : ''
+  return (
+    <div ref={ref} className="relative">
+      <div
+        className={clsx('v-input flex items-center gap-1.5 cursor-text min-h-[30px] py-1', open && 'ring-1 ring-brand-400')}
+        onClick={() => setOpen(true)}
+      >
+        <input
+          value={open ? query : displayValue}
+          onChange={e => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => { setQuery(''); setOpen(true) }}
+          placeholder={placeholder}
+          className="flex-1 text-xs outline-none bg-transparent text-slate-700 dark:text-slate-300 placeholder-slate-400"
+        />
+        <ChevronDown size={11} className="text-slate-400 flex-shrink-0" />
+      </div>
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-0.5 border border-[var(--border)] bg-white dark:bg-surface-100 shadow-lg max-h-44 overflow-auto">
+          {filtered.map(o => (
+            <button key={o} type="button" onClick={() => select(o)}
+              className={clsx('w-full text-left px-3 py-1.5 text-xs transition-colors',
+                value === o
+                  ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-surface-200')}>
+              {formatOption ? formatOption(o) : o}
+            </button>
+          ))}
+          {canCreate && (
+            <button type="button"
+              onClick={() => select(query.trim().toLowerCase().replace(/\s+/g, '-'))}
+              className="w-full text-left px-3 py-1.5 text-xs text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 border-t border-[var(--border)]">
+              + Add "{query.trim()}"
+            </button>
+          )}
+          {filtered.length === 0 && !canCreate && (
+            <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500">No matches</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function DealForm({ initial = BLANK, onSubmit, onCancel }) {
-  const { addCompany, contacts, teamMembers } = useCRM()
+  const { addCompany, addContact, contacts, teamMembers } = useCRM()
   const { user } = useAuth()
   const defaultOwnerIds = initial === BLANK ? (user ? [user.id] : []) : (initial.ownerIds || [])
   const [form, setForm] = useState({ ...BLANK, ...initial, ownerIds: defaultOwnerIds })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
+  const [showNewContact, setShowNewContact] = useState(false)
   const [contactQuery, setContactQuery] = useState('')
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
@@ -84,17 +143,23 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="v-label">Deal type</label>
-          <select value={form.dealType} onChange={f('dealType')} className="v-select">
-            <option value="">— Select —</option>
-            {DEAL_TYPES.map(t => <option key={t} value={t}>{formatDealType(t)}</option>)}
-          </select>
+          <InlineSelect
+            value={form.dealType}
+            onChange={v => setForm(p => ({ ...p, dealType: v }))}
+            options={DEAL_TYPES}
+            formatOption={formatDealType}
+            placeholder="Select or add type…"
+          />
         </div>
         <div>
           <label className="v-label">Property type</label>
-          <select value={form.propertyType} onChange={f('propertyType')} className="v-select">
-            <option value="">— Select —</option>
-            {PROPERTY_TYPES.map(t => <option key={t} value={t}>{formatAssetType(t)}</option>)}
-          </select>
+          <InlineSelect
+            value={form.propertyType}
+            onChange={v => setForm(p => ({ ...p, propertyType: v }))}
+            options={PROPERTY_TYPES}
+            formatOption={formatAssetType}
+            placeholder="Select or add type…"
+          />
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3">
@@ -126,41 +191,53 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             onCreateAndSelect={async (name) => { const c = await addCompany({ name, type: 'other' }); setForm(p => ({ ...p, ownerCompanyId: c.id })) }} />
         </div>
         <div>
-          <label className="v-label">Tenant / Seller</label>
+          <label className="v-label">Seller</label>
           <CompanyCombobox value={form.tenantCompanyId} onChange={(id) => setForm(p => ({ ...p, tenantCompanyId: id }))}
             onCreateAndSelect={async (name) => { const c = await addCompany({ name, type: 'other' }); setForm(p => ({ ...p, tenantCompanyId: c.id })) }} />
         </div>
       </div>
       <div>
-        <label className="v-label">Related contacts</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="v-label mb-0">Deal Contacts</label>
+          <button
+            type="button"
+            onClick={() => setShowNewContact(true)}
+            className="flex items-center gap-0.5 text-[10px] text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300"
+          >
+            <Plus size={10} /> New Contact
+          </button>
+        </div>
         {selectedContacts.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-1.5">
             {selectedContacts.map(c => (
               <span key={c.id} className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 text-[11px] font-medium">
                 {fullName(c)}
                 <button type="button" onClick={() => toggleContact(c.id)} className="hover:bg-brand-200 dark:hover:bg-brand-800 p-0.5">
-                  <span className="text-[10px] leading-none">✕</span>
+                  <X size={10} />
                 </button>
               </span>
             ))}
           </div>
         )}
-        <input
-          value={contactQuery}
-          onChange={e => setContactQuery(e.target.value)}
-          className="v-input"
-          placeholder="Search contacts to add..."
-        />
-        {contactQuery && filteredContacts.length > 0 && (
-          <div className="border border-[var(--border)] border-t-0 max-h-36 overflow-y-auto bg-white dark:bg-surface-100">
-            {filteredContacts.slice(0, 8).map(c => (
-              <button key={c.id} type="button" onClick={() => { toggleContact(c.id); setContactQuery('') }}
-                className="w-full text-left px-3 py-1.5 text-[11px] text-slate-700 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-brand-900/20">
-                {fullName(c)}{c.title && <span className="text-slate-400 ml-1.5">· {c.title}</span>}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="relative">
+          <input
+            value={contactQuery}
+            onChange={e => setContactQuery(e.target.value)}
+            className="v-input"
+            placeholder="Search contacts to add…"
+          />
+          {contactQuery && filteredContacts.length > 0 && (
+            <div className="absolute z-50 top-full left-0 right-0 border border-[var(--border)] border-t-0 max-h-36 overflow-y-auto bg-white dark:bg-surface-100 shadow-lg">
+              {filteredContacts.slice(0, 8).map(c => (
+                <button key={c.id} type="button"
+                  onClick={() => { toggleContact(c.id); setContactQuery('') }}
+                  className="w-full text-left px-3 py-1.5 text-[11px] text-slate-700 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-brand-900/20">
+                  {fullName(c)}{c.title && <span className="text-slate-400 ml-1.5">· {c.title}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       {teamMembers.length > 0 && (
         <div>
@@ -187,6 +264,20 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
         <button type="submit" disabled={saving} className="v-btn-primary flex-1 disabled:opacity-60">{saving ? 'Saving…' : 'Save Deal'}</button>
         <button type="button" onClick={onCancel} disabled={saving} className="v-btn-secondary">Cancel</button>
       </div>
+      {showNewContact && (
+        <Modal title="New Contact" onClose={() => setShowNewContact(false)} size="2xl" disableBackdropClose>
+          <ContactForm
+            onSubmit={async (contactForm) => {
+              const newContact = await addContact(contactForm)
+              if (newContact?.id) {
+                setForm(p => ({ ...p, contactIds: [...(p.contactIds || []), newContact.id] }))
+              }
+              setShowNewContact(false)
+            }}
+            onCancel={() => setShowNewContact(false)}
+          />
+        </Modal>
+      )}
     </form>
   )
 }
@@ -368,6 +459,8 @@ function DealDetail() {
   const { isConnected } = useMicrosoft()
   const [editing, setEditing] = useState(false)
   const [rightTab, setRightTab] = useState('activity')
+  const [editingMomentum, setEditingMomentum] = useState(false)
+  const [momentumInput, setMomentumInput] = useState('')
 
   const deal = getProperty(id)
   if (!deal) return <div className="p-8 text-slate-400 dark:text-slate-500">Deal not found.</div>
@@ -437,13 +530,39 @@ function DealDetail() {
               <div className="p-2 bg-surface-50 dark:bg-surface-100">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono">Momentum</span>
-                  <span className={clsx('text-[11px] font-bold font-mono tabular-nums',
-                    momentum.momentumScore >= 75 ? 'text-emerald-500' :
-                    momentum.momentumScore >= 50 ? 'text-blue-500' :
-                    momentum.momentumScore >= 25 ? 'text-amber-500' : 'text-red-500'
-                  )}>
-                    {momentum.momentumScore}/100
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {deal.momentumOverride != null && (
+                      <span className="text-[9px] font-mono text-amber-500 dark:text-amber-400">override</span>
+                    )}
+                    {editingMomentum ? (
+                      <div className="flex items-center gap-1">
+                        <input type="number" min="0" max="100"
+                          value={momentumInput}
+                          onChange={e => setMomentumInput(e.target.value)}
+                          className="w-14 text-[11px] text-center border border-[var(--border)] bg-white dark:bg-surface-200 text-slate-700 dark:text-slate-300 outline-none px-1 py-0"
+                          autoFocus
+                        />
+                        <button type="button"
+                          onClick={async () => {
+                            const val = momentumInput === '' ? null : Math.max(0, Math.min(100, Number(momentumInput)))
+                            await updatePropertyWithStage(id, { ...deal, momentumOverride: val })
+                            setEditingMomentum(false)
+                          }}
+                          className="text-[10px] text-brand-600 dark:text-brand-400 font-medium hover:underline">Set</button>
+                        <button type="button" onClick={() => setEditingMomentum(false)}
+                          className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">Cancel</button>
+                      </div>
+                    ) : (
+                      <button type="button"
+                        onClick={() => { setMomentumInput(deal.momentumOverride?.toString() ?? momentum.momentumScore.toString()); setEditingMomentum(true) }}
+                        className={clsx('text-[10px] font-bold font-mono tabular-nums',
+                          momentum.momentumScore >= 75 ? 'text-emerald-500' :
+                          momentum.momentumScore >= 50 ? 'text-blue-500' :
+                          momentum.momentumScore >= 25 ? 'text-amber-500' : 'text-red-500')}>
+                        {momentum.momentumScore}/100
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="h-1.5 bg-surface-200 dark:bg-surface-200 overflow-hidden">
                   <div className={clsx('h-full transition-all duration-500',

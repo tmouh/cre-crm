@@ -15,6 +15,7 @@ const TODAY = () => new Date()
  * Factors: recency of last touch, frequency of activity, depth (types of interaction), email volume.
  */
 function contactHealthScore(contact, activities, reminders, emailInteractions) {
+  if (contact.healthOverride != null) return contact.healthOverride
   const now = TODAY()
   let score = 50 // baseline
 
@@ -70,6 +71,7 @@ function contactHealthScore(contact, activities, reminders, emailInteractions) {
  * Factors: stage progression speed, recent activity, staleness.
  */
 function dealMomentumScore(deal, activities, reminders) {
+  if (deal.momentumOverride != null) return deal.momentumOverride
   const now = TODAY()
   let score = 50
 

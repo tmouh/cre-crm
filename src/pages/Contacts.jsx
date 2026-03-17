@@ -355,6 +355,9 @@ export function ContactDetail({ backTo }) {
   const location = useLocation()
   const { getContact, getCompany, updateContact, deleteContact, properties, updatePropertyWithStage, reminders, activities, teamMembers } = useCRM()
   const { user } = useAuth()
+  const { contactHealth } = useIntelligence()
+  const [editingHealth, setEditingHealth] = useState(false)
+  const [healthInput, setHealthInput] = useState('')
   const [editing, setEditing] = useState(false)
   const [privateData, setPrivateData] = useState(null)
   const [editingPrivate, setEditingPrivate] = useState(false)
@@ -484,6 +487,62 @@ export function ContactDetail({ backTo }) {
               </a>
             )}
           </div>
+
+          {/* Health score */}
+          {(() => {
+            const ch = contactHealth.find(h => h.id === id)
+            const score = ch?.healthScore ?? 0
+            const lbl = ch?.healthLabel || 'cold'
+            return (
+              <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+                <div className="p-2 bg-surface-50 dark:bg-surface-100">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono">Health</span>
+                    <div className="flex items-center gap-1.5">
+                      {contact.healthOverride != null && (
+                        <span className="text-[9px] font-mono text-amber-500 dark:text-amber-400">override</span>
+                      )}
+                      {editingHealth ? (
+                        <div className="flex items-center gap-1">
+                          <input type="number" min="0" max="100"
+                            value={healthInput}
+                            onChange={e => setHealthInput(e.target.value)}
+                            className="w-14 text-[11px] text-center border border-[var(--border)] bg-white dark:bg-surface-200 text-slate-700 dark:text-slate-300 outline-none px-1 py-0"
+                            autoFocus
+                          />
+                          <button type="button"
+                            onClick={async () => {
+                              const val = healthInput === '' ? null : Math.max(0, Math.min(100, Number(healthInput)))
+                              await updateContact(id, { ...contact, healthOverride: val })
+                              setEditingHealth(false)
+                            }}
+                            className="text-[10px] text-brand-600 dark:text-brand-400 font-medium hover:underline">Set</button>
+                          <button type="button" onClick={() => setEditingHealth(false)}
+                            className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">Cancel</button>
+                        </div>
+                      ) : (
+                        <button type="button"
+                          onClick={() => { setHealthInput(contact.healthOverride?.toString() ?? score.toString()); setEditingHealth(true) }}
+                          className={clsx('text-[10px] font-bold font-mono tabular-nums',
+                            score >= 75 ? 'text-emerald-500' : score >= 50 ? 'text-blue-500' : score >= 25 ? 'text-amber-500' : 'text-red-500')}>
+                          {score}/100
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-surface-200 dark:bg-surface-200 overflow-hidden">
+                    <div className={clsx('h-full transition-all duration-500',
+                      score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-blue-500' : score >= 25 ? 'bg-amber-500' : 'bg-red-500'
+                    )} style={{ width: `${score}%` }} />
+                  </div>
+                  <p className={clsx('text-[10px] mt-1 font-mono',
+                    score >= 75 ? 'text-emerald-500' : score >= 50 ? 'text-blue-500' : score >= 25 ? 'text-amber-500' : 'text-red-500')}>
+                    {lbl}
+                  </p>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Metadata */}
           <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)] space-y-1 text-[10px]">

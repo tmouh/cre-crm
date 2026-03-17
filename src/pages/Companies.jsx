@@ -71,6 +71,81 @@ function TypeCombobox({ value, onChange, disabled, allTypes }) {
   )
 }
 
+// ── BulkSelectModal ──────────────────────────────────────────────────────────
+function BulkSelectModal({ title, items, onConfirm, onClose }) {
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState(new Set())
+  const [saving, setSaving] = useState(false)
+
+  const filtered = search.trim()
+    ? items.filter(i => (i.primary + ' ' + i.secondary).toLowerCase().includes(search.toLowerCase()))
+    : items
+
+  function toggle(id) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  async function confirm() {
+    setSaving(true)
+    try { await onConfirm([...selected]) } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white dark:bg-slate-800 w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border)]">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+          <button onClick={onClose} className="v-btn-ghost p-1.5"><X size={15} /></button>
+        </div>
+        <div className="px-5 py-3 border-b border-[var(--border)] space-y-2">
+          <div className="relative">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search…"
+              className="v-input pl-7 text-xs py-1.5"
+            />
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
+            <span>{filtered.length} shown · {selected.size} selected</span>
+            <div className="flex gap-2">
+              <button type="button" className="text-brand-600 dark:text-brand-400 hover:underline"
+                onClick={() => setSelected(new Set(filtered.map(i => i.id)))}>Select all</button>
+              <button type="button" className="hover:underline"
+                onClick={() => setSelected(new Set())}>Clear</button>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <p className="px-5 py-6 text-sm text-slate-400 dark:text-slate-500 text-center">No items found</p>
+          ) : filtered.map(item => (
+            <label key={item.id}
+              className="flex items-center gap-3 px-5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer border-b border-[var(--border-subtle)] dark:border-[var(--border)] last:border-0">
+              <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} className="flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] text-slate-800 dark:text-slate-200 truncate font-medium">{item.primary}</p>
+                {item.secondary && <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{item.secondary}</p>}
+              </div>
+            </label>
+          ))}
+        </div>
+        <div className="px-5 py-3.5 border-t border-[var(--border)] flex justify-end gap-2">
+          <button onClick={onClose} className="v-btn-secondary text-sm">Cancel</button>
+          <button onClick={confirm} disabled={selected.size === 0 || saving} className="v-btn-primary text-sm disabled:opacity-50">
+            {saving ? 'Saving…' : `Add ${selected.size > 0 ? selected.size + ' ' : ''}Selected`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const BLANK = { name: '', type: '', address: '', phone: '', email: '', website: '', notes: '', tags: [], capitalType: '', propertyTypes: [], minDealSize: '', maxDealSize: '', targetMarkets: [], targetReturns: '', investmentCriteria: '' }
 
 function toggleArrayItem(arr, item) {
@@ -234,8 +309,10 @@ export function CompanyDetail({ backTo }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { getCompany, contacts, properties, updateCompany, deleteCompany, teamMembers } = useCRM()
+  const { getCompany, contacts, updateContact, properties, updatePropertyWithStage, updateCompany, deleteCompany, teamMembers } = useCRM()
   const [editing, setEditing] = useState(false)
+  const [showAddContacts, setShowAddContacts] = useState(false)
+  const [showAddDeals, setShowAddDeals] = useState(false)
   const resolvedBackTo = backTo || (location.pathname.startsWith('/personal/') ? '/personal/companies' : '/companies')
 
   const company = getCompany(id)
@@ -370,7 +447,12 @@ export function CompanyDetail({ backTo }) {
 
           {/* Contacts */}
           <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
-            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1.5 font-mono uppercase">Contacts ({relatedContacts.length})</p>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 font-mono uppercase">Contacts ({relatedContacts.length})</p>
+              <button onClick={() => setShowAddContacts(true)} className="text-slate-400 hover:text-brand-500 dark:hover:text-brand-400 transition-colors p-0.5">
+                <Plus size={12} />
+              </button>
+            </div>
             {relatedContacts.length > 0 ? (
               <div className="space-y-1.5">
                 {relatedContacts.map(c => {
@@ -395,7 +477,12 @@ export function CompanyDetail({ backTo }) {
 
           {/* Properties */}
           <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
-            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1.5 font-mono uppercase">Properties ({ownedProperties.length + tenantProperties.length})</p>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 font-mono uppercase">Properties ({ownedProperties.length + tenantProperties.length})</p>
+              <button onClick={() => setShowAddDeals(true)} className="text-slate-400 hover:text-brand-500 dark:hover:text-brand-400 transition-colors p-0.5">
+                <Plus size={12} />
+              </button>
+            </div>
             {ownedProperties.length > 0 && (
               <>
                 <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">Owns ({ownedProperties.length})</p>
@@ -439,6 +526,34 @@ export function CompanyDetail({ backTo }) {
         <Modal title="Edit Company" onClose={() => setEditing(false)} size="lg" disableBackdropClose>
           <CompanyForm initial={company} onSubmit={handleUpdate} onCancel={() => setEditing(false)} />
         </Modal>
+      )}
+      {showAddContacts && (
+        <BulkSelectModal
+          title="Add Contacts to Company"
+          items={contacts.filter(c => c.companyId !== id).map(c => ({ id: c.id, primary: fullName(c), secondary: c.title || '' }))}
+          onConfirm={async (selectedIds) => {
+            for (const cid of selectedIds) {
+              const c = contacts.find(x => x.id === cid)
+              if (c) await updateContact(cid, { ...c, companyId: id })
+            }
+            setShowAddContacts(false)
+          }}
+          onClose={() => setShowAddContacts(false)}
+        />
+      )}
+      {showAddDeals && (
+        <BulkSelectModal
+          title="Link Deals to Company"
+          items={properties.filter(p => !p.deletedAt && p.ownerCompanyId !== id && p.tenantCompanyId !== id).map(p => ({ id: p.id, primary: p.name || p.address || 'Unnamed', secondary: p.status || '' }))}
+          onConfirm={async (selectedIds) => {
+            for (const pid of selectedIds) {
+              const p = properties.find(x => x.id === pid)
+              if (p) await updatePropertyWithStage(pid, { ...p, ownerCompanyId: id })
+            }
+            setShowAddDeals(false)
+          }}
+          onClose={() => setShowAddDeals(false)}
+        />
       )}
     </div>
   )
