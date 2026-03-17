@@ -50,12 +50,12 @@ export const DEAL_TYPES = [
   'acquisition', 'note-acquisition', 'recapitalization', 'sale',
   'equity-raise', 'preferred-equity', 'mezzanine',
   'senior-debt', 'bridge-financing', 'construction-financing',
-  'development', 'debt-equity'
+  'debt-equity', 'full'
 ]
 
 export const DEAL_STATUSES = [
   'prospect', 'engaged', 'under-loi', 'under-contract',
-  'due-diligence', 'closed', 'dead'
+  'due-diligence', 'development', 'closed', 'dead'
 ]
 
 export const DEAL_STATUS_COLORS = {
@@ -64,6 +64,7 @@ export const DEAL_STATUS_COLORS = {
   'under-loi':      'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
   'under-contract': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
   'due-diligence':  'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  development:      'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-300',
   closed:           'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
   dead:             'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300',
 }
@@ -79,8 +80,8 @@ export const DEAL_TYPE_COLORS = {
   'senior-debt':            'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
   'bridge-financing':       'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
   'construction-financing': 'bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-300',
-  'development':            'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-300',
   'debt-equity':            'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
+  'full':                   'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
 }
 
 export function formatDealType(t) {
@@ -90,7 +91,7 @@ export function formatDealType(t) {
     'equity-raise': 'Equity Raise', 'preferred-equity': 'Preferred Equity',
     'mezzanine': 'Mezzanine', 'senior-debt': 'Senior Debt',
     'bridge-financing': 'Bridge Financing', 'construction-financing': 'Construction Financing',
-    'development': 'Development', 'debt-equity': 'Debt/Equity',
+    'debt-equity': 'Debt/Equity', 'full': 'Full',
   }
   return labels[t] || (t ? t.charAt(0).toUpperCase() + t.slice(1).replace(/-/g, ' ') : '')
 }
@@ -99,7 +100,7 @@ export function formatDealStatus(s) {
   const labels = {
     'prospect': 'Prospect', 'engaged': 'Engaged', 'under-loi': 'Under LOI',
     'under-contract': 'Under Contract', 'due-diligence': 'Due Diligence',
-    'closed': 'Closed', 'dead': 'Dead',
+    'development': 'Development', 'closed': 'Closed', 'dead': 'Dead',
   }
   return labels[s] || (s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ') : '')
 }
