@@ -585,7 +585,7 @@ export async function getInboxMessages(count = 50, daysBack = 2) {
 export async function getMessageAttachmentsWithSource(messageId) {
   try {
     const data = await graphGet(
-      `/me/messages/${messageId}/attachments?$select=id,name,@odata.type,size,sourceUrl,contentType`
+      `/me/messages/${messageId}/attachments?$select=id,name,@odata.type,size,contentType`
     )
     return (data?.value || [])
       .filter(att => att['@odata.type'] !== '#microsoft.graph.itemAttachment')
