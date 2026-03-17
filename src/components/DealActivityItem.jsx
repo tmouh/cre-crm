@@ -185,17 +185,15 @@ export default function DealActivityItem({ da }) {
                 {da.relevanceSignals.map((sig, i) => (
                   <span key={i} className={clsx(
                     'text-[10px] px-1.5 py-0.5 rounded font-medium',
-                    sig.type === 'sharepoint_deal_folder'
+                    (sig.type === 'deal_folder_attachment' || sig.type === 'om_uw_attachment')
                       ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-                      : sig.type === 'active_deal_match'
+                      : sig.type === 'active_deal_contact'
                         ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                         : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
                   )}>
-                    {sig.type === 'recipient_match'      && 'Contact matched'}
-                    {sig.type === 'active_deal_match'    && 'Active deal link'}
-                    {sig.type === 'address_match'        && 'Address in email'}
-                    {sig.type === 'deal_keywords'        && 'Deal keywords'}
-                    {sig.type === 'sharepoint_deal_folder' && '📁 SharePoint OM/UW folder'}
+                    {sig.type === 'deal_folder_attachment' && '📁 OM/UW folder attachment'}
+                    {sig.type === 'om_uw_attachment'       && '📎 OM/UW file attached'}
+                    {sig.type === 'active_deal_contact'    && 'Active deal contact'}
                   </span>
                 ))}
               </div>

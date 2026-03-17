@@ -151,7 +151,7 @@ async function processBatch(messages, direction, crmData) {
 
     const result = scoreEmail(message, attachments, crmData, direction)
 
-    // Tier 3 → excluded
+    // No qualifying signals → excluded
     if (result.tier === 3) continue
 
     const timestamp = direction === 'inbound'
