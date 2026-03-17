@@ -111,8 +111,13 @@ export function CRMProvider({ children }) {
   const updateContact = useCallback(async (id, patch) => {
     const rec = await db.contacts.update(id, patch)
     setContacts(prev => prev.map(c => c.id === id ? rec : c))
-    if (outlookPushRef.current && rec.outlookContactId) {
-      outlookPushRef.current({ ...rec, _isUpdate: true }).catch(() => {})
+    if (outlookPushRef.current) {
+      if (rec.outlookContactId) {
+        outlookPushRef.current({ ...rec, _isUpdate: true }).catch(() => {})
+      } else {
+        // No Outlook ID — treat as new so it gets created in Outlook and ID written back
+        outlookPushRef.current({ ...rec, _isNew: true }).catch(() => {})
+      }
     }
     return rec
   }, [])
