@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, X, CheckSquare, ChevronDown, AlertTriangle } from 'lucide-react'
+import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, X, CheckSquare, ChevronDown, AlertTriangle, Share2, Lock, Users } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { COMPANY_TYPES, COMPANY_TYPE_COLORS, ASSET_TYPES, CAPITAL_TYPES, companyInitials, formatDate, fullName, formatAssetType, formatCapitalType } from '../utils/helpers'
@@ -14,6 +14,7 @@ import PageHeader from '../components/PageHeader'
 import ImportModal from '../components/ImportModal'
 import DuplicateCheckModal from '../components/DuplicateCheckModal'
 import DuplicateScanModal from '../components/DuplicateScanModal'
+import ShareModal from '../components/ShareModal'
 import { useDuplicates } from '../hooks/useDuplicates'
 
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
@@ -673,7 +674,7 @@ export default function Companies() {
   const { id } = useParams()
   if (id) return <CompanyDetail />
 
-  const { companies, contacts, addCompany, updateCompany, deleteCompany } = useCRM()
+  const { companies, contacts, addCompany, updateCompany, deleteCompany, shareCompanies, makeCompaniesPrivate, teamMembers } = useCRM()
   const { companyDuplicates } = useDuplicates()
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
@@ -682,6 +683,8 @@ export default function Companies() {
   const [showDupScan, setShowDupScan] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [showBulkEdit, setShowBulkEdit] = useState(false)
+  const [showShare, setShowShare] = useState(false)
+  const [sharing, setSharing] = useState(false)
   const [dupCheck, setDupCheck] = useState(null) // { newData, existing }
   const [sortField, setSortField] = useState('name')
   const [sortDir, setSortDir] = useState('asc')
@@ -794,6 +797,23 @@ export default function Companies() {
     clearSelection()
   }
 
+  async function handleShare(userIds) {
+    setSharing(true)
+    try {
+      await shareCompanies([...selected], userIds)
+      setShowShare(false)
+      clearSelection()
+    } finally {
+      setSharing(false)
+    }
+  }
+
+  async function handleMakePrivate() {
+    if (!confirm(`Make ${selected.size} compan${selected.size !== 1 ? 'ies' : 'y'} private? They will be removed from the shared CRM.`)) return
+    await makeCompaniesPrivate([...selected])
+    clearSelection()
+  }
+
   return (
     <div className="h-full flex flex-col animate-fade-in">
       {/* Toolbar */}
@@ -827,38 +847,56 @@ export default function Companies() {
 
       {/* Bulk action bar */}
       {selected.size > 0 && (
-        <div ref={barSentinelRef} className="flex items-center gap-2 px-3 py-1.5 border-b border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/20 flex-shrink-0">
-          <CheckSquare size={12} className="text-brand-600 dark:text-brand-400" />
-          <span className="text-[11px] font-medium text-brand-700 dark:text-brand-300 font-mono">{selected.size} selected</span>
-          <div className="flex-1" />
-          <button onClick={() => setShowBulkEdit(true)} className="v-btn-secondary text-[10px]">
-            <Edit2 size={11} /> Edit
-          </button>
-          <button onClick={handleBulkDelete} className="v-btn-secondary text-[10px] text-red-600 dark:text-red-400">
-            <Trash2 size={11} /> Delete
-          </button>
-          <button onClick={clearSelection} className="v-btn-ghost p-1 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
-            <X size={12} />
-          </button>
-        </div>
-      )}
-      {selected.size > 0 && barStuck && (
-        <div className="fixed top-[40px] left-[200px] right-0 z-50 pointer-events-none">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-surface-50 border-b border-brand-200 dark:border-brand-700 pointer-events-auto">
+        <>
+          <div ref={barSentinelRef} className="flex items-center gap-2 px-3 py-1.5 border-b border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/20 flex-shrink-0">
             <CheckSquare size={12} className="text-brand-600 dark:text-brand-400" />
             <span className="text-[11px] font-medium text-brand-700 dark:text-brand-300 font-mono">{selected.size} selected</span>
             <div className="flex-1" />
+            <button onClick={() => setShowShare(true)} className="v-btn-primary text-[10px]">
+              <Share2 size={11} /> Share
+            </button>
+            {[...selected].some(id => companies.find(c => c.id === id)?.visibility === 'shared') && (
+              <button onClick={handleMakePrivate} className="v-btn-secondary text-[10px]">
+                <Lock size={11} /> Make Private
+              </button>
+            )}
             <button onClick={() => setShowBulkEdit(true)} className="v-btn-secondary text-[10px]">
               <Edit2 size={11} /> Edit
             </button>
             <button onClick={handleBulkDelete} className="v-btn-secondary text-[10px] text-red-600 dark:text-red-400">
               <Trash2 size={11} /> Delete
             </button>
-            <button onClick={clearSelection} className="v-btn-ghost p-1">
+            <button onClick={clearSelection} className="v-btn-ghost p-1 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
               <X size={12} />
             </button>
           </div>
-        </div>
+          {barStuck && (
+            <div className="fixed top-[40px] left-[200px] right-0 z-50 pointer-events-none">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-surface-50 border-b border-brand-200 dark:border-brand-700 pointer-events-auto">
+                <CheckSquare size={12} className="text-brand-600 dark:text-brand-400" />
+                <span className="text-[11px] font-medium text-brand-700 dark:text-brand-300 font-mono">{selected.size} selected</span>
+                <div className="flex-1" />
+                <button onClick={() => setShowShare(true)} className="v-btn-primary text-[10px]">
+                  <Share2 size={11} /> Share
+                </button>
+                {[...selected].some(id => companies.find(c => c.id === id)?.visibility === 'shared') && (
+                  <button onClick={handleMakePrivate} className="v-btn-secondary text-[10px]">
+                    <Lock size={11} /> Make Private
+                  </button>
+                )}
+                <button onClick={() => setShowBulkEdit(true)} className="v-btn-secondary text-[10px]">
+                  <Edit2 size={11} /> Edit
+                </button>
+                <button onClick={handleBulkDelete} className="v-btn-secondary text-[10px] text-red-600 dark:text-red-400">
+                  <Trash2 size={11} /> Delete
+                </button>
+                <button onClick={clearSelection} className="v-btn-ghost p-1">
+                  <X size={12} />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {filtered.length === 0 ? (
@@ -879,6 +917,7 @@ export default function Companies() {
                   { field: 'type', label: 'Type' },
                   { field: null, label: 'Description' },
                   { field: 'contacts', label: 'Contacts' },
+                  { field: null, label: 'Visibility' },
                   { field: null, label: 'Tags' },
                 ].map(({ field, label }) => (
                   <th key={label}
@@ -927,6 +966,13 @@ export default function Companies() {
                     </td>
                     <td>
                       <span className="text-[12px] text-slate-600 dark:text-slate-400 font-mono tabular-nums">{compContacts.length}</span>
+                    </td>
+                    <td>
+                      {(c.visibility || 'shared') === 'private' ? (
+                        <span className="v-badge bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400 flex items-center gap-0.5 w-fit"><Lock size={9} /> Private</span>
+                      ) : (
+                        <span className="v-badge bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300 flex items-center gap-0.5 w-fit"><Users size={9} /> Shared</span>
+                      )}
                     </td>
                     <td>
                       <div className="flex flex-wrap gap-0.5">
@@ -1011,6 +1057,17 @@ export default function Companies() {
           entityType="company"
           pairs={companyDuplicates}
           onClose={() => setShowDupScan(false)}
+        />
+      )}
+
+      {showShare && (
+        <ShareModal
+          count={selected.size}
+          entityLabel="company"
+          teamMembers={teamMembers}
+          onConfirm={handleShare}
+          onCancel={() => setShowShare(false)}
+          loading={sharing}
         />
       )}
     </div>
