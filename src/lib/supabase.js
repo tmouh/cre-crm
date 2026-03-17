@@ -27,7 +27,7 @@ function toCamel(obj) {
 // Strip undefined and empty-string fields before sending to Supabase
 // (empty strings break UUID and numeric columns)
 function clean(obj) {
-  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== ''))
+  return Object.fromEntries(Object.entries(obj).filter(([k, v]) => !k.startsWith('_') && v !== undefined && v !== ''))
 }
 
 // For updates: convert empty strings to null (lets Supabase clear columns) but strip undefined
