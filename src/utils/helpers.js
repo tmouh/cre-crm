@@ -49,7 +49,8 @@ export const PROPERTY_STATUSES = ['available', 'leased', 'under-contract', 'sold
 export const DEAL_TYPES = [
   'acquisition', 'note-acquisition', 'recapitalization', 'sale',
   'equity-raise', 'preferred-equity', 'mezzanine',
-  'senior-debt', 'bridge-financing', 'construction-financing'
+  'senior-debt', 'bridge-financing', 'construction-financing',
+  'development', 'debt-equity'
 ]
 
 export const DEAL_STATUSES = [
@@ -78,6 +79,8 @@ export const DEAL_TYPE_COLORS = {
   'senior-debt':            'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
   'bridge-financing':       'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
   'construction-financing': 'bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-300',
+  'development':            'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-300',
+  'debt-equity':            'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
 }
 
 export function formatDealType(t) {
@@ -87,6 +90,7 @@ export function formatDealType(t) {
     'equity-raise': 'Equity Raise', 'preferred-equity': 'Preferred Equity',
     'mezzanine': 'Mezzanine', 'senior-debt': 'Senior Debt',
     'bridge-financing': 'Bridge Financing', 'construction-financing': 'Construction Financing',
+    'development': 'Development', 'debt-equity': 'Debt/Equity',
   }
   return labels[t] || (t ? t.charAt(0).toUpperCase() + t.slice(1).replace(/-/g, ' ') : '')
 }
