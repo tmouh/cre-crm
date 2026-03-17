@@ -1,25 +1,29 @@
 /**
  * Deal Activity Sync Orchestrator
  *
- * Scans both Sent Items (outbound) and Inbox (inbound) for emails that qualify
- * as deal-related activity under the two-gate rule:
+ * Scans Sent Items (outbound) and Inbox (inbound) for emails that qualify
+ * as deal-related activity under two conditions:
  *
- *   Gate 1 — A deal's address or name appears in the email subject/body.
- *   Gate 2 — A contact linked to that deal is identified in the email:
- *             • Outbound: contact email in To field (CC excluded)
- *             • Inbound:  contact email matches the From field
- *             • Fallback: contact's full name appears in subject/body
+ *   Condition A — Email has an OM/UW folder attachment (SharePoint) or a file
+ *                 with an OM/UW-style filename.
+ *   Condition B — A direct recipient (outbound) or sender (inbound) is a CRM
+ *                 contact linked to a deal with an active status.
  *
- * Both gates must pass for the same deal. Runs after every Microsoft sync cycle.
- * Always best-effort — errors are caught and logged, never re-thrown.
+ * No back-searching: a cutoff timestamp is persisted in localStorage so only
+ * emails arriving after the previous sync are scored. On first run, the cutoff
+ * is set to "now" and no historical email is processed.
+ *
+ * Runs after every Microsoft sync cycle. Always best-effort.
  */
 
 import { getSentMessages, getInboxMessages, getMessageAttachmentsWithSource } from './microsoft'
 import { db } from '../lib/supabase'
 import { scoreEmail } from '../lib/dealActivityScoring'
 
+const LAST_SCORED_KEY = 'ms_last_activity_scored'
+
 // Track message IDs processed in this browser session to avoid re-scoring
-// on rapid back-to-back sync cycles. Cleared on page reload (intentional).
+// on rapid back-to-back sync cycles within the same page load.
 const processedMessageIds = new Set()
 
 /**
@@ -32,16 +36,36 @@ export async function syncDealActivities(crmData) {
   // Skip if CRM data isn't loaded yet
   if (!contacts?.length && !companies?.length) return
 
+  // ── Cutoff: never score emails older than the last run ───────────────────
+  const stored = localStorage.getItem(LAST_SCORED_KEY)
+  const now    = new Date()
+
+  if (!stored) {
+    // First run — establish baseline at "now" so we don't back-search
+    localStorage.setItem(LAST_SCORED_KEY, now.toISOString())
+    return
+  }
+
+  const cutoff = new Date(stored)
+  // Advance the cutoff before fetching so a concurrent session doesn't overlap
+  localStorage.setItem(LAST_SCORED_KEY, now.toISOString())
+
   try {
     const [sentMessages, inboxMessages] = await Promise.all([
       getSentMessages(50, 2),
       getInboxMessages(50, 2),
     ])
 
+    // Filter to only messages newer than the cutoff
+    const isNew = (msg) => {
+      const ts = msg.sentDateTime || msg.receivedDateTime
+      return ts ? new Date(ts) > cutoff : false
+    }
+
     // Process outbound first so threads started by us are seeded before
-    // inbound replies from the same 48-hour window update them.
-    await processBatch(sentMessages,  'outbound', crmData)
-    await processBatch(inboxMessages, 'inbound',  crmData)
+    // inbound replies from the same window update them.
+    await processBatch(sentMessages.filter(isNew),  'outbound', crmData)
+    await processBatch(inboxMessages.filter(isNew), 'inbound',  crmData)
   } catch (err) {
     console.warn('[DealActivitySync] sync error:', err?.message)
   }
@@ -82,7 +106,7 @@ async function processBatch(messages, direction, crmData) {
       continue
     }
 
-    // ── New thread — run the scoring pipeline ───────────────────────────────
+    // ── New thread — fetch attachments and run scoring ───────────────────────
     let attachments = []
     if (message.hasAttachments) {
       attachments = await getMessageAttachmentsWithSource(message.id).catch(() => [])
@@ -90,14 +114,13 @@ async function processBatch(messages, direction, crmData) {
 
     const result = scoreEmail(message, attachments, crmData, direction)
 
-    // Tier 3 → excluded entirely
+    // Tier 3 → excluded
     if (result.tier === 3) continue
 
     const timestamp = direction === 'inbound'
       ? (message.receivedDateTime || new Date().toISOString())
       : (message.sentDateTime     || new Date().toISOString())
 
-    // Tier 1 → auto  |  Tier 2 → needs_review
     await addDealActivity({
       conversationId,
       subject:              message.subject || '(no subject)',
@@ -105,7 +128,7 @@ async function processBatch(messages, direction, crmData) {
       companyId:            result.companyId,
       propertyId:           result.propertyId,
       candidatePropertyIds: result.candidatePropertyIds,
-      status:               result.tier === 1 ? 'auto' : 'needs_review',
+      status:               'auto',
       confidence:           result.confidence,
       relevanceSignals:     result.signals,
       messageCount:         1,
