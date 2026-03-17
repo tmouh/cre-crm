@@ -11,6 +11,8 @@ import {
   createGraphSubscription,
   renewGraphSubscription,
   listGraphSubscriptions,
+  updateOutlookContact,
+  createOutlookContact,
 } from '../services/microsoft'
 import { db, supabase } from '../lib/supabase'
 import { useCRM } from './CRMContext'
@@ -20,14 +22,14 @@ const MicrosoftContext = createContext(null)
 
 export function MicrosoftProvider({ children }) {
   // CRMProvider wraps MicrosoftProvider in App.jsx, so useCRM() is safe here.
-  const { contacts, companies, properties, addDealActivity, updateDealActivity } = useCRM()
+  const { contacts, companies, properties, addDealActivity, updateDealActivity, registerOutlookPush, updateContact } = useCRM()
 
   // Keep a ref so the sync callback always sees fresh CRM data without
   // needing contacts/companies/properties in its dependency array.
-  const crmDataRef = useRef({ contacts, companies, properties, addDealActivity, updateDealActivity })
+  const crmDataRef = useRef({ contacts, companies, properties, addDealActivity, updateDealActivity, updateContact })
   useEffect(() => {
-    crmDataRef.current = { contacts, companies, properties, addDealActivity, updateDealActivity }
-  }, [contacts, companies, properties, addDealActivity, updateDealActivity])
+    crmDataRef.current = { contacts, companies, properties, addDealActivity, updateDealActivity, updateContact }
+  }, [contacts, companies, properties, addDealActivity, updateDealActivity, updateContact])
 
   const [account, setAccount] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -47,6 +49,29 @@ export function MicrosoftProvider({ children }) {
   const [recentFiles, setRecentFiles] = useState([])
 
   const syncIntervalRef = useRef(null)
+
+  // ─── Outlook contact write-back ───────────────────────────────────────────
+  // Register a push callback with CRMContext so that every contact save
+  // automatically propagates to Outlook (fire-and-forget; never blocks CRM).
+  useEffect(() => {
+    registerOutlookPush(async (contact) => {
+      if (contact._skipOutlookPush) return  // imported from Outlook — already in sync
+      try {
+        const { companies: co, updateContact: uc } = crmDataRef.current
+        const companyName = contact.companyId
+          ? co.find(c => c.id === contact.companyId)?.name
+          : undefined
+        if (contact._isNew && !contact.outlookContactId) {
+          // Brand-new CRM contact — create in Outlook, then write back the ID
+          const result = await createOutlookContact(contact, companyName)
+          if (result?.id) await uc(contact.id, { outlookContactId: result.id })
+        } else if (contact.outlookContactId) {
+          // Existing Outlook-linked contact — PATCH it
+          await updateOutlookContact(contact.outlookContactId, contact, companyName)
+        }
+      } catch { /* Outlook push must never break CRM flow */ }
+    })
+  }, [registerOutlookPush]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check connection status on mount
   useEffect(() => {

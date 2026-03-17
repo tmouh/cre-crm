@@ -314,6 +314,44 @@ export async function getOutlookContacts() {
   return all
 }
 
+// ─── Contacts — Write ──────────────────────────────────────────────────────────
+
+// Maps CRM contact fields → Outlook PATCH/POST body.
+// Only includes fields that are explicitly defined (not undefined) so a partial
+// CRM update never blanks out Outlook fields that weren't touched.
+function crmToOutlookBody(contact, companyName) {
+  const body = {}
+  if (contact.firstName !== undefined || contact.lastName !== undefined) {
+    body.givenName = contact.firstName || ''
+    body.surname   = contact.lastName  || ''
+  }
+  if (contact.title  !== undefined) body.jobTitle      = contact.title  || ''
+  if (contact.notes  !== undefined) body.personalNotes = contact.notes  || ''
+  if (contact.email  !== undefined) {
+    body.emailAddresses = contact.email
+      ? [{ address: contact.email, name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() }]
+      : []
+  }
+  if (contact.phone  !== undefined) body.businessPhones = contact.phone  ? [contact.phone]  : []
+  if (contact.mobile !== undefined) body.mobilePhone    = contact.mobile || ''
+  if (companyName    !== undefined) body.companyName    = companyName    || ''
+  if (contact.tags   !== undefined) body.categories     = contact.tags   || []
+  return body
+}
+
+export async function updateOutlookContact(outlookId, contact, companyName) {
+  const body = crmToOutlookBody(contact, companyName)
+  if (!Object.keys(body).length) return
+  return graphPatch(`/me/contacts/${outlookId}`, body)
+}
+
+export async function createOutlookContact(contact, companyName) {
+  const body = crmToOutlookBody(contact, companyName)
+  if (!body.givenName && !body.surname)
+    body.givenName = contact.firstName || contact.email || 'Unknown'
+  return graphPost('/me/contacts', body)
+}
+
 // ─── People / Org Graph ────────────────────────────────────────────────────────
 
 export async function getRelevantPeople(query) {
@@ -486,7 +524,7 @@ export async function checkCapabilities() {
     const [mail, calendar, contacts, files, people, teams, presence, meetings] = await Promise.all([
       hasScope(['Mail.Read']),
       hasScope(['Calendars.Read']),
-      hasScope(['Contacts.Read']),
+      hasScope(['Contacts.ReadWrite']),
       hasScope(['Files.Read']),
       hasScope(['People.Read']),
       hasScope(['Team.ReadBasic.All']),  // delegated; may need admin consent on tenant

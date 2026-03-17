@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { db, seedDatabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 
@@ -38,6 +38,12 @@ export function CRMProvider({ children }) {
 
   // ─── Undo stack ────────────────────────────────────────────────────────────
   const [undoStack, setUndoStack] = useState([])
+
+  // ─── Outlook push ref ─────────────────────────────────────────────────────
+  // MicrosoftContext registers a push callback here on mount so that contact
+  // saves automatically propagate to Outlook without creating a circular dep.
+  const outlookPushRef = useRef(null)
+  const registerOutlookPush = useCallback((fn) => { outlookPushRef.current = fn }, [])
 
   // ─── Initial load + seed ───────────────────────────────────────────────────
   useEffect(() => {
@@ -96,12 +102,19 @@ export function CRMProvider({ children }) {
     const withOwner = { ...contact, ownerIds: [...new Set([...(contact.ownerIds || []), ...(user ? [user.id] : [])])] }
     const rec = await db.contacts.insert(withOwner)
     setContacts(prev => [...prev, rec])
+    if (outlookPushRef.current) {
+      outlookPushRef.current({ ...rec, _isNew: true, _skipOutlookPush: contact._skipOutlookPush }).catch(() => {})
+    }
     return rec
   }, [user])
 
   const updateContact = useCallback(async (id, patch) => {
     const rec = await db.contacts.update(id, patch)
     setContacts(prev => prev.map(c => c.id === id ? rec : c))
+    if (outlookPushRef.current && rec.outlookContactId) {
+      outlookPushRef.current({ ...rec, _isUpdate: true }).catch(() => {})
+    }
+    return rec
   }, [])
 
   const deleteContact = useCallback(async (id) => {
@@ -542,6 +555,7 @@ export function CRMProvider({ children }) {
       undoStack, undoLastDelete, dismissUndo,
       getContact, getCompany, getProperty,
       activitiesFor, remindersFor, dealActivitiesFor,
+      registerOutlookPush,
     }}>
       {children}
     </CRMContext.Provider>

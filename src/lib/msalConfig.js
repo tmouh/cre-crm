@@ -19,7 +19,7 @@ export const BASE_SCOPES = ['User.Read', 'offline_access', 'openid', 'profile', 
 // Mail + Calendar + Contacts
 export const MAIL_SCOPES = ['Mail.Read']
 export const CALENDAR_SCOPES = ['Calendars.Read']
-export const CONTACTS_SCOPES = ['Contacts.Read']
+export const CONTACTS_SCOPES = ['Contacts.ReadWrite']
 
 // Files + SharePoint
 export const FILES_SCOPES = ['Files.Read', 'Sites.Read.All']

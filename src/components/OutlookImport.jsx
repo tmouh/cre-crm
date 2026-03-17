@@ -209,6 +209,8 @@ export default function OutlookImport({ onClose }) {
           tags:   (oc.categories || []).map(c => c.trim().toLowerCase().replace(/\s+/g, '-')).filter(Boolean),
           ownerIds: user ? [user.id] : [],
           visibility: importVisibility,
+          outlookContactId: oc.id,    // link to the source Outlook contact
+          _skipOutlookPush: true,     // data came FROM Outlook — no push needed
         })
         contactsCreated++
       } catch {
