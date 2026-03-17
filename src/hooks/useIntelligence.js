@@ -12,9 +12,9 @@ const TODAY = () => new Date()
 
 /**
  * Calculate relationship health score (0-100) for a contact.
- * Factors: recency of last touch, frequency of activity, depth (types of interaction), email volume.
+ * Accepts pre-indexed subsets (not the full arrays) for O(1) lookup.
  */
-function contactHealthScore(contact, activities, reminders, emailInteractions) {
+function contactHealthScore(contact, contactActivities, contactReminders, contactEmails) {
   const now = TODAY()
   let score = 50 // baseline
 
@@ -32,10 +32,8 @@ function contactHealthScore(contact, activities, reminders, emailInteractions) {
   }
 
   // Activity frequency (last 90 days)
-  const recentActivities = activities.filter(a =>
-    a.contactId === contact.id &&
-    a.createdAt &&
-    differenceInDays(now, parseISO(a.createdAt)) <= 90
+  const recentActivities = contactActivities.filter(a =>
+    a.createdAt && differenceInDays(now, parseISO(a.createdAt)) <= 90
   )
   if (recentActivities.length >= 10) score += 15
   else if (recentActivities.length >= 5) score += 10
@@ -47,19 +45,13 @@ function contactHealthScore(contact, activities, reminders, emailInteractions) {
   score += Math.min(types.size * 3, 12)
 
   // Pending tasks (positive signal — means we're engaged)
-  const pendingReminders = reminders.filter(r => r.contactId === contact.id && r.status === 'pending')
-  if (pendingReminders.length > 0) score += 5
+  if (contactReminders.some(r => r.status === 'pending')) score += 5
 
-  // Email interactions from Outlook (last 90 days)
-  if (emailInteractions?.length) {
-    const recentEmails = emailInteractions.filter(e =>
-      e.contactId === contact.id &&
-      e.receivedAt &&
-      differenceInDays(now, parseISO(e.receivedAt)) <= 90
-    )
-    if (recentEmails.length >= 10) score += 12
-    else if (recentEmails.length >= 5) score += 8
-    else if (recentEmails.length >= 1) score += 4
+  // Email interactions from Outlook (last 90 days — already pre-filtered to 90d window)
+  if (contactEmails?.length) {
+    if (contactEmails.length >= 10) score += 12
+    else if (contactEmails.length >= 5) score += 8
+    else if (contactEmails.length >= 1) score += 4
   }
 
   return Math.max(0, Math.min(100, score))
@@ -125,19 +117,48 @@ export function useIntelligence() {
   const [emailInteractions, setEmailInteractions] = useState([])
 
   useEffect(() => {
-    db.emailInteractions.getAll()
+    // Only fetch recent emails (last 90 days, contact_id + received_at only) for health scoring.
+    // This avoids loading the full email archive into memory.
+    db.emailInteractions.getRecent(90)
       .then(setEmailInteractions)
       .catch(() => {})
   }, [])
 
   const contactHealth = useMemo(() => {
-    return contacts.map(c => ({
-      ...c,
-      healthScore: contactHealthScore(c, activities, reminders, emailInteractions),
-    })).map(c => ({
-      ...c,
-      healthLabel: healthLabel(c.healthScore),
-    }))
+    // Build indexes O(n) so per-contact lookup is O(1) instead of O(n)
+    const actsByContact = {}
+    activities.forEach(a => {
+      if (a.contactId) {
+        if (!actsByContact[a.contactId]) actsByContact[a.contactId] = []
+        actsByContact[a.contactId].push(a)
+      }
+    })
+
+    const remindersByContact = {}
+    reminders.forEach(r => {
+      if (r.contactId) {
+        if (!remindersByContact[r.contactId]) remindersByContact[r.contactId] = []
+        remindersByContact[r.contactId].push(r)
+      }
+    })
+
+    const emailsByContact = {}
+    emailInteractions.forEach(e => {
+      if (e.contactId) {
+        if (!emailsByContact[e.contactId]) emailsByContact[e.contactId] = []
+        emailsByContact[e.contactId].push(e)
+      }
+    })
+
+    return contacts.map(c => {
+      const score = contactHealthScore(
+        c,
+        actsByContact[c.id] || [],
+        remindersByContact[c.id] || [],
+        emailsByContact[c.id] || []
+      )
+      return { id: c.id, healthScore: score, healthLabel: healthLabel(score) }
+    })
   }, [contacts, activities, reminders, emailInteractions])
 
   const dealMomentum = useMemo(() => {
@@ -174,13 +195,21 @@ export function useIntelligence() {
     const now = TODAY()
     const suggestions = []
 
+    // Pre-index pending reminders by contactId and propertyId
+    const pendingByContact = {}
+    const pendingByProperty = {}
+    reminders.forEach(r => {
+      if (r.status !== 'pending') return
+      if (r.contactId) pendingByContact[r.contactId] = true
+      if (r.propertyId) pendingByProperty[r.propertyId] = true
+    })
+
     // Contacts going stale (30-90 days without contact)
     contacts.forEach(c => {
       if (!c.lastContacted) return
       const days = differenceInDays(now, parseISO(c.lastContacted))
       if (days >= 30 && days < 90) {
-        const hasPending = reminders.some(r => r.contactId === c.id && r.status === 'pending')
-        if (!hasPending) {
+        if (!pendingByContact[c.id]) {
           suggestions.push({
             type: 'stale-contact',
             entity: c,
@@ -192,24 +221,24 @@ export function useIntelligence() {
       }
     })
 
+    // Pre-index recent activity by propertyId
+    const recentActByProperty = {}
+    activities.forEach(a => {
+      if (a.propertyId && a.createdAt && differenceInDays(now, parseISO(a.createdAt)) <= 14) {
+        recentActByProperty[a.propertyId] = true
+      }
+    })
+
     // Deals without recent activity
     properties.filter(p => p.status !== 'closed' && p.status !== 'dead').forEach(d => {
-      const recentAct = activities.filter(a =>
-        a.propertyId === d.id &&
-        a.createdAt &&
-        differenceInDays(now, parseISO(a.createdAt)) <= 14
-      )
-      if (recentAct.length === 0) {
-        const hasPending = reminders.some(r => r.propertyId === d.id && r.status === 'pending')
-        if (!hasPending) {
-          suggestions.push({
-            type: 'inactive-deal',
-            entity: d,
-            entityType: 'deal',
-            reason: 'No recent activity',
-            priority: ['under-loi', 'under-contract', 'due-diligence'].includes(d.status) ? 'high' : 'medium',
-          })
-        }
+      if (!recentActByProperty[d.id] && !pendingByProperty[d.id]) {
+        suggestions.push({
+          type: 'inactive-deal',
+          entity: d,
+          entityType: 'deal',
+          reason: 'No recent activity',
+          priority: ['under-loi', 'under-contract', 'due-diligence'].includes(d.status) ? 'high' : 'medium',
+        })
       }
     })
 

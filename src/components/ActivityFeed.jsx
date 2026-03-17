@@ -26,6 +26,8 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
   const [activityTime, setActivityTime] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({ type: '', description: '', date: '', time: '' })
+  const [showAll, setShowAll] = useState(false)
+  const FEED_LIMIT = 50
 
   function openForm() {
     setActivityDate(new Date().toISOString().slice(0, 10))
@@ -161,7 +163,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
       {/* Timeline */}
       {mergedItems.length > 0 && (
         <div className="px-3 py-3 space-y-1.5">
-          {mergedItems.map((item, i) => {
+          {(showAll ? mergedItems : mergedItems.slice(0, FEED_LIMIT)).map((item, i) => {
             // Deal activity thread (email threads from the smart layer)
             if (item._kind === 'deal') {
               return <DealActivityItem key={`da-${item.id}`} da={item} />
@@ -228,6 +230,14 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
               </div>
             )
           })}
+          {mergedItems.length > FEED_LIMIT && (
+            <button
+              onClick={() => setShowAll(v => !v)}
+              className="w-full text-center text-[10px] text-brand-600 dark:text-brand-400 hover:underline py-1 font-mono"
+            >
+              {showAll ? 'Show less' : `Show all ${mergedItems.length} entries`}
+            </button>
+          )}
         </div>
       )}
     </div>

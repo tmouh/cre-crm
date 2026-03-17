@@ -1,4 +1,4 @@
-import { useState, Component } from 'react'
+import { useState, useEffect, Component } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle } from 'lucide-react'
 import clsx from 'clsx'
@@ -348,6 +348,11 @@ export default function Contacts() {
   const [sortField, setSortField] = useState('name')
   const [sortDir, setSortDir] = useState('asc')
   const [dupCheck, setDupCheck] = useState(null)
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 200
+
+  // Reset to page 0 whenever filters or sort change
+  useEffect(() => { setPage(0) }, [search, filterCompany, filterOwner, filterFunction, sortField, sortDir])
 
   function handleSort(field) {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -419,6 +424,13 @@ export default function Contacts() {
         </select>
         <div className="flex-1" />
         <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">{filtered.length} / {contacts.length}</span>
+        {filtered.length > PAGE_SIZE && (
+          <div className="flex items-center gap-1">
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="v-btn-ghost px-1.5 py-0.5 text-[10px] disabled:opacity-30">‹</button>
+            <span className="text-[10px] font-mono text-slate-400">{page + 1}/{Math.ceil(filtered.length / PAGE_SIZE)}</span>
+            <button onClick={() => setPage(p => Math.min(Math.ceil(filtered.length / PAGE_SIZE) - 1, p + 1))} disabled={page >= Math.ceil(filtered.length / PAGE_SIZE) - 1} className="v-btn-ghost px-1.5 py-0.5 text-[10px] disabled:opacity-30">›</button>
+          </div>
+        )}
         <div className="flex gap-1">
           <button onClick={() => setShowImport(true)} className="v-btn-secondary text-[10px]"><Upload size={11} /> CSV</button>
           {contactDuplicates.length > 0 && (
@@ -473,7 +485,7 @@ export default function Contacts() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(c => {
+              {filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map(c => {
                 const company = getCompany(c.companyId)
                 const stale = c.lastContacted && daysDiff(c.lastContacted) >= 90
                 const ch = contactHealth.find(h => h.id === c.id)
@@ -559,6 +571,7 @@ export default function Contacts() {
       {/* ─ Status bar ─ */}
       <div className="os-status-bar flex-shrink-0">
         <span>{filtered.length} contacts</span>
+        {filtered.length > PAGE_SIZE && <span>showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)}</span>}
         {filterCompany && <span>filtered by company</span>}
         {filterOwner && <span>filtered by owner</span>}
         {filterFunction && <span>filtered by function</span>}
