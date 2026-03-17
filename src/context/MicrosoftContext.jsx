@@ -14,12 +14,73 @@ import {
   updateOutlookContact,
   createOutlookContact,
   getOutlookContact,
+  getModifiedOutlookContacts,
 } from '../services/microsoft'
 import { db, supabase } from '../lib/supabase'
 import { useCRM } from './CRMContext'
 import { syncDealActivities } from '../services/dealActivitySync'
 
 const MicrosoftContext = createContext(null)
+
+const CONTACT_SYNC_KEY = 'ms_last_contact_sync'
+
+/**
+ * Poll Outlook for contacts modified since the last sync and apply any
+ * changes to matching CRM records. Uses localStorage to track the last
+ * checked timestamp so only genuinely changed contacts are processed.
+ * On first run, sets the baseline to now and skips (no back-fill).
+ */
+async function syncOutlookContactsToCrm({ contacts: crmContacts, updateContact: uc }) {
+  const stored = localStorage.getItem(CONTACT_SYNC_KEY)
+  const now    = new Date().toISOString()
+
+  if (!stored) {
+    localStorage.setItem(CONTACT_SYNC_KEY, now)
+    return
+  }
+
+  try {
+    const modified = await getModifiedOutlookContacts(stored)
+    if (!modified.length) {
+      localStorage.setItem(CONTACT_SYNC_KEY, now)
+      return
+    }
+
+    let updated = 0
+    for (const outlookContact of modified) {
+      const crmContact = crmContacts.find(c => c.outlookContactId === outlookContact.id)
+      if (!crmContact) continue
+
+      const patch = outlookToCrmPatch(outlookContact)
+      if (!Object.keys(patch).length) continue
+
+      await uc(crmContact.id, patch, { skipOutlookPush: true })
+      updated++
+    }
+
+    if (updated > 0) {
+      console.log(`[OutlookSync] pulled ${updated} contact update(s) from Outlook`)
+    }
+    localStorage.setItem(CONTACT_SYNC_KEY, now)
+  } catch (err) {
+    console.warn('[OutlookSync] poll error:', err?.message)
+    // Don't update the timestamp on error so next sync retries the same window
+  }
+}
+
+// Maps Outlook contact fields → CRM patch (direction: Outlook → CRM)
+function outlookToCrmPatch(c) {
+  const patch = {}
+  if (c.givenName        !== undefined) patch.firstName = c.givenName        || ''
+  if (c.surname          !== undefined) patch.lastName  = c.surname          || ''
+  if (c.jobTitle         !== undefined) patch.title     = c.jobTitle         || ''
+  if (c.personalNotes    !== undefined) patch.notes     = c.personalNotes    || ''
+  if (c.mobilePhone      !== undefined) patch.mobile    = c.mobilePhone      || ''
+  if (c.emailAddresses   !== undefined) patch.email     = c.emailAddresses?.[0]?.address || ''
+  if (c.businessPhones   !== undefined) patch.phone     = c.businessPhones?.[0]           || ''
+  if (c.categories       !== undefined) patch.tags      = c.categories       || []
+  return patch
+}
 
 export function MicrosoftProvider({ children }) {
   // CRMProvider wraps MicrosoftProvider in App.jsx, so useCRM() is safe here.
@@ -142,6 +203,10 @@ export function MicrosoftProvider({ children }) {
       if (capabilities?.mail) {
         syncDealActivities(crmDataRef.current).catch(() => {})
       }
+      // Poll for Outlook contact changes and push into CRM (best-effort, non-blocking)
+      if (capabilities?.contacts) {
+        syncOutlookContactsToCrm(crmDataRef.current).catch(() => {})
+      }
       // Prune old data once per day to stay within Supabase free tier limits
       const lastCleanup = localStorage.getItem('ms_last_cleanup')
       const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000
@@ -226,20 +291,6 @@ export function MicrosoftProvider({ children }) {
     const interval = setInterval(ensureSubscriptions, 6 * 60 * 60 * 1000)
     return () => clearInterval(interval)
   }, [isConnected, capabilities]) // eslint-disable-line
-
-  // Maps Outlook contact fields → CRM patch (reverse of crmToOutlookBody)
-  function outlookToCrmPatch(c) {
-    const patch = {}
-    if (c.givenName        !== undefined) patch.firstName = c.givenName        || ''
-    if (c.surname          !== undefined) patch.lastName  = c.surname          || ''
-    if (c.jobTitle         !== undefined) patch.title     = c.jobTitle         || ''
-    if (c.personalNotes    !== undefined) patch.notes     = c.personalNotes    || ''
-    if (c.mobilePhone      !== undefined) patch.mobile    = c.mobilePhone      || ''
-    if (c.emailAddresses   !== undefined) patch.email     = c.emailAddresses?.[0]?.address || ''
-    if (c.businessPhones   !== undefined) patch.phone     = c.businessPhones?.[0]           || ''
-    if (c.categories       !== undefined) patch.tags      = c.categories       || []
-    return patch
-  }
 
   // Poll for unprocessed webhook notifications and trigger sync
   useEffect(() => {

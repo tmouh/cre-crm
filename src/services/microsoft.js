@@ -356,6 +356,19 @@ export async function getOutlookContact(outlookId) {
   return graphGet(`/me/contacts/${outlookId}?$select=id,givenName,surname,emailAddresses,businessPhones,mobilePhone,jobTitle,personalNotes,categories`)
 }
 
+/**
+ * Fetch Outlook contacts modified after a given ISO timestamp.
+ * Used to poll for Outlook-side changes and push them into the CRM.
+ */
+export async function getModifiedOutlookContacts(since) {
+  // Graph requires the datetime in ISO format without quotes in the $filter value
+  const data = await graphGet(
+    `/me/contacts?$select=id,givenName,surname,emailAddresses,businessPhones,mobilePhone,jobTitle,personalNotes,categories` +
+    `&$filter=lastModifiedDateTime gt ${encodeURIComponent(since)}&$top=100`,
+  )
+  return data?.value || []
+}
+
 // ─── SharePoint file search ────────────────────────────────────────────────────
 
 /**
