@@ -352,6 +352,10 @@ export async function createOutlookContact(contact, companyName) {
   return graphPost('/me/contacts', body)
 }
 
+export async function getOutlookContact(outlookId) {
+  return graphGet(`/me/contacts/${outlookId}?$select=id,givenName,surname,emailAddresses,businessPhones,mobilePhone,jobTitle,personalNotes,categories`)
+}
+
 // ─── People / Org Graph ────────────────────────────────────────────────────────
 
 export async function getRelevantPeople(query) {

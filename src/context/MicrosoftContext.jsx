@@ -13,6 +13,7 @@ import {
   listGraphSubscriptions,
   updateOutlookContact,
   createOutlookContact,
+  getOutlookContact,
 } from '../services/microsoft'
 import { db, supabase } from '../lib/supabase'
 import { useCRM } from './CRMContext'
@@ -50,22 +51,23 @@ export function MicrosoftProvider({ children }) {
 
   const syncIntervalRef = useRef(null)
 
-  // ─── Outlook contact write-back ───────────────────────────────────────────
+  // ─── Outlook contact write-back (CRM → Outlook) ──────────────────────────
   // Register a push callback with CRMContext so that every contact save
   // automatically propagates to Outlook (fire-and-forget; never blocks CRM).
   useEffect(() => {
     registerOutlookPush(async (contact) => {
-      if (contact._skipOutlookPush) return  // imported from Outlook — already in sync
+      if (contact._skipOutlookPush) return  // came from Outlook — skip to avoid loop
       try {
         const { companies: co, updateContact: uc } = crmDataRef.current
         const companyName = contact.companyId
           ? co.find(c => c.id === contact.companyId)?.name
           : undefined
-        if (contact._isNew && !contact.outlookContactId) {
-          // Brand-new CRM contact — create in Outlook, then write back the ID
+        if (!contact.outlookContactId) {
+          // No Outlook link yet — create in Outlook and write back the ID
+          console.log('[OutlookPush] creating new Outlook contact for', contact.firstName, contact.lastName)
           const result = await createOutlookContact(contact, companyName)
-          if (result?.id) await uc(contact.id, { outlookContactId: result.id })
-        } else if (contact.outlookContactId) {
+          if (result?.id) await uc(contact.id, { outlookContactId: result.id }, { skipOutlookPush: true })
+        } else {
           // Existing Outlook-linked contact — PATCH it
           console.log('[OutlookPush] patching outlook contact', contact.outlookContactId)
           await updateOutlookContact(contact.outlookContactId, contact, companyName)
@@ -179,6 +181,8 @@ export function MicrosoftProvider({ children }) {
           desired.push({ resource: 'me/messages', changeType: 'created,updated' })
         if (capabilities.calendar && !existingResources.has('me/events'))
           desired.push({ resource: 'me/events', changeType: 'created,updated,deleted' })
+        if (capabilities.contacts && !existingResources.has('me/contacts'))
+          desired.push({ resource: 'me/contacts', changeType: 'created,updated,deleted' })
 
         for (const sub of desired) {
           try {
@@ -223,17 +227,60 @@ export function MicrosoftProvider({ children }) {
     return () => clearInterval(interval)
   }, [isConnected, capabilities]) // eslint-disable-line
 
+  // Maps Outlook contact fields → CRM patch (reverse of crmToOutlookBody)
+  function outlookToCrmPatch(c) {
+    const patch = {}
+    if (c.givenName        !== undefined) patch.firstName = c.givenName        || ''
+    if (c.surname          !== undefined) patch.lastName  = c.surname          || ''
+    if (c.jobTitle         !== undefined) patch.title     = c.jobTitle         || ''
+    if (c.personalNotes    !== undefined) patch.notes     = c.personalNotes    || ''
+    if (c.mobilePhone      !== undefined) patch.mobile    = c.mobilePhone      || ''
+    if (c.emailAddresses   !== undefined) patch.email     = c.emailAddresses?.[0]?.address || ''
+    if (c.businessPhones   !== undefined) patch.phone     = c.businessPhones?.[0]           || ''
+    if (c.categories       !== undefined) patch.tags      = c.categories       || []
+    return patch
+  }
+
   // Poll for unprocessed webhook notifications and trigger sync
   useEffect(() => {
     if (!isConnected) return
     async function pollNotifications() {
       try {
         const pending = await db.webhookNotifications.getUnprocessed(20)
-        if (pending.length > 0) {
-          await db.webhookNotifications.markProcessed(pending.map(n => n.id))
-          // Trigger a data refresh
-          sync()
+        if (pending.length === 0) return
+        await db.webhookNotifications.markProcessed(pending.map(n => n.id))
+
+        // Split contact notifications from everything else
+        const contactNotifs = pending.filter(n => /\/contacts\//i.test(n.resource || ''))
+        const otherNotifs   = pending.filter(n => !/\/contacts\//i.test(n.resource || ''))
+
+        // ── Outlook → CRM contact sync ──────────────────────────────────────
+        if (contactNotifs.length > 0) {
+          const { contacts: crmContacts, updateContact: uc } = crmDataRef.current
+          const seen = new Set()
+          for (const n of contactNotifs) {
+            if (n.change_type === 'deleted') continue  // never delete from CRM
+            const match = (n.resource || '').match(/\/contacts\/([^/?]+)/i)
+            if (!match) continue
+            const outlookId = match[1]
+            if (seen.has(outlookId)) continue
+            seen.add(outlookId)
+            const crmContact = crmContacts.find(c => c.outlookContactId === outlookId)
+            if (!crmContact) continue  // not tracked in CRM, skip
+            try {
+              const outlookContact = await getOutlookContact(outlookId)
+              if (!outlookContact) continue
+              const patch = outlookToCrmPatch(outlookContact)
+              if (Object.keys(patch).length > 0) {
+                console.log('[OutlookSync] updating CRM contact from Outlook:', crmContact.firstName, crmContact.lastName)
+                await uc(crmContact.id, patch, { skipOutlookPush: true })
+              }
+            } catch (err) { console.warn('[OutlookSync] failed for', outlookId, err?.message) }
+          }
         }
+
+        // Trigger general data refresh for mail/calendar notifications
+        if (otherNotifs.length > 0) sync()
       } catch { /* polling is best-effort */ }
     }
     // Poll every 30 seconds for near-real-time updates

@@ -108,10 +108,10 @@ export function CRMProvider({ children }) {
     return rec
   }, [user])
 
-  const updateContact = useCallback(async (id, patch) => {
+  const updateContact = useCallback(async (id, patch, options = {}) => {
     const rec = await db.contacts.update(id, patch)
     setContacts(prev => prev.map(c => c.id === id ? rec : c))
-    if (outlookPushRef.current) {
+    if (outlookPushRef.current && !options.skipOutlookPush) {
       if (rec.outlookContactId) {
         outlookPushRef.current({ ...rec, _isUpdate: true }).catch(() => {})
       } else {
