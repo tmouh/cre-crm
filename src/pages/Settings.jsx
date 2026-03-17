@@ -108,7 +108,7 @@ export default function Settings() {
                 : 'Not yet synced this session'}
               {syncState.error && <span className="text-red-500 ml-2">Error: {syncState.error}</span>}
             </span>
-            <span className="text-slate-300 dark:text-slate-600 flex-shrink-0">Syncs every 5 min · webhooks every 30 s</span>
+            <span className="text-slate-300 dark:text-slate-600 flex-shrink-0">Syncs every 5 min · subscriptions renewed every 6 h</span>
           </div>
         )}
 
