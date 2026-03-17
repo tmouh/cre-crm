@@ -3,33 +3,40 @@
  *
  * An email qualifies as a deal activity if EITHER condition is met:
  *
- *   Condition A — File attachment from an OM or UW folder in SharePoint
- *                 (sourceUrl contains /om/ or /uw/), OR a regular attachment
- *                 whose filename matches OM/UW naming patterns.
+ *   Condition A — Email has a file attachment that exists in an OM or UW folder
+ *                 in the user's SharePoint/OneDrive. The attachment objects passed
+ *                 in must already have `inDealFolder: true` resolved by the caller
+ *                 (dealActivitySync.js) via a SharePoint search.
  *
- *   Condition B — A sender or direct recipient email matches a CRM contact
- *                 who is linked to a deal with an active status.
+ *   Condition B — A direct recipient (outbound: To field) or sender (inbound: From
+ *                 field) is a CRM contact linked to a deal with an active status.
+ *                 CC is excluded.
  *
  * No address matching, keyword matching, or name-in-body checks.
- * Tier 2 (needs_review) is not used — emails either auto-qualify or are excluded.
+ * All qualifying emails are Tier 1 (auto). No Tier 2 (needs_review).
  */
 
 const ACTIVE_STATUSES = new Set([
   'prospect', 'engaged', 'under-loi', 'under-contract', 'due-diligence',
 ])
 
-// SharePoint folder path segments that qualify (OM / UW only per business rule)
+// SharePoint folder path segments that qualify (OM and UW only)
 const DEAL_FOLDER_PATTERNS = ['/om/', '/uw/']
 
-// Filename patterns for regular (non-SharePoint-reference) attachments
-// Matches filenames that clearly represent OM or UW documents
-const OM_UW_FILENAME_RE = /\b(om|uw|offering\s*mem(o|orandum)|underwriting|offering\s*circular)\b/i
+/**
+ * Check whether a SharePoint parentReference path is inside an OM or UW folder.
+ * @param {string} path - e.g. "/drives/xxx/root:/Deals/OM"
+ */
+export function isInDealFolder(path = '') {
+  const lower = path.toLowerCase()
+  return DEAL_FOLDER_PATTERNS.some(pat => lower.includes(pat))
+}
 
 /**
  * Score an email (inbound or outbound) against CRM deals.
  *
  * @param {object} message     - Graph message object
- * @param {Array}  attachments - Attachment objects (may include sourceUrl for SharePoint refs)
+ * @param {Array}  attachments - Attachment objects; qualifying ones have `inDealFolder: true`
  * @param {object} crmData     - { contacts, companies, properties }
  * @param {string} direction   - 'outbound' | 'inbound'
  *
@@ -50,24 +57,11 @@ export function scoreEmail(message, attachments = [], crmData, direction = 'outb
     p => ACTIVE_STATUSES.has(p.status) && !p.deletedAt,
   )
 
-  // ── Condition A: OM / UW attachment ──────────────────────────────────────
-  // A1 — SharePoint reference attachment from an OM or UW folder
-  const dealFolderAtts = (attachments || []).filter(att => {
-    if (!att.sourceUrl) return false
-    const url = att.sourceUrl.toLowerCase()
-    return DEAL_FOLDER_PATTERNS.some(pat => url.includes(pat))
-  })
+  // ── Condition A: file attachment from an OM or UW folder ──────────────────
+  const dealFolderAtts = (attachments || []).filter(a => a.inDealFolder)
+  const hasDealFolderAtt = dealFolderAtts.length > 0
 
-  // A2 — Regular attachment whose filename matches OM/UW patterns
-  const namedDealAtts = (attachments || []).filter(att => {
-    if (att.sourceUrl) return false  // already handled by A1
-    return att.name && OM_UW_FILENAME_RE.test(att.name)
-  })
-
-  const hasDealFolderAtt = dealFolderAtts.length > 0 || namedDealAtts.length > 0
-
-  // ── Condition B: Contact linked to an active deal ─────────────────────────
-  // Outbound: To field only (CC excluded). Inbound: From field only.
+  // ── Condition B: direct recipient/sender linked to an active deal ──────────
   let relevantEmails = []
   if (direction === 'outbound') {
     relevantEmails = (message.toRecipients || [])
@@ -94,7 +88,7 @@ export function scoreEmail(message, attachments = [], crmData, direction = 'outb
 
   const hasActiveDealContact = matchedContact !== null
 
-  // ── Gate: must pass at least one condition ────────────────────────────────
+  // ── Gate ──────────────────────────────────────────────────────────────────
   if (!hasDealFolderAtt && !hasActiveDealContact) {
     return {
       tier: 3, confidence: 'none', score: 0, signals: [],
@@ -105,16 +99,10 @@ export function scoreEmail(message, attachments = [], crmData, direction = 'outb
   // ── Build signals ─────────────────────────────────────────────────────────
   const signals = []
 
-  if (dealFolderAtts.length > 0) {
+  if (hasDealFolderAtt) {
     signals.push({
       type:   'deal_folder_attachment',
-      detail: dealFolderAtts.map(a => a.name || a.sourceUrl || ''),
-    })
-  }
-  if (namedDealAtts.length > 0) {
-    signals.push({
-      type:   'om_uw_attachment',
-      detail: namedDealAtts.map(a => a.name || ''),
+      detail: dealFolderAtts.map(a => a.name || ''),
     })
   }
   if (hasActiveDealContact) {
@@ -134,8 +122,8 @@ export function scoreEmail(message, attachments = [], crmData, direction = 'outb
     contactId  = matchedContact.id
     companyId  = matchedContact.companyId || null
     propertyId = matchedDeal?.id || null
-  } else if (hasDealFolderAtt) {
-    // No active-deal contact matched — still try to tag a CRM contact from recipients
+  } else {
+    // No active-deal contact; still tag a CRM contact from recipients if present
     for (const email of relevantEmails) {
       const contact = contactsByEmail[email]
       if (contact) {

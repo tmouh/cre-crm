@@ -16,15 +16,51 @@
  * Runs after every Microsoft sync cycle. Always best-effort.
  */
 
-import { getSentMessages, getInboxMessages, getMessageAttachmentsWithSource } from './microsoft'
+import { getSentMessages, getInboxMessages, getMessageAttachmentsWithSource, searchDriveForFile } from './microsoft'
 import { db } from '../lib/supabase'
-import { scoreEmail } from '../lib/dealActivityScoring'
+import { scoreEmail, isInDealFolder } from '../lib/dealActivityScoring'
 
 const LAST_SCORED_KEY = 'ms_last_activity_scored'
 
 // Track message IDs processed in this browser session to avoid re-scoring
 // on rapid back-to-back sync cycles within the same page load.
 const processedMessageIds = new Set()
+
+// Cache SharePoint search results by normalized filename for the session.
+// Avoids repeated Graph calls for the same filename across multiple emails.
+const spSearchCache = new Map()
+
+/**
+ * For each attachment, check whether the file lives in an OM or UW folder
+ * in SharePoint by searching the user's drive. Results are cached by filename.
+ * Attachments that match get `inDealFolder: true` added.
+ */
+async function resolveAttachments(attachments) {
+  return Promise.all(
+    attachments.map(async (att) => {
+      if (!att.name) return att
+
+      const cacheKey = att.name.toLowerCase()
+      let inDealFolder = false
+
+      if (spSearchCache.has(cacheKey)) {
+        inDealFolder = spSearchCache.get(cacheKey)
+      } else {
+        try {
+          const results = await searchDriveForFile(att.name)
+          inDealFolder = results.some(f =>
+            isInDealFolder(f.parentReference?.path || ''),
+          )
+        } catch {
+          // Search failure — treat as not in deal folder
+        }
+        spSearchCache.set(cacheKey, inDealFolder)
+      }
+
+      return inDealFolder ? { ...att, inDealFolder: true } : att
+    }),
+  )
+}
 
 /**
  * Main sync entry point. Called after each Microsoft sync completes.
@@ -106,10 +142,11 @@ async function processBatch(messages, direction, crmData) {
       continue
     }
 
-    // ── New thread — fetch attachments and run scoring ───────────────────────
+    // ── New thread — fetch attachments, resolve SharePoint paths, score ───────
     let attachments = []
     if (message.hasAttachments) {
-      attachments = await getMessageAttachmentsWithSource(message.id).catch(() => [])
+      const raw = await getMessageAttachmentsWithSource(message.id).catch(() => [])
+      attachments = await resolveAttachments(raw)
     }
 
     const result = scoreEmail(message, attachments, crmData, direction)

@@ -356,6 +356,27 @@ export async function getOutlookContact(outlookId) {
   return graphGet(`/me/contacts/${outlookId}?$select=id,givenName,surname,emailAddresses,businessPhones,mobilePhone,jobTitle,personalNotes,categories`)
 }
 
+// ─── SharePoint file search ────────────────────────────────────────────────────
+
+/**
+ * Search the user's OneDrive/SharePoint for files whose name closely matches
+ * the given filename. Returns the Graph DriveItem objects (with parentReference).
+ * Strips extension and common version markers before searching so "123 Main OM v3.pdf"
+ * finds "123 Main OM.pdf" stored in SharePoint.
+ */
+export async function searchDriveForFile(filename) {
+  const baseName = filename
+    .replace(/\.[^.]+$/, '')                              // strip extension
+    .replace(/\s*(v\d+|final|draft|rev\s*\d*)\s*$/i, '') // strip version markers
+    .trim()
+  if (baseName.length < 3) return []
+  const data = await graphGet(
+    `/me/drive/search(q='${encodeURIComponent(baseName)}')` +
+    `?$select=id,name,parentReference&$top=10`,
+  )
+  return data?.value || []
+}
+
 // ─── People / Org Graph ────────────────────────────────────────────────────────
 
 export async function getRelevantPeople(query) {
