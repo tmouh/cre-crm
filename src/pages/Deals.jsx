@@ -357,6 +357,13 @@ function DealDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { getProperty, getCompany, getContact, updatePropertyWithStage, deleteProperty, contacts, teamMembers } = useCRM()
+
+  async function addContactToDeal(contactId) {
+    if (!contactId) return
+    const current = deal.contactIds || []
+    if (current.includes(contactId)) return
+    await updatePropertyWithStage(id, { ...deal, contactIds: [...current, contactId] })
+  }
   const { dealMomentum } = useIntelligence()
   const { isConnected } = useMicrosoft()
   const [editing, setEditing] = useState(false)
@@ -489,10 +496,10 @@ function DealDetail() {
             </div>
           )}
 
-          {/* Related contacts */}
+          {/* Deal Contacts */}
           {relatedContacts.length > 0 && (
             <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono mb-1.5">Contacts</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono mb-1.5">Deal Contacts</p>
               <div className="space-y-1.5">
                 {relatedContacts.map(c => (
                   <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400">
@@ -580,7 +587,11 @@ function DealDetail() {
             {rightTab === 'activity' && (
               <>
                 <ReminderList propertyId={id} />
-                <ActivityFeed propertyId={id} />
+                <ActivityFeed
+                  propertyId={id}
+                  dealContacts={relatedContacts}
+                  onAddDealContact={addContactToDeal}
+                />
               </>
             )}
             {rightTab === 'emails' && isConnected && (
