@@ -67,9 +67,10 @@ export function MicrosoftProvider({ children }) {
           if (result?.id) await uc(contact.id, { outlookContactId: result.id })
         } else if (contact.outlookContactId) {
           // Existing Outlook-linked contact — PATCH it
+          console.log('[OutlookPush] patching outlook contact', contact.outlookContactId)
           await updateOutlookContact(contact.outlookContactId, contact, companyName)
         }
-      } catch { /* Outlook push must never break CRM flow */ }
+      } catch (err) { console.error('[OutlookPush] failed:', err?.message || err) }
     })
   }, [registerOutlookPush]) // eslint-disable-line react-hooks/exhaustive-deps
 
