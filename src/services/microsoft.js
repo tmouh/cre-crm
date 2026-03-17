@@ -503,6 +503,7 @@ export async function checkCapabilities() {
 /**
  * Fetch recent messages from the Sent Items folder.
  * Used by the deal activity scoring pipeline to detect outbound deal emails.
+ * Note: ccRecipients is fetched but the scoring engine only uses toRecipients.
  * @param {number} count    - max messages to return
  * @param {number} daysBack - how far back to look (default 2 days)
  */
@@ -510,10 +511,28 @@ export async function getSentMessages(count = 50, daysBack = 2) {
   try {
     const since = new Date(Date.now() - daysBack * 86_400_000).toISOString()
     const data = await graphGet(
-      `/me/mailFolders/SentItems/messages?$top=${count}&$orderby=sentDateTime desc&$select=id,subject,conversationId,from,toRecipients,ccRecipients,sentDateTime,bodyPreview,hasAttachments`
+      `/me/mailFolders/SentItems/messages?$top=${count}&$orderby=sentDateTime desc&$select=id,subject,conversationId,from,toRecipients,sentDateTime,bodyPreview,hasAttachments`
     )
-    // Filter client-side to messages after `since` (Graph $filter + $orderby together can conflict with some tenants)
     return (data?.value || []).filter(m => (m.sentDateTime || '') >= since)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Fetch recent messages from the Inbox folder.
+ * Used by the deal activity scoring pipeline to detect inbound deal emails
+ * from clients and prospects (where the client is the sender).
+ * @param {number} count    - max messages to return
+ * @param {number} daysBack - how far back to look (default 2 days)
+ */
+export async function getInboxMessages(count = 50, daysBack = 2) {
+  try {
+    const since = new Date(Date.now() - daysBack * 86_400_000).toISOString()
+    const data = await graphGet(
+      `/me/mailFolders/Inbox/messages?$top=${count}&$orderby=receivedDateTime desc&$select=id,subject,conversationId,from,toRecipients,receivedDateTime,bodyPreview,hasAttachments,isDraft`
+    )
+    return (data?.value || []).filter(m => !m.isDraft && (m.receivedDateTime || '') >= since)
   } catch {
     return []
   }

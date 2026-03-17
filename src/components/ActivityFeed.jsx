@@ -185,6 +185,143 @@ function ContactCombobox({ dealContacts, allContacts, value, onChange }) {
   )
 }
 
+// ─── Deal Combobox ───────────────────────────────────────────────────────────
+
+function DealCombobox({ contactDeals, allDeals, value, onChange }) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen]   = useState(false)
+  const ref = useRef(null)
+
+  const selected = value ? allDeals.find(d => d.id === value) : null
+
+  useEffect(() => {
+    function handle(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handle)
+    return () => document.removeEventListener('mousedown', handle)
+  }, [])
+
+  const contactDealIds = new Set((contactDeals || []).map(d => d.id))
+
+  const filtered = (query.trim()
+    ? allDeals.filter(d => (d.name || d.address || '').toLowerCase().includes(query.toLowerCase()))
+    : allDeals
+  ).slice(0, 12)
+
+  const linkedFiltered = filtered.filter(d => contactDealIds.has(d.id))
+  const otherFiltered  = filtered.filter(d => !contactDealIds.has(d.id))
+
+  function select(deal) {
+    onChange(deal.id)
+    setQuery('')
+    setOpen(false)
+  }
+
+  function clear() {
+    onChange(null)
+    setQuery('')
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <div
+        className={clsx(
+          'v-input flex items-center gap-1.5 cursor-pointer min-h-[30px] py-1',
+          open && 'ring-1 ring-brand-400'
+        )}
+        onClick={() => setOpen(v => !v)}
+      >
+        {selected ? (
+          <>
+            <span className="flex-1 text-xs text-slate-800 dark:text-slate-200 truncate">{selected.name || selected.address || 'Unnamed deal'}</span>
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); clear() }}
+              className="text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400"
+            >
+              <X size={11} />
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="flex-1 text-xs text-slate-400 dark:text-slate-500">Select deal… (optional)</span>
+            <ChevronDown size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+          </>
+        )}
+      </div>
+
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-0.5 border border-[var(--border)] bg-white dark:bg-surface-100 shadow-lg max-h-52 overflow-auto">
+          <div className="px-2 py-1.5 border-b border-[var(--border)] sticky top-0 bg-white dark:bg-surface-100">
+            <input
+              autoFocus
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search deals…"
+              className="w-full text-xs outline-none bg-transparent text-slate-700 dark:text-slate-300 placeholder-slate-400"
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
+
+          {filtered.length === 0 && (
+            <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500">No deals found</p>
+          )}
+
+          {linkedFiltered.length > 0 && (
+            <>
+              <p className="px-2 py-1 text-[9px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono bg-surface-50 dark:bg-surface-0">
+                Contact's Deals
+              </p>
+              {linkedFiltered.map(d => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => select(d)}
+                  className={clsx(
+                    'w-full text-left px-3 py-1.5 text-xs transition-colors',
+                    value === d.id
+                      ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-surface-200'
+                  )}
+                >
+                  {d.name || d.address || 'Unnamed deal'}
+                  {d.status && <span className="text-slate-400 dark:text-slate-500 ml-1.5 text-[10px] capitalize">{d.status}</span>}
+                </button>
+              ))}
+            </>
+          )}
+
+          {otherFiltered.length > 0 && (
+            <>
+              {linkedFiltered.length > 0 && (
+                <p className="px-2 py-1 text-[9px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono bg-surface-50 dark:bg-surface-0 border-t border-[var(--border)]">
+                  All Deals
+                </p>
+              )}
+              {otherFiltered.map(d => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => select(d)}
+                  className={clsx(
+                    'w-full text-left px-3 py-1.5 text-xs transition-colors',
+                    value === d.id
+                      ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-surface-200'
+                  )}
+                >
+                  {d.name || d.address || 'Unnamed deal'}
+                  {d.status && <span className="text-slate-400 dark:text-slate-500 ml-1.5 text-[10px] capitalize">{d.status}</span>}
+                  <span className="ml-1.5 text-[9px] text-brand-500 dark:text-brand-400">+ link to contact</span>
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export default function ActivityFeed({
@@ -192,8 +329,11 @@ export default function ActivityFeed({
   // Deal-specific: pass to enable contact picker + inline deal-contact adding
   dealContacts,       // Contact[] — current deal contacts
   onAddDealContact,   // (contactId: string) => void — adds contact to deal
+  // Contact-specific: pass to enable deal picker + inline contact-deal linking
+  contactDeals,       // Property[] — deals already linked to this contact
+  onLinkDeal,         // (dealId: string) => void — links deal to contact
 }) {
-  const { activitiesFor, dealActivitiesFor, addActivity, updateActivity, deleteActivity, contacts } = useCRM()
+  const { activitiesFor, dealActivitiesFor, addActivity, updateActivity, deleteActivity, contacts, properties } = useCRM()
   const { user } = useAuth()
 
   const [showForm,      setShowForm]      = useState(false)
@@ -202,6 +342,7 @@ export default function ActivityFeed({
   const [activityDate,  setActivityDate]  = useState('')
   const [activityTime,  setActivityTime]  = useState('')
   const [formContactId, setFormContactId] = useState(null)   // for deal context
+  const [formDealId,    setFormDealId]    = useState(null)   // for contact context
 
   const [editingId,  setEditingId]  = useState(null)
   const [editForm,   setEditForm]   = useState({ type: '', description: '', date: '', time: '' })
@@ -210,7 +351,8 @@ export default function ActivityFeed({
   const actorName    = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'You'
   const avatarLetter = (actorName[0] || 'U').toUpperCase()
 
-  const isDealContext = !!propertyId && !!dealContacts
+  const isDealContext    = !!propertyId && !!dealContacts
+  const isContactContext = !!contactId && !!contactDeals
 
   const field       = contactId ? 'contactId' : companyId ? 'companyId' : 'propertyId'
   const id          = contactId || companyId || propertyId
@@ -227,6 +369,7 @@ export default function ActivityFeed({
     setActivityDate(new Date().toISOString().slice(0, 10))
     setActivityTime(new Date().toTimeString().slice(0, 5))
     setFormContactId(null)
+    setFormDealId(null)
     setShowForm(v => !v)
   }
 
@@ -243,12 +386,18 @@ export default function ActivityFeed({
       await onAddDealContact(formContactId).catch(() => {})
     }
 
+    // If a deal was picked in contact context and it's not already linked, link it
+    const contactDealIds = new Set((contactDeals || []).map(d => d.id))
+    if (formDealId && onLinkDeal && !contactDealIds.has(formDealId)) {
+      await onLinkDeal(formDealId).catch(() => {})
+    }
+
     await addActivity({
       type,
       description: text.trim() || null,
       contactId: formContactId || contactId,
       companyId,
-      propertyId,
+      propertyId: formDealId || propertyId,
       date: activityDate
         ? new Date(activityDate + 'T' + (activityTime || '12:00') + ':00').toISOString()
         : new Date().toISOString(),
@@ -257,6 +406,7 @@ export default function ActivityFeed({
     setText('')
     setType('call')
     setFormContactId(null)
+    setFormDealId(null)
     setActivityDate(new Date().toISOString().slice(0, 10))
     setActivityTime(new Date().toTimeString().slice(0, 5))
     setShowForm(false)
@@ -349,6 +499,26 @@ export default function ActivityFeed({
               {formContactId && onAddDealContact && !new Set((dealContacts || []).map(c => c.id)).has(formContactId) && (
                 <p className="text-[10px] text-brand-500 dark:text-brand-400 mt-1">
                   This contact will be added to Deal Contacts on save.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Deal picker — only in contact context */}
+          {isContactContext && (
+            <div>
+              <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">
+                Deal <span className="normal-case text-slate-400">(optional)</span>
+              </label>
+              <DealCombobox
+                contactDeals={contactDeals}
+                allDeals={properties.filter(p => !p.deletedAt)}
+                value={formDealId}
+                onChange={setFormDealId}
+              />
+              {formDealId && onLinkDeal && !new Set((contactDeals || []).map(d => d.id)).has(formDealId) && (
+                <p className="text-[10px] text-brand-500 dark:text-brand-400 mt-1">
+                  This deal will be linked to the contact on save.
                 </p>
               )}
             </div>

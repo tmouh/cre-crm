@@ -353,7 +353,7 @@ export function ContactDetail({ backTo }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { getContact, getCompany, updateContact, deleteContact, properties, reminders, activities, teamMembers } = useCRM()
+  const { getContact, getCompany, updateContact, deleteContact, properties, updatePropertyWithStage, reminders, activities, teamMembers } = useCRM()
   const { user } = useAuth()
   const [editing, setEditing] = useState(false)
   const [privateData, setPrivateData] = useState(null)
@@ -380,6 +380,14 @@ export function ContactDetail({ backTo }) {
 
   const company = getCompany(contact.companyId)
   const relatedProps = properties.filter(p => p.contactIds?.includes(id))
+  const contactLinkedDeals = relatedProps.filter(p => !p.deletedAt)
+
+  async function linkContactToDeal(dealId) {
+    const deal = properties.find(p => p.id === dealId)
+    if (!deal) return
+    const newIds = [...new Set([...(deal.contactIds || []), id])]
+    await updatePropertyWithStage(dealId, { ...deal, contactIds: newIds })
+  }
 
   const lastTouchItems = [
     ...activities.filter(a => a.contactId === id).map(a => ({ date: a.date || a.createdAt, type: a.type })),
@@ -653,7 +661,7 @@ export function ContactDetail({ backTo }) {
           <div className="p-4 space-y-3">
             <CommunicationHeatmap contactId={id} />
             <ReminderList contactId={id} />
-            <ActivityFeed contactId={id} />
+            <ActivityFeed contactId={id} contactDeals={contactLinkedDeals} onLinkDeal={linkContactToDeal} />
             <OutlookMessages email={contact.email} contactId={id} />
             <OutlookAttachments email={contact.email} />
           </div>
