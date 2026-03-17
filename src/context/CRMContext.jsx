@@ -507,7 +507,7 @@ export function CRMProvider({ children }) {
   const getProperty = useCallback((id) => properties.find(p => p.id === id), [properties])
 
   const activitiesFor = useCallback((field, id) =>
-    activities.filter(a => a[field] === id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    activities.filter(a => a[field] === id).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')),
   [activities])
 
   const remindersFor = useCallback((field, id) =>

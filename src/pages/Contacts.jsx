@@ -528,7 +528,7 @@ export function ContactDetail({ backTo }) {
           )}
 
           {/* Shared fields — only for shared contacts */}
-          {contact.visibility === 'shared' && (contact.sharedNotes || contact.sharedCellPhones?.length > 0 || contact.sharedPersonalEmails?.length > 0) && (
+          {contact.visibility === 'shared' && (contact.sharedNotes || contact.sharedCellPhones?.length > 0 || contact.sharedEmails?.length > 0) && (
             <div className="px-3 py-2 border-b border-brand-200/60 dark:border-brand-800/60 bg-brand-50/30 dark:bg-brand-900/10 space-y-1.5">
               <p className="text-[10px] font-semibold text-brand-600 dark:text-brand-400 mb-1 font-mono uppercase flex items-center gap-1"><Users size={9} /> Shared Fields</p>
               {contact.sharedNotes && (
@@ -549,11 +549,11 @@ export function ContactDetail({ backTo }) {
                   </div>
                 </div>
               )}
-              {contact.sharedPersonalEmails?.length > 0 && (
+              {contact.sharedEmails?.length > 0 && (
                 <div>
                   <p className="text-[9px] text-brand-500 dark:text-brand-500 font-mono uppercase mb-0.5">Personal Emails</p>
                   <div className="space-y-0.5">
-                    {contact.sharedPersonalEmails.map((em, i) => (
+                    {contact.sharedEmails.map((em, i) => (
                       <a key={i} href={`mailto:${em}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 truncate">
                         <Mail size={11} className="text-brand-400 flex-shrink-0" /> <span className="truncate">{em}</span>
                       </a>
