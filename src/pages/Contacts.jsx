@@ -1,6 +1,6 @@
-import { useState, useEffect, Component } from 'react'
+import { useState, useEffect, useCallback, useRef, Component } from 'react'
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle, Lock, Users, Save, X } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle, Lock, Users, Save, X, CheckSquare, Share2 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
@@ -21,6 +21,7 @@ import DuplicateCheckModal from '../components/DuplicateCheckModal'
 import DuplicateScanModal from '../components/DuplicateScanModal'
 import LinkedInProfile from '../components/LinkedInProfile'
 import CommunicationHeatmap from '../components/CommunicationHeatmap'
+import ShareModal from '../components/ShareModal'
 import { useDuplicates } from '../hooks/useDuplicates'
 import { db } from '../lib/supabase'
 
@@ -741,7 +742,7 @@ export default function Contacts() {
   const { id } = useParams()
   if (id) return <ContactDetail />
 
-  const { sharedContacts: contacts, companies, addContact, updateContact, getCompany, teamMembers } = useCRM()
+  const { sharedContacts: contacts, companies, addContact, updateContact, deleteContact, getCompany, teamMembers, shareContacts, makeContactsPrivate } = useCRM()
   const { isAdmin } = useAuth()
   const { contactHealth } = useIntelligence()
   const { contactDuplicates } = useDuplicates()
@@ -756,6 +757,23 @@ export default function Contacts() {
   const [sortField, setSortField] = useState('name')
   const [sortDir, setSortDir] = useState('asc')
   const [dupCheck, setDupCheck] = useState(null)
+  const [selected, setSelected] = useState(new Set())
+  const [showShare, setShowShare] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  const [barStuck, setBarStuck] = useState(false)
+  const observerRef = useRef(null)
+  const barSentinelRef = useCallback(node => {
+    if (observerRef.current) { observerRef.current.disconnect(); observerRef.current = null }
+    if (node) {
+      observerRef.current = new IntersectionObserver(
+        ([entry]) => setBarStuck(!entry.isIntersecting),
+        { threshold: 0 }
+      )
+      observerRef.current.observe(node)
+    } else {
+      setBarStuck(false)
+    }
+  }, [])
 
   function handleSort(field) {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -789,6 +807,74 @@ export default function Contacts() {
     }
     return sortDir === 'asc' ? cmp : -cmp
   })
+
+  const allVisibleSelected = filtered.length > 0 && filtered.every(c => selected.has(c.id))
+
+  function toggleOne(id) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (allVisibleSelected) {
+      setSelected(prev => { const next = new Set(prev); filtered.forEach(c => next.delete(c.id)); return next })
+    } else {
+      setSelected(prev => { const next = new Set(prev); filtered.forEach(c => next.add(c.id)); return next })
+    }
+  }
+
+  function clearSelection() { setSelected(new Set()) }
+
+  async function handleShare(userIds) {
+    setSharing(true)
+    try {
+      await shareContacts([...selected], userIds)
+      setShowShare(false)
+      clearSelection()
+    } finally {
+      setSharing(false)
+    }
+  }
+
+  async function handleMakePrivate() {
+    if (!confirm(`Make ${selected.size} contact(s) private? They will be removed from the shared CRM.`)) return
+    await makeContactsPrivate([...selected])
+    clearSelection()
+  }
+
+  async function handleBulkDelete() {
+    if (!confirm(`Delete ${selected.size} contact(s)? They will be moved to Recently Deleted.`)) return
+    for (const cid of selected) await deleteContact(cid)
+    clearSelection()
+  }
+
+  const BulkBar = ({ sticky = false }) => (
+    <div className={clsx(
+      'flex items-center gap-2 px-3 py-1.5 border-b border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/20',
+      sticky ? 'fixed top-[40px] left-[200px] right-0 z-50 bg-white dark:bg-surface-50 border-brand-200 dark:border-brand-700' : 'flex-shrink-0'
+    )}>
+      <CheckSquare size={12} className="text-brand-600 dark:text-brand-400" />
+      <span className="text-[11px] font-medium text-brand-700 dark:text-brand-300 font-mono">{selected.size} selected</span>
+      <div className="flex-1" />
+      <button onClick={() => setShowShare(true)} className="v-btn-primary text-[10px]">
+        <Share2 size={11} /> Share
+      </button>
+      {[...selected].some(id => contacts.find(c => c.id === id)?.visibility === 'shared') && (
+        <button onClick={handleMakePrivate} className="v-btn-secondary text-[10px]">
+          <Lock size={11} /> Make Private
+        </button>
+      )}
+      <button onClick={handleBulkDelete} className="v-btn-secondary text-[10px] text-red-600 dark:text-red-400">
+        <Trash2 size={11} /> Delete
+      </button>
+      <button onClick={clearSelection} className="v-btn-ghost p-1 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
+        <X size={12} />
+      </button>
+    </div>
+  )
 
   async function handleAdd(form) {
     const dup = contacts.find(c =>
@@ -851,6 +937,16 @@ export default function Contacts() {
         </div>
       </div>
 
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <>
+          <div ref={barSentinelRef}>
+            <BulkBar />
+          </div>
+          {barStuck && <BulkBar sticky />}
+        </>
+      )}
+
       {/* ─ Table ─ */}
       {filtered.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
@@ -861,6 +957,10 @@ export default function Contacts() {
           <table className="v-table">
             <thead className="sticky top-0 z-10">
               <tr>
+                <th className="w-8">
+                  <input type="checkbox" checked={allVisibleSelected} onChange={toggleAll}
+                    className="w-3.5 h-3.5 border-slate-300 text-brand-600 cursor-pointer accent-brand-600" />
+                </th>
                 {[
                   { field: 'name', label: 'Name' },
                   { field: 'company', label: 'Company' },
@@ -890,8 +990,13 @@ export default function Contacts() {
                 const owners = (c.ownerIds || [])
                   .map(oid => teamMembers.find(m => m.id === oid))
                   .filter(Boolean)
+                const isSelected = selected.has(c.id)
                 return (
-                  <tr key={c.id}>
+                  <tr key={c.id} className={clsx(isSelected && '!bg-brand-50/50 dark:!bg-brand-900/10')}>
+                    <td>
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleOne(c.id)}
+                        className="w-3.5 h-3.5 border-slate-300 text-brand-600 cursor-pointer accent-brand-600" />
+                    </td>
                     <td>
                       <Link to={`/contacts/${c.id}`} className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-brand-600 flex items-center justify-center flex-shrink-0">
@@ -970,6 +1075,7 @@ export default function Contacts() {
         {filterCompany && <span>filtered by company</span>}
         {filterOwner && <span>filtered by owner</span>}
         {filterFunction && <span>filtered by function</span>}
+        {selected.size > 0 && <span>{selected.size} selected</span>}
       </div>
 
       {showAdd && (
@@ -1029,6 +1135,17 @@ export default function Contacts() {
           entityType="contact"
           pairs={contactDuplicates}
           onClose={() => setShowDupScan(false)}
+        />
+      )}
+
+      {showShare && (
+        <ShareModal
+          count={selected.size}
+          entityLabel="contact"
+          teamMembers={teamMembers}
+          onConfirm={handleShare}
+          onCancel={() => setShowShare(false)}
+          loading={sharing}
         />
       )}
     </div>
