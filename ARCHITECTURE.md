@@ -1,6 +1,6 @@
 # Architecture & Inner Workings
 
-Technical documentation covering non-obvious logic, priorities, and data flow in the Vanadium OS CRE deal tracker.
+Technical documentation covering non-obvious logic, priorities, and data flow in V23CRM.
 
 ---
 
@@ -11,6 +11,38 @@ All CRM data lives in **CRMContext** (`src/context/CRMContext.jsx`). On mount, i
 **Auth** is handled by **AuthContext** (`src/context/AuthContext.jsx`). On sign-in, `syncTeamMember` upserts the user into the `team_members` table with their `display_name` from Google/OAuth metadata. This is how team member names show up instead of emails.
 
 **Theme** is managed by **ThemeContext** (`src/context/ThemeContext.jsx`), stored in localStorage.
+
+---
+
+## Routes
+
+```
+/                    → Dashboard
+/login               → Login
+/contacts            → Shared contacts list
+/contacts/:id        → Contact detail
+/personal/contacts   → My (owned) contacts list
+/personal/contacts/:id → Personal contact detail
+/companies           → Companies (My + Shared)
+/companies/:id       → Company detail
+/deals               → Deals list (bulk import button here)
+/deals/:id           → Deal detail
+/pipeline            → Kanban board
+/investors           → Investor company profiles
+/investors/:id       → Investor detail
+/comps               → Comparables database
+/comps/:id           → Comp detail
+/reminders           → Full reminder queue
+/inbox               → Combined activity log (manual + deal threads)
+/documents           → OneDrive/SharePoint file browser
+/reports             → Pipeline analytics + export
+/automations         → Workflow automation rules
+/settings            → User preferences + Microsoft 365 connection
+/map                 → Geocoded deal map
+/recently-deleted    → Soft-deleted items (15-day trash)
+/properties          → Redirects to /deals (backward compat)
+/properties/:id      → Redirects to /deals/:id
+```
 
 ---
 
@@ -30,6 +62,51 @@ All CRM data lives in **CRMContext** (`src/context/CRMContext.jsx`). On mount, i
 
 ---
 
+## Relationship Intelligence (`useIntelligence` hook)
+
+Computed in memory on every render — not stored in the DB (except `healthOverride` and `momentumOverride` for manual overrides).
+
+**Contact health score (0–100):** Combines recency of last touch, activity frequency, interaction depth, pending reminders, and email volume from email_interactions.
+
+**Deal momentum score (0–100):** Stage advancement speed, recent activity count, days since last activity, and staleness penalty.
+
+**Dashboard surfaces:**
+- **Hot Deals** — momentum ≥ 75
+- **Stalled Deals** — momentum < 25, deal value > threshold
+- **Needs Attention** — contacts with health < threshold or last touch > 90 days
+- **Suggested Follow-ups** — ranked by health + open reminders
+- **Win Rate** — closed / (closed + dead) from pipeline history
+
+---
+
+## Sharing & Visibility Model
+
+Contacts and companies have a per-record visibility system:
+
+| State | Who sees it |
+|---|---|
+| `visibility = 'private'`, `ownerIds` set | Only owners |
+| `visibility = 'shared'`, `sharedWith = null` | All team members |
+| `visibility = 'shared'`, `sharedWith = [userId…]` | Only listed users |
+| No `ownerIds` (ownerless) | Everyone (treated as shared) |
+
+**List views:** Contacts and Companies each have a **My** view (owned by me) and a **Shared** view (shared with me or everyone).
+
+**Bulk actions:** Both lists support row selection with bulk **Share** and **Make Private** actions. Companies also have a Visibility column showing current state.
+
+---
+
+## Duplicate Detection
+
+Two mechanisms, both using the `useDuplicates` hook:
+
+1. **On-create check** — `DuplicateCheckModal` runs before saving a new contact or company, shows potential matches, and lets the user proceed or cancel.
+2. **Bulk scan** — `DuplicateScanModal` scans all existing records for similarity and presents merge options.
+
+Similarity matching is fuzzy (normalized name comparison, not exact).
+
+---
+
 ## Phone Icon in Contacts List
 
 The phone icon in the contacts table shows if **either** `phone` (office) **or** `mobile` is set. The `tel:` link prefers office phone when available, falling back to mobile.
@@ -46,11 +123,24 @@ The app uses camelCase internally (JavaScript convention) but Supabase uses snak
 
 ---
 
-## Soft Delete
+## Soft Delete & Undo Stack
 
 Contacts, companies, properties, and reminders use soft delete. Deleting a record sets `deleted_at` to the current timestamp instead of removing the row. The **Recently Deleted** page shows items deleted in the last 15 days with options to restore or permanently purge.
 
 `getAll()` queries filter out rows where `deleted_at` is not null (controlled by `trackDeleted: true` on the table helper).
+
+**Undo stack:** CRMContext keeps the last 10 deletions in memory. A toast appears briefly after deletion with an Undo button that calls `undoLastDelete()` — restoring the record without needing the Recently Deleted page.
+
+---
+
+## Stage History & Automations
+
+Every time a deal's status changes via `updatePropertyWithStage()`, the system:
+1. Appends `{ from, to, at }` to the deal's `stageHistory` array
+2. Updates `stageChangedAt` to the current timestamp
+3. Runs any matching **Automations** — rules that trigger on a specific stage value and execute an action (currently: create a reminder with configurable title, type, priority, and days-from-now offset)
+
+This powers Pipeline velocity metrics (average time per stage) and Reports analytics.
 
 ---
 
@@ -79,7 +169,7 @@ Deals (stored in the `properties` table) have two classification systems:
 
 - `development` — ground-up or value-add development (distinct from construction financing)
 - `debt-equity` — combined debt and equity structure
-- `full` — full property sale/acquisition with no specific sub-type
+- `full` — full property sale/acquisition
 
 **Deal Statuses** (where it is in the pipeline):
 `prospect` → `engaged` → `under-loi` → `under-contract` → `due-diligence` → `closed` / `dead`
@@ -99,13 +189,11 @@ The Deals list has an **Import** button that opens `ImportModal` with `entity="d
 - Tags are semicolon-separated
 
 **Contact-review step:** After the preview, if any contact names in the CSV don't match an existing contact, the importer pauses with three options:
-- **Add all** — creates minimal contact records (first + last name split on whitespace) for all unmatched names
+- **Add all** — creates minimal contact records (first + last name) for all unmatched names
 - **Select which** — checkbox list to pick individual names to create
 - **Skip all** — imports deals without linking those contacts
 
-New contacts created during import are immediately available for linking in the same batch.
-
-**DB columns added for deals import** (run in Supabase SQL Editor):
+**DB columns required for deals import:**
 ```sql
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS deal_group TEXT;
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS city TEXT;
@@ -143,8 +231,6 @@ On first load, if the `app_config` table's `seeded` key is false, `seedDatabase(
 
 ---
 
----
-
 ## Color System
 
 All badges use a consistent color mapping defined in `helpers.js`:
@@ -154,23 +240,23 @@ All badges use a consistent color mapping defined in `helpers.js`:
 | **Priority** | high=red, medium=yellow, low=gray |
 | **Activity/Reminder type** | call=purple, email=blue, meeting=indigo, tour=teal, proposal=orange, note=gray, follow-up=pink |
 | **Deal status** | prospect=gray, engaged=blue, under-loi=indigo, under-contract=yellow, due-diligence=purple, closed=green, dead=red |
+| **Deal type** | acquisition=blue, note-acquisition=cyan, recapitalization=violet, sale=emerald, equity-raise=amber, preferred-equity=orange, mezzanine=pink, senior-debt=teal, bridge-financing=rose, construction-financing=lime, development=fuchsia, debt-equity=sky, full=indigo |
 | **Company type** | owner=blue, tenant=green, investor=purple, developer=orange, broker=teal, lender=yellow |
+| **Investor status** | contacted=slate, reviewing=blue, interested=indigo, site-visit=teal, bidding=amber, passed=red, awarded=green |
 
 All colors include dark mode variants.
-
-| **Deal type** | acquisition=blue, note-acquisition=cyan, recapitalization=violet, sale=emerald, equity-raise=amber, preferred-equity=orange, mezzanine=pink, senior-debt=teal, bridge-financing=rose, construction-financing=lime, development=fuchsia, debt-equity=sky, full=indigo |
 
 ---
 
 ## Bulk Selection — Contacts & Companies
 
-Both the **My Contacts** list and the **Shared Contacts** list support row-level bulk selection. Selecting one or more rows reveals a bulk action toolbar with context-specific actions (e.g., delete, share/make private, assign owner).
+Both the **My Contacts** and **Shared Contacts** lists support row-level bulk selection. Selecting one or more rows reveals a bulk action toolbar with context-specific actions (delete, share/make private, assign owner).
 
-The **Companies** list (both My Companies and Shared) also supports bulk selection with **Share** and **Make Private** bulk actions, and includes a **Visibility** column showing whether each company is shared or private.
+The **Companies** list (My and Shared) supports the same with **Share** and **Make Private** bulk actions, plus a **Visibility** column showing each company's current sharing state.
 
 ---
 
-## File Structure (current)
+## File Structure
 
 ```
 src/
@@ -181,15 +267,18 @@ src/
     ThemeContext.jsx      — light/dark/system theme
   pages/
     Dashboard.jsx         — KPIs, pipeline summary, reminders, needs attention
-    Contacts.jsx          — My Contacts list & detail (activity, reminders, Outlook mirror)
+    Contacts.jsx          — Shared contacts list & detail (activity, reminders, Outlook mirror)
+    PersonalContacts.jsx  — My (owned) contacts list & detail
     Companies.jsx         — Companies list & detail (My + Shared, bulk selection)
     Deals.jsx             — Deals list & detail (bulk import, pipeline view)
-    Properties.jsx        — Properties/deals alternate entry point
-    Pipeline.jsx          — Kanban board across deal stages
+    Properties.jsx        — Properties alternate entry (redirects to deals routes)
+    Pipeline.jsx          — Kanban board across deal stages with velocity metrics
+    Investors.jsx         — Investor company profiles with investment criteria tracking
+    Comps.jsx             — Comparable sales database
     Reminders.jsx         — Full reminder queue with filters
     Reports.jsx           — Pipeline analytics, activity report, CSV export
     Map.jsx               — Geocoded deal map
-    Inbox.jsx             — Microsoft 365 email/calendar per contact
+    Inbox.jsx             — Combined activity log (manual + deal threads)
     Documents.jsx         — OneDrive/SharePoint file browser
     Automations.jsx       — Trigger-based workflow rules
     Settings.jsx          — User preferences, Microsoft connection
@@ -199,18 +288,25 @@ src/
     ActivityFeed.jsx      — Shared activity log (manual entries + deal thread cards)
     DealActivityItem.jsx  — Single deal_activity card with signal badges + correction UI
     ImportModal.jsx       — CSV bulk import (contacts, companies, properties, comps, deals)
-    LinkedInProfile.jsx   — PDL enrichment display
+    LinkedInProfile.jsx   — PDL LinkedIn enrichment display
     OutlookMessages.jsx   — Raw Outlook mirror (contact-level reference, not in shared log)
-    OutlookImport.jsx     — Manual email import helper
+    OutlookAttachments.jsx — Attachment list viewer
+    CommunicationHeatmap.jsx — Visual communication frequency matrix
+    DuplicateCheckModal.jsx — On-create duplicate detection UI
+    DuplicateScanModal.jsx  — Bulk duplicate scan & merge UI
+    ShareModal.jsx        — Share contact/company with specific team members
     SearchableSelect.jsx  — Searchable dropdown with inline creation
     CompanyCombobox.jsx   — Company-specific searchable combobox
     TagInput.jsx          — Multi-tag input
     Modal.jsx             — Reusable modal wrapper
     ReminderList.jsx      — Reminder list per entity
+    GlobalSearch.jsx      — Global search results component
     layout/
       AppShell.jsx        — Main layout shell
       Sidebar.jsx         — Navigation with badge counts
       CommandPalette.jsx  — Global keyboard search (⌘K)
+  hooks/
+    useIntelligence.js    — Health scores, momentum, suggested follow-ups, pipeline stats
   lib/
     supabase.js           — DB client, transforms (toSnake/toCamel/clean), seed data
     dealActivityScoring.js — Email relevance scoring engine (Tier 1/2/3)

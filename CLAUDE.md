@@ -1,4 +1,4 @@
-# CRE CRM — Claude Instructions
+# V23CRM — Claude Instructions
 
 ## Auto-deploy
 After every change (or batch of related changes):
@@ -29,15 +29,17 @@ Common types: `TEXT` (strings, enums), `NUMERIC` (decimals), `BOOLEAN`, `TIMESTA
 - Font: Verdana throughout (set in `src/index.css`)
 
 ## Key files
-- `src/context/CRMContext.jsx` — all data/state logic; loads and exposes contacts, companies, properties, activities, dealActivities, reminders, teamMembers, etc.
+- `src/context/CRMContext.jsx` — all data/state logic; loads and exposes contacts, companies, properties, activities, dealActivities, reminders, teamMembers, comps, investors, dealInvestors, automations, etc.
 - `src/context/MicrosoftContext.jsx` — Microsoft Graph connection, sync loop, webhook polling; calls `syncDealActivities` after every sync
 - `src/lib/supabase.js` — DB access layer + seed data; all table CRUD is here
-- `src/utils/helpers.js` — all constants (DEAL_TYPES, DEAL_STATUSES, DEAL_TYPE_COLORS, etc.) and formatters
-- `src/pages/` — page components (Contacts, Companies, Deals, Pipeline, Dashboard, Reminders, Inbox, Documents, Map, etc.)
-- `src/components/ImportModal.jsx` — CSV bulk import for contacts, companies, properties, comps, and deals (with contact-review step)
-- `src/components/LinkedInProfile.jsx` — LinkedIn enrichment display
+- `src/utils/helpers.js` — all constants (DEAL_TYPES, DEAL_STATUSES, PROPERTY_TYPES, COMPANY_TYPES, CONTACT_FUNCTIONS, INVESTOR_STATUSES, color maps) and formatters; when adding a new type/status update the array, color map, AND label map
+- `src/pages/` — page components (Contacts, PersonalContacts, Companies, Deals, Pipeline, Investors, Comps, Dashboard, Reminders, Inbox, Documents, Map, Reports, Automations, Settings, etc.)
+- `src/components/ImportModal.jsx` — CSV bulk import for contacts, companies, properties, comps, and deals (with contact-review step for deals)
 - `src/components/ActivityFeed.jsx` — shared activity log UI; merges manual activities + deal_activity threads
 - `src/components/DealActivityItem.jsx` — renders a single deal_activity thread entry with correction UI
+- `src/components/DuplicateCheckModal.jsx` — on-create duplicate check for contacts/companies
+- `src/components/DuplicateScanModal.jsx` — bulk duplicate scan & merge
+- `src/hooks/useIntelligence.js` — contact health scores, deal momentum scores, dashboard surfaces
 - `src/lib/dealActivityScoring.js` — email relevance scoring engine (Tier 1/2/3, SharePoint signal)
 - `src/services/dealActivitySync.js` — orchestrates sent-mail scoring and deal_activity creation/update
 - `src/services/microsoft.js` — full Microsoft Graph API service layer
@@ -47,14 +49,28 @@ Common types: `TEXT` (strings, enums), `NUMERIC` (decimals), `BOOLEAN`, `TIMESTA
 - `vercel.json` — build config + function timeout
 
 ## Deal types & statuses
-Defined in `src/utils/helpers.js` as `DEAL_TYPES` and `DEAL_STATUSES`. When adding a new type or status, update all three objects: the array, the color map, and the label map in `formatDealType`/`formatDealStatus`.
+Defined in `src/utils/helpers.js` as `DEAL_TYPES` and `DEAL_STATUSES`. When adding a new type or status, update all three objects: the array, the color map (`DEAL_TYPE_COLORS` / `DEAL_STATUS_COLORS`), and the label map in `formatDealType` / `formatDealStatus`.
 
 **Current deal types:** `acquisition`, `note-acquisition`, `recapitalization`, `sale`, `equity-raise`, `preferred-equity`, `mezzanine`, `senior-debt`, `bridge-financing`, `construction-financing`, `development`, `debt-equity`, `full`
 
 **Current deal statuses:** `prospect`, `engaged`, `under-loi`, `under-contract`, `due-diligence`, `closed`, `dead`
 
-## properties table — extra columns (added)
-In addition to the core deal fields, the `properties` table has these additional columns:
+## Investor statuses
+Used in `deal_investors` table to track where an investor is on a specific deal:
+`contacted`, `reviewing`, `interested`, `site-visit`, `bidding`, `passed`, `awarded`
+Defined in `INVESTOR_STATUSES` and `INVESTOR_STATUS_COLORS` in `helpers.js`.
+
+## Sharing & visibility model
+Contacts and companies have per-record visibility. Key fields: `ownerIds` (UUID[]), `visibility` (TEXT: 'private'/'shared'), `sharedWith` (UUID[] or null = all team). Ownerless records are visible to everyone. The My vs Shared list split is driven by these fields. The `shareContacts`, `makeContactsPrivate`, `shareCompanies`, `makeCompaniesPrivate` functions in CRMContext handle bulk visibility changes.
+
+## CRMContext key exports (beyond basic CRUD)
+- `sharedContacts`, `personalContacts` — pre-filtered contact arrays
+- `sharedCompanies`, `personalCompanies` — pre-filtered company arrays
+- `dealActivities`, `dealActivitiesFor(field, id)` — deal activity data + filter helper
+- `updatePropertyWithStage(id, patch)` — updates deal status AND appends to stageHistory AND runs automations
+- `undoStack`, `undoLastDelete`, `dismissUndo` — in-memory undo for recent deletes (last 10)
+
+## properties table — columns added beyond core
 ```sql
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS deal_group TEXT;
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS city TEXT;
@@ -63,7 +79,7 @@ ALTER TABLE properties ADD COLUMN IF NOT EXISTS state TEXT;
 These map to `dealGroup`, `city`, `state` in camelCase and are used by the deals bulk import.
 
 ## Bulk import — deals
-`ImportModal` supports `entity="deals"` with CSV columns: `name*, group, city/region, state, stage, property type, deal type, amount, contact, company, notes, tags`. After preview, if any contact names don't match existing records, a contact-review step prompts the user to add all, select specific, or skip unmatched names before importing.
+`ImportModal` supports `entity="deals"` with CSV columns: `name*, group, city/region, state, stage, property type, deal type, amount, contact, company, notes, tags`. After preview, if any contact names don't match existing records, a **contact-review step** prompts the user to: Add all new contacts, Select specific ones, or Skip all. New contacts created during import are minimal (firstName + lastName only) but are immediately available for linking in the same batch.
 
 ## Email / Activity Log architecture (important — do not break this)
 

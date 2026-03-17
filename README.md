@@ -1,4 +1,4 @@
-# Vanadium OS — CRE CRM
+# V23CRM
 
 A private CRM built for commercial real estate dealmakers. Manages contacts, companies, deals, and investor relationships with deep Microsoft 365 integration, AI-driven relationship intelligence, live deal mapping, and a smart shared team Activity Log fed by scored outbound email threads.
 
@@ -15,7 +15,7 @@ A private CRM built for commercial real estate dealmakers. Manages contacts, com
 | Microsoft | Azure MSAL Browser (PKCE/SPA), Microsoft Graph API |
 | AI/Enrichment | People Data Labs (PDL) via Vercel serverless function |
 | Maps | Leaflet + React-Leaflet + OpenStreetMap/Nominatim |
-| Deploy | Vercel (SPA + serverless functions) |
+| Deploy | Vercel (SPA + serverless functions, auto-deploy from GitHub main) |
 
 ---
 
@@ -23,21 +23,32 @@ A private CRM built for commercial real estate dealmakers. Manages contacts, com
 
 | Page | Description |
 |---|---|
-| **Dashboard** | KPIs, deal pipeline summary, upcoming reminders, recent activity |
-| **Contacts** | Full contact list with health scores, last-touch tracking, LinkedIn enrichment |
-| **Companies** | Company directory with type classification and contact associations |
-| **Deals** | Deal management with status pipeline, comps, document tracking, and CSV bulk import |
-| **Pipeline** | Kanban board view across all deal stages |
-| **Investors** | LP investor company tracking with contact associations |
+| **Dashboard** | KPIs, hot deals, stalled contacts, suggested follow-ups, recent activity, pipeline funnel |
+| **Contacts (Shared)** | Shared contact list with health scores, bulk selection, share/make-private, duplicate detection, CSV import |
+| **My Contacts** | Personal/owned contacts — same features but filtered to owned records |
+| **Companies** | Company directory with My/Shared views, bulk selection, visibility column, duplicate detection, CSV import |
+| **Deals** | Deal management with status pipeline, deal type, value, linked contacts/companies, stage history, CSV bulk import |
+| **Pipeline** | Kanban board across all deal stages with drag-drop, velocity metrics, win rate |
+| **Investors** | LP investor company profiles with investment criteria, deal size ranges, related contacts and tracked deals |
 | **Comps** | Comparable sales database with CSV import |
-| **Map** | Live geocoded deal map with status pin colors and popups |
-| **Inbox** | Microsoft 365 email and calendar integration per contact |
-| **Documents** | OneDrive/SharePoint file access linked to contacts |
-| **Reminders** | Task and follow-up management with priority levels |
-| **Automations** | Trigger-based workflows (e.g., deal stage → create reminder) |
-| **Reports** | Pipeline analytics, activity reports, contacts report with CSV export |
-| **Settings** | Microsoft 365 connection, theme, and account preferences |
-| **Recently Deleted** | Soft-delete recovery with 15-day retention window |
+| **Map** | Live geocoded deal map with status-colored pins and deal popups |
+| **Inbox** | Combined activity log — manual activities + deal activity threads, grouped by date |
+| **Documents** | OneDrive/SharePoint file browser linked to Microsoft 365 connection |
+| **Reminders** | Task and follow-up queue with priority, snooze, links to contact/company/deal |
+| **Automations** | Trigger-based workflows (deal stage change → create reminder) |
+| **Reports** | Pipeline analytics by status and type, activity report, contact breakdown, CSV export |
+| **Settings** | Microsoft 365 connection, theme (light/dark/system), account preferences |
+| **Recently Deleted** | Soft-delete recovery with 15-day retention window and permanent purge |
+
+---
+
+## Relationship Intelligence
+
+Built into every contact and deal via the `useIntelligence` hook:
+
+- **Contact health score (0–100):** Combines recency of last touch, activity frequency, interaction depth, pending tasks, and email volume. Drives the "Needs Attention" dashboard box (threshold: 90 days without contact).
+- **Deal momentum score (0–100):** Stage advancement speed, recent activity, staleness. Drives "Hot Deals" and "Stalled Deals" dashboard boxes.
+- **Suggested Follow-ups:** Contacts flagged by low health score or stalled deals appear in the Dashboard with one-click reminder creation.
 
 ---
 
@@ -47,7 +58,7 @@ The Activity Log has two distinct layers:
 
 **Outlook Mirror** (`OutlookMessages` component) — a full mailbox-style mirror of all emails to/from a contact. Reference only. Not shown in the shared team log.
 
-**Deal Activity Layer** (`deal_activities` table) — a curated team-visible log of meaningful deal-related email communication. One entry per *thread*, not per email. Shows one thread card even if there are 10 replies in the chain. The Outlook mirror stays as a reference surface.
+**Deal Activity Layer** (`deal_activities` table) — a curated team-visible log of meaningful deal-related email communication. One entry per *thread*, not per email. Shows one thread card even if there are 10 replies in the chain.
 
 ### How it works
 
@@ -88,6 +99,17 @@ Each deal_activity card supports:
 
 ---
 
+## Sharing & Visibility
+
+Contacts and companies have per-record visibility:
+- **Private** — visible only to owners (`ownerIds`)
+- **Shared** — visible to all team members, or optionally a `sharedWith` whitelist
+- Ownerless records are visible to everyone
+
+Both Contacts and Companies have **My** and **Shared** list views. Bulk selection supports **Share** and **Make Private** actions across multiple records at once.
+
+---
+
 ## Architecture
 
 ```
@@ -105,10 +127,13 @@ src/
   services/
     microsoft.js             # Full Microsoft Graph API service layer
     dealActivitySync.js      # Sent-mail scoring orchestrator
+  hooks/
+    useIntelligence.js       # Health scores, momentum scores, suggested actions
   pages/                     # Page components (one per route)
   components/
     ActivityFeed.jsx         # Shared activity log — manual entries + deal thread cards
     DealActivityItem.jsx     # Single deal_activity thread card with correction UI
+    ImportModal.jsx          # CSV bulk import (contacts, companies, properties, comps, deals)
     OutlookMessages.jsx      # Raw Outlook email mirror (contact-level reference)
     ...
   utils/
@@ -203,7 +228,7 @@ All `VITE_*` variables are injected at build time from Vercel's environment vari
 
 ### Core tables
 
-`contacts`, `companies`, `properties` (deals), `reminders`, `activities`, `automations`, `comps`
+`contacts`, `companies`, `properties` (deals), `reminders`, `activities`, `automations`, `comps`, `deal_investors`
 
 Recent column additions to `properties`:
 ```sql
