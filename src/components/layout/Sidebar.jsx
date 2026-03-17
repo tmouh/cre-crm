@@ -10,6 +10,7 @@ import clsx from 'clsx'
 import { useCRM } from '../../context/CRMContext'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
+import { useMicrosoft } from '../../context/MicrosoftContext'
 import { isOverdue, isDueToday } from '../../utils/helpers'
 
 const NAV_SECTIONS = [
@@ -67,6 +68,7 @@ export default function Sidebar({ collapsed, onToggle }) {
   const { reminders } = useCRM()
   const { user, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
+  const { isConnected, connect } = useMicrosoft()
   const location = useLocation()
 
   const urgentCount = reminders.filter(
@@ -132,7 +134,28 @@ export default function Sidebar({ collapsed, onToggle }) {
 
       {/* Bottom section */}
       <div className="border-t border-[var(--border)] px-1.5 py-1.5 space-y-px">
-        {BOTTOM_NAV.map(item => (
+        <SidebarLink item={BOTTOM_NAV[0]} collapsed={collapsed} />
+        {!isConnected && (
+          <button
+            onClick={() => connect(false)}
+            title="Connect Microsoft 365"
+            className={clsx(
+              'flex items-center gap-2 w-full transition-colors',
+              'text-slate-500 hover:text-slate-700 hover:bg-surface-100',
+              'dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-surface-200',
+              collapsed ? 'justify-center p-1.5' : 'px-2 py-1 text-[11px] font-medium'
+            )}
+          >
+            <svg viewBox="0 0 21 21" className="w-3.5 h-3.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+              <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+              <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+              <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+              <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+            </svg>
+            {!collapsed && <span className="truncate">Connect M365</span>}
+          </button>
+        )}
+        {BOTTOM_NAV.slice(1).map(item => (
           <SidebarLink key={item.to} item={item} collapsed={collapsed} />
         ))}
 
