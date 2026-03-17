@@ -81,7 +81,7 @@ export function useDuplicates() {
           confidence = Math.max(confidence, 80)
         }
 
-        if (reasons.length > 0) {
+        if (reasons.length > 0 && confidence >= 85) {
           seen.add(key)
           pairs.push({ id: key, entityType: 'contact', a, b, reasons, confidence })
         }
@@ -131,7 +131,7 @@ export function useDuplicates() {
           confidence = Math.max(confidence, 85)
         }
 
-        if (reasons.length > 0) {
+        if (reasons.length > 0 && confidence >= 85) {
           seen.add(key)
           pairs.push({ id: key, entityType: 'company', a, b, reasons, confidence })
         }
