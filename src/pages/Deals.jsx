@@ -269,9 +269,8 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
           <ContactForm
             onSubmit={async (contactForm) => {
               const newContact = await addContact(contactForm)
-              if (newContact?.id) {
-                setForm(p => ({ ...p, contactIds: [...(p.contactIds || []), newContact.id] }))
-              }
+              if (!newContact?.id) throw new Error('Contact could not be saved — please try again.')
+              setForm(p => ({ ...p, contactIds: [...(p.contactIds || []), newContact.id] }))
               setShowNewContact(false)
             }}
             onCancel={() => setShowNewContact(false)}
