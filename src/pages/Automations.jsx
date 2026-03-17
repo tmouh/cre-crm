@@ -12,15 +12,18 @@ const BLANK = { name: '', triggerType: 'stage-change', triggerValue: '', actionT
 function AutomationForm({ initial = BLANK, onSubmit, onCancel }) {
   const [form, setForm] = useState({ ...BLANK, ...initial, actionConfig: { ...BLANK.actionConfig, ...(initial.actionConfig || {}) } })
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
 
   async function handleSubmit(e) {
     e.preventDefault()
+    setSaveError(null)
     setSaving(true)
-    try { await onSubmit(form) } catch { /* parent handles errors */ } finally { setSaving(false) }
+    try { await onSubmit(form) } catch (err) { setSaveError(err?.message || 'Failed to save. Please try again.') } finally { setSaving(false) }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800">{saveError}</p>}
       <div>
         <label className="v-label">Automation name *</label>
         <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required className="v-input" placeholder="e.g. Follow up when deal moves to Under LOI" />

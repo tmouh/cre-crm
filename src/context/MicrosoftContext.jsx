@@ -34,6 +34,7 @@ export function MicrosoftProvider({ children }) {
   const [capabilities, setCapabilities] = useState(null)
   const [isConnected, setIsConnected] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [connectError, setConnectError] = useState(null)
   const [syncState, setSyncState] = useState({
     lastSync: null,
     syncing: false,
@@ -112,6 +113,14 @@ export function MicrosoftProvider({ children }) {
       // Run deal activity scoring on recent sent messages (best-effort, non-blocking)
       if (capabilities?.mail) {
         syncDealActivities(crmDataRef.current).catch(() => {})
+      }
+      // Prune old data once per day to stay within Supabase free tier limits
+      const lastCleanup = localStorage.getItem('ms_last_cleanup')
+      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000
+      if (!lastCleanup || Number(lastCleanup) < oneDayAgo) {
+        localStorage.setItem('ms_last_cleanup', String(Date.now()))
+        db.webhookNotifications.deleteOld(7).catch(() => {})
+        db.emailInteractions.deleteOld(90).catch(() => {})
       }
     } catch (err) {
       setSyncState(prev => ({ ...prev, syncing: false, error: err.message }))
@@ -209,14 +218,24 @@ export function MicrosoftProvider({ children }) {
   }, [isConnected, sync])
 
   const connect = useCallback(async (fullScopes = false) => {
-    await signInMicrosoft(fullScopes)
-    // If incremental consent was handled via popup (no redirect), re-check capabilities
-    // so the Settings page updates immediately without a page reload.
-    if (fullScopes) {
-      try {
+    setConnectError(null)
+    try {
+      await signInMicrosoft(fullScopes)
+      // If incremental consent was handled via popup (no redirect), re-check capabilities
+      // so the Settings page updates immediately without a page reload.
+      if (fullScopes) {
         const caps = await checkCapabilities()
         setCapabilities(caps)
-      } catch { /* best-effort */ }
+      }
+    } catch (err) {
+      // user_cancelled = they closed the popup intentionally, no error needed
+      if (err?.errorCode === 'user_cancelled') return
+      // popup_window_error = browser blocked the popup
+      if (err?.errorCode === 'popup_window_error' || err?.message?.includes('popup')) {
+        setConnectError('Popup was blocked. Please allow popups for this site, then try again.')
+        return
+      }
+      setConnectError(err?.message || 'Failed to connect. Please try again.')
     }
   }, [])
 
@@ -244,6 +263,8 @@ export function MicrosoftProvider({ children }) {
       connect,
       disconnect,
       sync,
+      connectError,
+      clearConnectError: () => setConnectError(null),
 
       // Sync state
       syncState,

@@ -1,12 +1,20 @@
 /**
  * Proactive duplicate detection across contacts and companies.
- * Returns pairs of potential duplicates with match reason and confidence.
+ *
+ * Scoring is ADDITIVE — multiple weaker signals combine to push confidence
+ * higher than any single signal alone, preventing both false positives (a
+ * shared phone line surfacing strangers) and false negatives (two entries for
+ * the same person that differ on every individual field but match on several).
+ *
+ * Threshold: 85. Only pairs at or above 85% confidence are returned.
  */
 import { useMemo } from 'react'
 import { useCRM } from '../context/CRMContext'
-import { fullName } from '../utils/helpers'
 
-// Normalize a string for comparison — lowercase, strip punctuation, collapse spaces
+const THRESHOLD = 85
+
+// ─── String helpers ────────────────────────────────────────────────────────────
+
 function norm(s) {
   return (s || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim()
 }
@@ -15,6 +23,18 @@ function norm(s) {
 const SUFFIXES = /\b(llc|lp|inc|corp|co|ltd|group|partners|capital|advisors|fund|trust|management|real estate|realty|properties|property)\b\.?/gi
 function normCompany(s) {
   return norm((s || '').replace(SUFFIXES, '')).replace(/\s+/g, ' ').trim()
+}
+
+// Normalize a URL to bare domain + path for comparison
+function normSite(s) {
+  return norm(s || '').replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/$/, '')
+}
+
+// Take last 10 digits of a phone string — handles +1 country code variants
+// e.g. "+1 (212) 555-1234" and "212-555-1234" both → "2125551234"
+function normPhone(s) {
+  const digits = (s || '').replace(/\D/g, '')
+  return digits.length >= 10 ? digits.slice(-10) : digits
 }
 
 // Levenshtein distance, capped at maxDist for performance
@@ -40,6 +60,58 @@ function fuzzyMatch(a, b, threshold = 2) {
   return lev(na, nb, threshold) <= threshold
 }
 
+// Collect all phone values from a contact across old and new fields
+function contactPhones(c) {
+  return [
+    c.phone,
+    c.mobile,
+    ...(c.personalPhones || []),
+    ...(c.sharedCellPhones || []),
+  ].map(normPhone).filter(p => p.length >= 10)
+}
+
+// True if any phone from set A matches any phone from set B
+function anyPhoneMatch(a, b) {
+  const setA = new Set(contactPhones(a))
+  if (!setA.size) return false
+  return contactPhones(b).some(p => setA.has(p))
+}
+
+// ─── Scoring tables ────────────────────────────────────────────────────────────
+//
+// CONTACTS
+//   Same email (exact)              → immediate 95, no further scoring needed
+//   Same last + fuzzy first (≤2)    → +75  (strong primary)
+//   Same last + first initial only  → +40  (weak primary, needs support)
+//   Any phone match (10-digit norm) → +30  (supporting)
+//   Same companyId                  → +15  (supporting)
+//   Cap at 94 (email is definitive)
+//
+// Key combos:
+//   Full name alone             = 75   (not shown — common names)
+//   Full name + company         = 90 ✓
+//   Full name + phone           = 105 → 94 ✓
+//   Last + initial + phone      = 70   (not shown)
+//   Last + initial + phone + co = 85 ✓
+//
+// COMPANIES
+//   Exact normalized name        → +85  (strong primary, standalone sufficient)
+//   Fuzzy normalized name (≤2)   → +55  (medium primary, needs support)
+//   Same website (normalized)    → +30  (supporting)
+//   Same phone (10-digit norm)   → +25  (supporting)
+//   Same email domain            → +15  (supporting — only meaningful with a name signal)
+//   Cap at 95
+//
+// Key combos:
+//   Exact name alone        = 85 ✓
+//   Fuzzy name alone        = 55   (not shown)
+//   Fuzzy name + website    = 85 ✓
+//   Fuzzy name + phone      = 80   (not shown — could be regional offices)
+//   Fuzzy name + both       = 110 → 95 ✓
+//   Same website alone      = 30   (not shown)
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+
 export function useDuplicates() {
   const { contacts, companies } = useCRM()
 
@@ -54,39 +126,52 @@ export function useDuplicates() {
         if (seen.has(key)) continue
 
         const reasons = []
-        let confidence = 0
+        let score = 0
 
-        // Exact email match
-        if (a.email && b.email && norm(a.email) === norm(b.email)) {
+        // 1. Email — definitive, skip remaining signals
+        const emailA = norm(a.email), emailB = norm(b.email)
+        if (emailA && emailB && emailA === emailB) {
           reasons.push('Same email')
-          confidence = Math.max(confidence, 95)
+          score = 95
         }
 
-        // Same last name + similar first name
-        const lastMatch = a.lastName && b.lastName && norm(a.lastName) === norm(b.lastName)
-        const firstMatch = a.firstName && b.firstName && fuzzyMatch(a.firstName, b.firstName, 2)
-        if (lastMatch && firstMatch) {
-          reasons.push('Same name')
-          confidence = Math.max(confidence, 85)
-        } else if (lastMatch && a.firstName && b.firstName && norm(a.firstName)[0] === norm(b.firstName)[0]) {
-          reasons.push('Same last name, similar first name')
-          confidence = Math.max(confidence, 60)
+        if (score < 95) {
+          // 2. Name
+          const lastA = norm(a.lastName), lastB = norm(b.lastName)
+          const firstA = norm(a.firstName), firstB = norm(b.firstName)
+          const lastExact = lastA && lastB && lastA === lastB
+
+          if (lastExact && firstA && firstB && lev(firstA, firstB, 2) <= 2) {
+            reasons.push('Same name')
+            score += 75
+          } else if (lastExact && firstA && firstB && firstA[0] === firstB[0]) {
+            reasons.push('Similar name')
+            score += 40
+          }
+
+          // 3. Phone (any field, 10-digit normalized)
+          if (anyPhoneMatch(a, b)) {
+            reasons.push('Same phone')
+            score += 30
+          }
+
+          // 4. Same company (supporting)
+          if (a.companyId && b.companyId && a.companyId === b.companyId) {
+            reasons.push('Same company')
+            score += 15
+          }
+
+          score = Math.min(94, score)
         }
 
-        // Same phone
-        const phoneA = (a.phone || a.mobile || '').replace(/\D/g, '')
-        const phoneB = (b.phone || b.mobile || '').replace(/\D/g, '')
-        if (phoneA.length >= 7 && phoneA === phoneB) {
-          reasons.push('Same phone')
-          confidence = Math.max(confidence, 80)
-        }
-
-        if (reasons.length > 0) {
+        const confidence = score
+        if (reasons.length > 0 && confidence >= THRESHOLD) {
           seen.add(key)
           pairs.push({ id: key, entityType: 'contact', a, b, reasons, confidence })
         }
       }
     }
+
     return pairs.sort((x, y) => y.confidence - x.confidence)
   }, [contacts])
 
@@ -101,42 +186,52 @@ export function useDuplicates() {
         if (seen.has(key)) continue
 
         const reasons = []
-        let confidence = 0
+        let score = 0
 
-        // Normalized name match (strips LLC, Inc, etc.)
+        // 1. Name
         const na = normCompany(a.name), nb = normCompany(b.name)
         if (na && nb) {
           if (na === nb) {
             reasons.push('Same name')
-            confidence = Math.max(confidence, 90)
-          } else if (fuzzyMatch(na, nb, 2)) {
+            score += 85
+          } else if (lev(na, nb, 2) <= 2) {
             reasons.push('Similar name')
-            confidence = Math.max(confidence, 65)
+            score += 55
           }
         }
 
-        // Same email domain (company-level)
-        const domainA = (a.email || '').split('@')[1]?.toLowerCase()
-        const domainB = (b.email || '').split('@')[1]?.toLowerCase()
-        if (domainA && domainB && domainA === domainB) {
-          reasons.push('Same email domain')
-          confidence = Math.max(confidence, 70)
-        }
-
-        // Same website
-        const siteA = norm(a.website || '').replace(/^(www\.|https?:\/\/)/, '')
-        const siteB = norm(b.website || '').replace(/^(www\.|https?:\/\/)/, '')
+        // 2. Website (supporting — strong enough to elevate a fuzzy name match)
+        const siteA = normSite(a.website), siteB = normSite(b.website)
         if (siteA && siteB && siteA === siteB) {
           reasons.push('Same website')
-          confidence = Math.max(confidence, 85)
+          score += 30
         }
 
-        if (reasons.length > 0) {
+        // 3. Phone (supporting)
+        const phoneA = normPhone(a.phone), phoneB = normPhone(b.phone)
+        if (phoneA.length >= 10 && phoneA === phoneB) {
+          reasons.push('Same phone')
+          score += 25
+        }
+
+        // 4. Email domain — only meaningful when a name signal is already present
+        if (score >= 55) {
+          const domainA = (a.email || '').split('@')[1]?.toLowerCase()
+          const domainB = (b.email || '').split('@')[1]?.toLowerCase()
+          if (domainA && domainB && domainA === domainB) {
+            reasons.push('Same domain')
+            score += 15
+          }
+        }
+
+        const confidence = Math.min(95, score)
+        if (reasons.length > 0 && confidence >= THRESHOLD) {
           seen.add(key)
           pairs.push({ id: key, entityType: 'company', a, b, reasons, confidence })
         }
       }
     }
+
     return pairs.sort((x, y) => y.confidence - x.confidence)
   }, [companies])
 

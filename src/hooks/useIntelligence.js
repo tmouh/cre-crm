@@ -15,6 +15,7 @@ const TODAY = () => new Date()
  * Accepts pre-indexed subsets (not the full arrays) for O(1) lookup.
  */
 function contactHealthScore(contact, contactActivities, contactReminders, contactEmails) {
+  if (contact.healthOverride != null) return contact.healthOverride
   const now = TODAY()
   let score = 50 // baseline
 
@@ -62,6 +63,7 @@ function contactHealthScore(contact, contactActivities, contactReminders, contac
  * Factors: stage progression speed, recent activity, staleness.
  */
 function dealMomentumScore(deal, activities, reminders) {
+  if (deal.momentumOverride != null) return deal.momentumOverride
   const now = TODAY()
   let score = 50
 

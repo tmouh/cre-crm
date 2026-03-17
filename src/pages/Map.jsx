@@ -143,8 +143,11 @@ export default function MapPage() {
         zoom={USA_ZOOM}
         className="w-full h-full z-0"
         zoomControl={true}
+        minZoom={3}
+        maxBounds={[[-85, -180], [85, 180]]}
+        maxBoundsViscosity={1.0}
       >
-        <TileLayer key={resolvedTheme} attribution={tileAttribution} url={tileUrl} />
+        <TileLayer key={resolvedTheme} attribution={tileAttribution} url={tileUrl} noWrap={true} />
         <MapFitter coords={geoDeals} />
         {geoDeals.map(deal => (
           <Marker

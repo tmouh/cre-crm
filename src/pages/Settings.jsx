@@ -38,7 +38,7 @@ export default function Settings() {
   const { theme, setTheme } = useTheme()
   const {
     isConnected, account, profile, capabilities, connect, disconnect,
-    sync, syncState,
+    sync, syncState, connectError, clearConnectError,
   } = useMicrosoft()
 
   const [defaultCompanyType, setDefaultCompanyType] = useSetting('default-company-type', 'other')
@@ -100,10 +100,23 @@ export default function Settings() {
         </div>
 
         {/* Sync status */}
-        {isConnected && syncState.lastSync && (
-          <div className="px-5 py-2 bg-slate-50 dark:bg-surface-100 border-b border-[var(--border)] text-2xs text-slate-400 dark:text-slate-500">
-            Last synced: {new Date(syncState.lastSync).toLocaleString()}
-            {syncState.error && <span className="text-red-500 ml-2">Error: {syncState.error}</span>}
+        {isConnected && (
+          <div className="px-5 py-2 bg-slate-50 dark:bg-surface-100 border-b border-[var(--border)] text-2xs text-slate-400 dark:text-slate-500 flex items-center justify-between gap-4">
+            <span>
+              {syncState.lastSync
+                ? <>Last synced: {new Date(syncState.lastSync).toLocaleString()}</>
+                : 'Not yet synced this session'}
+              {syncState.error && <span className="text-red-500 ml-2">Error: {syncState.error}</span>}
+            </span>
+            <span className="text-slate-300 dark:text-slate-600 flex-shrink-0">Syncs every 5 min · webhooks every 30 s</span>
+          </div>
+        )}
+
+        {/* Connect error banner */}
+        {connectError && (
+          <div className="px-5 py-2.5 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 flex items-center justify-between gap-3 text-2xs">
+            <span className="text-amber-700 dark:text-amber-300">{connectError}</span>
+            <button onClick={clearConnectError} className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-200 flex-shrink-0">✕</button>
           </div>
         )}
 

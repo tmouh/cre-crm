@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
@@ -15,6 +15,17 @@ async function syncTeamMember(user) {
 export function AuthProvider({ children }) {
   const [user, setUser]             = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [isAdmin, setIsAdmin]       = useState(false)
+
+  const fetchAdminStatus = useCallback(async (userId) => {
+    if (!userId) { setIsAdmin(false); return }
+    const { data } = await supabase
+      .from('team_members')
+      .select('is_admin')
+      .eq('id', userId)
+      .single()
+    setIsAdmin(data?.is_admin === true)
+  }, [])
 
   useEffect(() => {
     // Get current session on mount
@@ -22,16 +33,21 @@ export function AuthProvider({ children }) {
       setUser(session?.user ?? null)
       setAuthLoading(false)
       syncTeamMember(session?.user)
+      fetchAdminStatus(session?.user?.id)
     })
 
     // Keep state in sync across tabs; sync team member on every sign-in
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
-      if (event === 'SIGNED_IN') syncTeamMember(session?.user)
+      if (event === 'SIGNED_IN') {
+        syncTeamMember(session?.user)
+        fetchAdminStatus(session?.user?.id)
+      }
+      if (event === 'SIGNED_OUT') setIsAdmin(false)
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [fetchAdminStatus])
 
   const signIn = async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -41,7 +57,7 @@ export function AuthProvider({ children }) {
   const signOut = () => supabase.auth.signOut()
 
   return (
-    <AuthContext.Provider value={{ user, authLoading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, authLoading, isAdmin, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )

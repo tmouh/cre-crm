@@ -4,15 +4,16 @@
  * This is the same data model (properties table) with a "Deals" label.
  */
 
-import { useState, Component } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ArrowLeft, Edit2, Trash2, MapPin, Building2,
-  Users, Upload, Clock, TrendingUp, ChevronRight, Briefcase,
+  Users, Clock, ChevronRight, Briefcase, Mail, FileText, ArrowUpRight, ChevronDown, X,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
+import { useMicrosoft } from '../context/MicrosoftContext'
 import { useIntelligence } from '../hooks/useIntelligence'
 import {
   formatCurrency, formatDate, fullName, formatDealType, formatDealStatus,
@@ -24,7 +25,8 @@ import TagInput from '../components/TagInput'
 import ActivityFeed from '../components/ActivityFeed'
 import ReminderList from '../components/ReminderList'
 import CompanyCombobox from '../components/CompanyCombobox'
-import SearchableSelect from '../components/SearchableSelect'
+import { getEmailsForContact, searchEmailsByKeyword } from '../services/microsoft'
+import { ContactForm } from './Contacts'
 
 const BLANK = {
   name: '', address: '', dealType: '', propertyType: '', size: '', sizeUnit: 'SF',
@@ -32,19 +34,104 @@ const BLANK = {
   contactIds: [], tags: [], notes: '', ownerIds: [],
 }
 
+function InlineSelect({ value, onChange, options, formatOption, placeholder = 'Select or type…' }) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const ref = useRef(null)
+  useEffect(() => {
+    function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+  const q = query.toLowerCase().trim()
+  const filtered = q ? options.filter(o => o.toLowerCase().includes(q)) : options
+  const hasExact = options.some(o => o.toLowerCase() === q)
+  const canCreate = q.length > 1 && !hasExact
+  function select(v) { onChange(v); setQuery(''); setOpen(false) }
+  const displayValue = value ? (formatOption ? formatOption(value) : value) : ''
+  return (
+    <div ref={ref} className="relative">
+      <div
+        className={clsx('v-input flex items-center gap-1.5 cursor-text min-h-[30px] py-1', open && 'ring-1 ring-brand-400')}
+        onClick={() => setOpen(true)}
+      >
+        <input
+          value={open ? query : displayValue}
+          onChange={e => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => { setQuery(''); setOpen(true) }}
+          placeholder={placeholder}
+          className="flex-1 text-xs outline-none bg-transparent text-slate-700 dark:text-slate-300 placeholder-slate-400"
+        />
+        <ChevronDown size={11} className="text-slate-400 flex-shrink-0" />
+      </div>
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-0.5 border border-[var(--border)] bg-white dark:bg-surface-100 shadow-lg max-h-44 overflow-auto">
+          {filtered.map(o => (
+            <button key={o} type="button" onClick={() => select(o)}
+              className={clsx('w-full text-left px-3 py-1.5 text-xs transition-colors',
+                value === o
+                  ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-surface-200')}>
+              {formatOption ? formatOption(o) : o}
+            </button>
+          ))}
+          {canCreate && (
+            <button type="button"
+              onClick={() => select(query.trim().toLowerCase().replace(/\s+/g, '-'))}
+              className="w-full text-left px-3 py-1.5 text-xs text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 border-t border-[var(--border)]">
+              + Add "{query.trim()}"
+            </button>
+          )}
+          {filtered.length === 0 && !canCreate && (
+            <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500">No matches</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function DealForm({ initial = BLANK, onSubmit, onCancel }) {
-  const { addCompany, contacts, teamMembers } = useCRM()
+  const { addCompany, addContact, contacts, teamMembers } = useCRM()
   const { user } = useAuth()
   const defaultOwnerIds = initial === BLANK ? (user ? [user.id] : []) : (initial.ownerIds || [])
   const [form, setForm] = useState({ ...BLANK, ...initial, ownerIds: defaultOwnerIds })
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
+  const [showNewContact, setShowNewContact] = useState(false)
+  const [contactQuery, setContactQuery] = useState('')
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   function toggleOwner(id) {
     setForm(p => ({ ...p, ownerIds: p.ownerIds.includes(id) ? p.ownerIds.filter(o => o !== id) : [...p.ownerIds, id] }))
   }
 
+  function toggleContact(id) {
+    setForm(p => ({ ...p, contactIds: (p.contactIds || []).includes(id) ? p.contactIds.filter(c => c !== id) : [...(p.contactIds || []), id] }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSaveError(null)
+    setSaving(true)
+    try {
+      await onSubmit(form)
+    } catch (err) {
+      setSaveError(err?.message || 'Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const selectedContacts = (form.contactIds || []).map(id => contacts.find(c => c.id === id)).filter(Boolean)
+  const filteredContacts = contacts.filter(c =>
+    !(form.contactIds || []).includes(c.id) &&
+    fullName(c).toLowerCase().includes(contactQuery.toLowerCase())
+  )
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800">{saveError}</p>}
       <div>
         <label className="v-label">Deal name <span className="text-red-500">*</span></label>
         <input value={form.name} onChange={f('name')} className="v-input" required placeholder="e.g. 1440 Broadway Acquisition" />
@@ -56,17 +143,23 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="v-label">Deal type</label>
-          <select value={form.dealType} onChange={f('dealType')} className="v-select">
-            <option value="">— Select —</option>
-            {DEAL_TYPES.map(t => <option key={t} value={t}>{formatDealType(t)}</option>)}
-          </select>
+          <InlineSelect
+            value={form.dealType}
+            onChange={v => setForm(p => ({ ...p, dealType: v }))}
+            options={DEAL_TYPES}
+            formatOption={formatDealType}
+            placeholder="Select or add type…"
+          />
         </div>
         <div>
           <label className="v-label">Property type</label>
-          <select value={form.propertyType} onChange={f('propertyType')} className="v-select">
-            <option value="">— Select —</option>
-            {PROPERTY_TYPES.map(t => <option key={t} value={t}>{formatAssetType(t)}</option>)}
-          </select>
+          <InlineSelect
+            value={form.propertyType}
+            onChange={v => setForm(p => ({ ...p, propertyType: v }))}
+            options={PROPERTY_TYPES}
+            formatOption={formatAssetType}
+            placeholder="Select or add type…"
+          />
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3">
@@ -98,19 +191,53 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             onCreateAndSelect={async (name) => { const c = await addCompany({ name, type: 'other' }); setForm(p => ({ ...p, ownerCompanyId: c.id })) }} />
         </div>
         <div>
-          <label className="v-label">Tenant / Seller</label>
+          <label className="v-label">Seller</label>
           <CompanyCombobox value={form.tenantCompanyId} onChange={(id) => setForm(p => ({ ...p, tenantCompanyId: id }))}
             onCreateAndSelect={async (name) => { const c = await addCompany({ name, type: 'other' }); setForm(p => ({ ...p, tenantCompanyId: c.id })) }} />
         </div>
       </div>
       <div>
-        <label className="v-label">Related contacts</label>
-        <SearchableSelect
-          options={contacts.map(c => ({ value: c.id, label: fullName(c), sub: c.title || c.email || '' }))}
-          selected={form.contactIds || []}
-          onChange={(ids) => setForm(p => ({ ...p, contactIds: ids }))}
-          multiple placeholder="Search contacts..."
-        />
+        <div className="flex items-center justify-between mb-1">
+          <label className="v-label mb-0">Deal Contacts</label>
+          <button
+            type="button"
+            onClick={() => setShowNewContact(true)}
+            className="flex items-center gap-0.5 text-[10px] text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300"
+          >
+            <Plus size={10} /> New Contact
+          </button>
+        </div>
+        {selectedContacts.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-1.5">
+            {selectedContacts.map(c => (
+              <span key={c.id} className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 text-[11px] font-medium">
+                {fullName(c)}
+                <button type="button" onClick={() => toggleContact(c.id)} className="hover:bg-brand-200 dark:hover:bg-brand-800 p-0.5">
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="relative">
+          <input
+            value={contactQuery}
+            onChange={e => setContactQuery(e.target.value)}
+            className="v-input"
+            placeholder="Search contacts to add…"
+          />
+          {contactQuery && filteredContacts.length > 0 && (
+            <div className="absolute z-50 top-full left-0 right-0 border border-[var(--border)] border-t-0 max-h-36 overflow-y-auto bg-white dark:bg-surface-100 shadow-lg">
+              {filteredContacts.slice(0, 8).map(c => (
+                <button key={c.id} type="button"
+                  onClick={() => { toggleContact(c.id); setContactQuery('') }}
+                  className="w-full text-left px-3 py-1.5 text-[11px] text-slate-700 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-brand-900/20">
+                  {fullName(c)}{c.title && <span className="text-slate-400 ml-1.5">· {c.title}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       {teamMembers.length > 0 && (
         <div>
@@ -131,13 +258,189 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       <div>
         <label className="v-label">Notes</label>
-        <textarea value={form.notes} onChange={f('notes')} rows={3} className="v-textarea" />
+        <textarea value={form.notes} onChange={f('notes')} rows={3} className="v-input resize-y" />
       </div>
       <div className="flex gap-2 pt-2">
-        <button type="submit" className="v-btn-primary flex-1">Save Deal</button>
-        <button type="button" onClick={onCancel} className="v-btn-secondary">Cancel</button>
+        <button type="submit" disabled={saving} className="v-btn-primary flex-1 disabled:opacity-60">{saving ? 'Saving…' : 'Save Deal'}</button>
+        <button type="button" onClick={onCancel} disabled={saving} className="v-btn-secondary">Cancel</button>
       </div>
+      {showNewContact && (
+        <Modal title="New Contact" onClose={() => setShowNewContact(false)} size="2xl" disableBackdropClose>
+          <ContactForm
+            onSubmit={async (contactForm) => {
+              const newContact = await addContact(contactForm)
+              if (newContact?.id) {
+                setForm(p => ({ ...p, contactIds: [...(p.contactIds || []), newContact.id] }))
+              }
+              setShowNewContact(false)
+            }}
+            onCancel={() => setShowNewContact(false)}
+          />
+        </Modal>
+      )}
     </form>
+  )
+}
+
+// ─── Deal email scanning ────────────────────────────────────────────────────
+
+function DealEmailThread({ thread }) {
+  const [expanded, setExpanded] = useState(false)
+  // thread is sorted newest-first; latest = thread[0]
+  const latest = thread[0]
+
+  return (
+    <div className="v-card overflow-hidden">
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full text-left p-3 flex items-start gap-2.5 hover:bg-slate-50 dark:hover:bg-surface-100 transition-colors"
+      >
+        <Mail size={13} className={clsx('mt-0.5 flex-shrink-0', latest.isRead ? 'text-slate-300 dark:text-slate-600' : 'text-brand-500')} />
+        <div className="flex-1 min-w-0">
+          <p className={clsx('text-xs truncate', latest.isRead ? 'text-slate-600 dark:text-slate-400' : 'font-semibold text-slate-800 dark:text-slate-200')}>
+            {latest.subject || '(no subject)'}
+          </p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+              {latest.from?.emailAddress?.name || latest.from?.emailAddress?.address}
+            </span>
+            <span className="text-slate-300 dark:text-slate-600 text-[10px]">·</span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{formatDate(latest.receivedDateTime)}</span>
+            {thread.length > 1 && (
+              <>
+                <span className="text-slate-300 dark:text-slate-600 text-[10px]">·</span>
+                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">{thread.length} msgs</span>
+              </>
+            )}
+          </div>
+        </div>
+        <a
+          href={latest.webLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className="p-1 text-slate-300 hover:text-brand-500 dark:text-slate-600 dark:hover:text-brand-400 transition-colors flex-shrink-0"
+          title="Open in Outlook"
+        >
+          <ArrowUpRight size={12} />
+        </a>
+      </button>
+
+      {expanded && thread.length > 0 && (
+        <div className="border-t border-slate-100 dark:border-slate-700/40 divide-y divide-slate-50 dark:divide-slate-800/50">
+          {thread.map(email => (
+            <a
+              key={email.id}
+              href={email.webLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-surface-100 transition-colors"
+            >
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate">
+                  {email.from?.emailAddress?.name || email.from?.emailAddress?.address}
+                </span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono flex-shrink-0 ml-2">
+                  {formatDate(email.receivedDateTime)}
+                </span>
+              </div>
+              {email.bodyPreview && (
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 line-clamp-1">{email.bodyPreview}</p>
+              )}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DealEmails({ deal, relatedContacts }) {
+  const [threads, setThreads] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function fetchEmails() {
+      setLoading(true)
+      const promises = []
+
+      // Fetch by each linked contact's email
+      for (const contact of relatedContacts) {
+        if (contact.email)  promises.push(getEmailsForContact(contact.email,  180))
+        if (contact.email2) promises.push(getEmailsForContact(contact.email2, 180))
+      }
+
+      // Search by property address and deal name as keywords
+      if (deal.address) promises.push(searchEmailsByKeyword(deal.address, 180))
+      if (deal.name)    promises.push(searchEmailsByKeyword(deal.name,    180))
+
+      const results = await Promise.allSettled(promises)
+      if (cancelled) return
+
+      const allEmails = results.flatMap(r => r.status === 'fulfilled' ? r.value : [])
+
+      // Deduplicate by email id
+      const seen = new Set()
+      const unique = allEmails.filter(e => {
+        if (seen.has(e.id)) return false
+        seen.add(e.id)
+        return true
+      })
+
+      // Sort newest first
+      unique.sort((a, b) => (b.receivedDateTime || '').localeCompare(a.receivedDateTime || ''))
+
+      // Group into threads by conversationId
+      const threadMap = new Map()
+      for (const email of unique) {
+        const key = email.conversationId || email.id
+        if (!threadMap.has(key)) threadMap.set(key, [])
+        threadMap.get(key).push(email)
+      }
+
+      // Sort threads by most recent message
+      const sortedThreads = Array.from(threadMap.values()).sort((a, b) =>
+        (b[0].receivedDateTime || '').localeCompare(a[0].receivedDateTime || '')
+      )
+
+      setThreads(sortedThreads)
+      setLoading(false)
+    }
+
+    fetchEmails()
+    return () => { cancelled = true }
+  }, [deal.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading) {
+    return (
+      <div className="v-card p-6 text-center">
+        <Mail size={16} className="text-slate-300 dark:text-slate-600 mx-auto mb-1.5" />
+        <p className="text-xs text-slate-400 dark:text-slate-500">Scanning Outlook…</p>
+      </div>
+    )
+  }
+
+  if (threads.length === 0) {
+    return (
+      <div className="v-card p-6 text-center">
+        <Mail size={16} className="text-slate-300 dark:text-slate-600 mx-auto mb-1.5" />
+        <p className="text-xs text-slate-400 dark:text-slate-500">No related emails found</p>
+        <p className="text-[10px] text-slate-300 dark:text-slate-600 mt-0.5">Searched by contact emails, address, and deal name</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
+        {threads.length} thread{threads.length !== 1 ? 's' : ''} found
+      </p>
+      {threads.map(thread => (
+        <DealEmailThread key={thread[0].conversationId || thread[0].id} thread={thread} />
+      ))}
+    </div>
   )
 }
 
@@ -145,8 +448,19 @@ function DealDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { getProperty, getCompany, getContact, updatePropertyWithStage, deleteProperty, contacts, teamMembers } = useCRM()
+
+  async function addContactToDeal(contactId) {
+    if (!contactId) return
+    const current = deal.contactIds || []
+    if (current.includes(contactId)) return
+    await updatePropertyWithStage(id, { ...deal, contactIds: [...current, contactId] })
+  }
   const { dealMomentum } = useIntelligence()
+  const { isConnected } = useMicrosoft()
   const [editing, setEditing] = useState(false)
+  const [rightTab, setRightTab] = useState('activity')
+  const [editingMomentum, setEditingMomentum] = useState(false)
+  const [momentumInput, setMomentumInput] = useState('')
 
   const deal = getProperty(id)
   if (!deal) return <div className="p-8 text-slate-400 dark:text-slate-500">Deal not found.</div>
@@ -216,13 +530,39 @@ function DealDetail() {
               <div className="p-2 bg-surface-50 dark:bg-surface-100">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono">Momentum</span>
-                  <span className={clsx('text-[11px] font-bold font-mono tabular-nums',
-                    momentum.momentumScore >= 75 ? 'text-emerald-500' :
-                    momentum.momentumScore >= 50 ? 'text-blue-500' :
-                    momentum.momentumScore >= 25 ? 'text-amber-500' : 'text-red-500'
-                  )}>
-                    {momentum.momentumScore}/100
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {deal.momentumOverride != null && (
+                      <span className="text-[9px] font-mono text-amber-500 dark:text-amber-400">override</span>
+                    )}
+                    {editingMomentum ? (
+                      <div className="flex items-center gap-1">
+                        <input type="number" min="0" max="100"
+                          value={momentumInput}
+                          onChange={e => setMomentumInput(e.target.value)}
+                          className="w-14 text-[11px] text-center border border-[var(--border)] bg-white dark:bg-surface-200 text-slate-700 dark:text-slate-300 outline-none px-1 py-0"
+                          autoFocus
+                        />
+                        <button type="button"
+                          onClick={async () => {
+                            const val = momentumInput === '' ? null : Math.max(0, Math.min(100, Number(momentumInput)))
+                            await updatePropertyWithStage(id, { ...deal, momentumOverride: val })
+                            setEditingMomentum(false)
+                          }}
+                          className="text-[10px] text-brand-600 dark:text-brand-400 font-medium hover:underline">Set</button>
+                        <button type="button" onClick={() => setEditingMomentum(false)}
+                          className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">Cancel</button>
+                      </div>
+                    ) : (
+                      <button type="button"
+                        onClick={() => { setMomentumInput(deal.momentumOverride?.toString() ?? momentum.momentumScore.toString()); setEditingMomentum(true) }}
+                        className={clsx('text-[10px] font-bold font-mono tabular-nums',
+                          momentum.momentumScore >= 75 ? 'text-emerald-500' :
+                          momentum.momentumScore >= 50 ? 'text-blue-500' :
+                          momentum.momentumScore >= 25 ? 'text-amber-500' : 'text-red-500')}>
+                        {momentum.momentumScore}/100
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="h-1.5 bg-surface-200 dark:bg-surface-200 overflow-hidden">
                   <div className={clsx('h-full transition-all duration-500',
@@ -275,10 +615,10 @@ function DealDetail() {
             </div>
           )}
 
-          {/* Related contacts */}
+          {/* Deal Contacts */}
           {relatedContacts.length > 0 && (
             <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono mb-1.5">Contacts</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono mb-1.5">Deal Contacts</p>
               <div className="space-y-1.5">
                 {relatedContacts.map(c => (
                   <Link key={c.id} to={`/contacts/${c.id}`} className="flex items-center gap-2 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400">
@@ -337,10 +677,46 @@ function DealDetail() {
           )}
         </div>
 
-        {/* Right: Activity & Reminders */}
-        <div className="flex-1 overflow-auto bg-surface-50 dark:bg-surface-50 p-4 space-y-4">
-          <ReminderList propertyId={id} />
-          <ActivityFeed propertyId={id} />
+        {/* Right: tabbed Activity / Emails */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-surface-50 dark:bg-surface-50">
+          {/* Tab bar */}
+          <div className="flex border-b border-[var(--border)] bg-surface-0 flex-shrink-0 px-1">
+            {[
+              { id: 'activity', label: 'Activity', icon: Briefcase },
+              ...(isConnected ? [{ id: 'emails', label: 'Emails', icon: Mail }] : []),
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setRightTab(tab.id)}
+                className={clsx(
+                  'flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium border-b-2 -mb-px transition-colors',
+                  rightTab === tab.id
+                    ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400'
+                    : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
+                )}
+              >
+                <tab.icon size={11} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div className="flex-1 overflow-auto p-4 space-y-4">
+            {rightTab === 'activity' && (
+              <>
+                <ReminderList propertyId={id} />
+                <ActivityFeed
+                  propertyId={id}
+                  dealContacts={relatedContacts}
+                  onAddDealContact={addContactToDeal}
+                />
+              </>
+            )}
+            {rightTab === 'emails' && isConnected && (
+              <DealEmails deal={deal} relatedContacts={relatedContacts} />
+            )}
+          </div>
         </div>
       </div>
 

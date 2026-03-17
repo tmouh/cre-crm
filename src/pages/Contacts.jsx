@@ -1,6 +1,6 @@
 import { useState, useEffect, Component } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle } from 'lucide-react'
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
+import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle, Lock, Users, Save, X } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
@@ -22,6 +22,7 @@ import DuplicateScanModal from '../components/DuplicateScanModal'
 import LinkedInProfile from '../components/LinkedInProfile'
 import CommunicationHeatmap from '../components/CommunicationHeatmap'
 import { useDuplicates } from '../hooks/useDuplicates'
+import { db } from '../lib/supabase'
 
 class LinkedInErrorBoundary extends Component {
   state = { crashed: false }
@@ -32,14 +33,63 @@ class LinkedInErrorBoundary extends Component {
   }
 }
 
-const BLANK = { firstName: '', lastName: '', title: '', contactFunction: '', companyId: '', email: '', phone: '', mobile: '', linkedIn: '', notes: '', tags: [], ownerIds: [] }
+const BLANK = { firstName: '', lastName: '', title: '', contactFunction: '', companyId: '', linkedIn: '', notes: '', tags: [], ownerIds: [], visibility: 'shared', sharedWith: [], sharedNotes: '', sharedCellPhones: [], sharedEmails: [], personalPhones: [], personalEmails: [], email: '', phone: '', mobile: '' }
 
-export function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
+// Multi-value input: individual boxes with X to remove and + to add
+function MultiValueInput({ values, onChange, type = 'text', placeholder, addLabel }) {
+  return (
+    <div className="space-y-1">
+      {values.map((v, i) => (
+        <div key={i} className="flex gap-1">
+          <input
+            type={type}
+            value={v}
+            onChange={e => { const next = [...values]; next[i] = e.target.value; onChange(next) }}
+            className="v-input flex-1"
+            placeholder={placeholder}
+          />
+          <button type="button" onClick={() => onChange(values.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 px-1 flex-shrink-0 transition-colors">
+            <X size={11} />
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...values, ''])} className="flex items-center gap-1 text-[10px] text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">
+        <Plus size={10} /> {addLabel}
+      </button>
+    </div>
+  )
+}
+
+export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibility = 'shared' }) {
   const { addCompany, teamMembers } = useCRM()
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
 
-  const defaultOwnerIds = initial === BLANK ? (user ? [user.id] : []) : (initial.ownerIds || [])
-  const [form, setForm] = useState({ ...BLANK, ...initial, ownerIds: defaultOwnerIds })
+  const isNewContact = initial === BLANK
+  const isOwner = isNewContact || (initial.ownerIds || []).includes(user?.id)
+  const ownersEditable = isNewContact || isAdmin
+
+  // Derive personalPhones/personalEmails from legacy fields for existing contacts
+  const initPersonalPhones = initial.personalPhones?.length
+    ? initial.personalPhones
+    : [initial.phone, initial.mobile].filter(Boolean)
+  const initPersonalEmails = initial.personalEmails?.length
+    ? initial.personalEmails
+    : [initial.email].filter(Boolean)
+
+  const defaultOwnerIds = isNewContact ? (user ? [user.id] : []) : (initial.ownerIds || [])
+  const [form, setForm] = useState({
+    ...BLANK,
+    ...initial,
+    ownerIds: defaultOwnerIds,
+    visibility: initial.visibility || defaultVisibility,
+    sharedWith: initial.sharedWith || [],
+    sharedCellPhones: initial.sharedCellPhones || [],
+    sharedEmails: initial.sharedEmails || initial.sharedPersonalEmails || [],
+    personalPhones: initPersonalPhones,
+    personalEmails: initPersonalEmails,
+  })
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   function toggleOwner(id) {
@@ -51,111 +101,296 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel }) {
     }))
   }
 
-  return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="v-label">First name <span className="text-red-500">*</span></label>
-          <input value={form.firstName} onChange={f('firstName')} className="v-input" required />
-        </div>
-        <div>
-          <label className="v-label">Last name <span className="text-red-500">*</span></label>
-          <input value={form.lastName} onChange={f('lastName')} className="v-input" required />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="v-label">Title / Role</label>
-          <input value={form.title} onChange={f('title')} className="v-input" placeholder="e.g. VP Real Estate" />
-        </div>
-        <div>
-          <label className="v-label">Function</label>
-          <select value={form.contactFunction || ''} onChange={f('contactFunction')} className="v-select">
-            <option value="">— Select —</option>
-            {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
-          </select>
-        </div>
-      </div>
-      <div>
-        <label className="v-label">Company</label>
-        <CompanyCombobox
-          value={form.companyId}
-          onChange={(id) => setForm(p => ({ ...p, companyId: id }))}
-          onCreateAndSelect={async (name) => {
-            const c = await addCompany({ name, type: 'other' })
-            setForm(p => ({ ...p, companyId: c.id }))
-          }}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="v-label">Email</label>
-          <input type="email" value={form.email} onChange={f('email')} className="v-input" placeholder="name@company.com" />
-        </div>
-        <div>
-          <label className="v-label">Phone</label>
-          <input value={form.phone} onChange={f('phone')} className="v-input" placeholder="212-555-0100" />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="v-label">Mobile</label>
-          <input value={form.mobile} onChange={f('mobile')} className="v-input" placeholder="917-555-0100" />
-        </div>
-        <div>
-          <label className="v-label">LinkedIn</label>
-          <input value={form.linkedIn} onChange={f('linkedIn')} className="v-input" placeholder="linkedin.com/in/..." />
-        </div>
-      </div>
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSaveError(null)
+    setSaving(true)
+    try {
+      // Write back first array entries to legacy single fields for backward compat
+      const payload = {
+        ...form,
+        phone: form.personalPhones[0] || '',
+        mobile: form.personalPhones[1] || '',
+        email: form.personalEmails[0] || '',
+      }
+      await onSubmit(payload)
+    } catch (err) {
+      setSaveError(err?.message || 'Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
-      {teamMembers.length > 0 && (
-        <div>
-          <label className="v-label">Owners</label>
-          <div className="border border-[var(--border)] p-1.5 space-y-0.5 max-h-24 overflow-y-auto">
-            {teamMembers.map(m => (
-              <label key={m.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-100 px-1.5 py-0.5">
-                <input
-                  type="checkbox"
-                  checked={form.ownerIds.includes(m.id)}
-                  onChange={() => toggleOwner(m.id)}
-                />
-                <span className="text-slate-700 dark:text-slate-300">{m.displayName || m.email}</span>
-                {m.id === user?.id && <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">(you)</span>}
-              </label>
-            ))}
+  return (
+    <form onSubmit={handleSubmit}>
+      {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800 mb-3">{saveError}</p>}
+
+      <div className="grid grid-cols-3 gap-3">
+
+        {/* ── Column 1: Basic Info ── */}
+        <div className="border border-[var(--border)] p-3 flex flex-col gap-2">
+          <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Basic Info</p>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="v-label">First name <span className="text-red-500">*</span></label>
+              <input value={form.firstName} onChange={f('firstName')} className="v-input" required />
+            </div>
+            <div>
+              <label className="v-label">Last name <span className="text-red-500">*</span></label>
+              <input value={form.lastName} onChange={f('lastName')} className="v-input" required />
+            </div>
+          </div>
+
+          <div>
+            <label className="v-label">Title / Role</label>
+            <input value={form.title} onChange={f('title')} className="v-input" placeholder="e.g. VP Real Estate" />
+          </div>
+
+          <div>
+            <label className="v-label">Company</label>
+            <CompanyCombobox
+              value={form.companyId}
+              onChange={(id) => setForm(p => ({ ...p, companyId: id }))}
+              onCreateAndSelect={async (name) => {
+                const c = await addCompany({ name, type: 'other' })
+                setForm(p => ({ ...p, companyId: c.id }))
+              }}
+            />
+          </div>
+
+          <div>
+            <label className="v-label">LinkedIn</label>
+            <input value={form.linkedIn} onChange={f('linkedIn')} className="v-input" placeholder="linkedin.com/in/..." />
+          </div>
+
+          <div>
+            <label className="v-label">Function</label>
+            <select value={form.contactFunction || ''} onChange={f('contactFunction')} className="v-select">
+              <option value="">— Select —</option>
+              {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="v-label">Tags</label>
+            <TagInput tags={form.tags || []} onChange={(tags) => setForm(p => ({ ...p, tags }))} />
+          </div>
+
+          {/* Owners / Visibility / Share With at bottom of Basic Info */}
+          <div className="border-t border-[var(--border)] pt-2 mt-auto space-y-2">
+            {teamMembers.length > 0 && (
+              <div>
+                <label className="v-label">Owners</label>
+                {ownersEditable ? (
+                  <div className="border border-[var(--border)] p-1.5 space-y-0.5 max-h-20 overflow-y-auto">
+                    {teamMembers.map(m => (
+                      <label key={m.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-100 px-1.5 py-0.5">
+                        <input type="checkbox" checked={form.ownerIds.includes(m.id)} onChange={() => toggleOwner(m.id)} />
+                        <span className="text-slate-700 dark:text-slate-300">{m.displayName || m.email}</span>
+                        {m.id === user?.id && <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">(you)</span>}
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border border-[var(--border)] p-1.5 flex flex-wrap gap-1.5">
+                    {(form.ownerIds || []).map(id => {
+                      const m = teamMembers.find(t => t.id === id)
+                      return m ? (
+                        <span key={id} className="text-[11px] text-slate-600 dark:text-slate-300 bg-surface-100 dark:bg-surface-200 px-2 py-0.5 border border-[var(--border)]">
+                          {m.displayName || m.email}{m.id === user?.id ? ' (you)' : ''}
+                        </span>
+                      ) : null
+                    })}
+                    {form.ownerIds.length === 0 && <span className="text-[10px] text-slate-400 dark:text-slate-500">No owners</span>}
+                  </div>
+                )}
+                {!ownersEditable && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Only admins can change owners after creation.</p>}
+              </div>
+            )}
+
+            {isOwner && (
+              <div>
+                <label className="v-label">Visibility</label>
+                <div className="flex gap-1.5">
+                  <button type="button" onClick={() => setForm(p => ({ ...p, visibility: 'private' }))}
+                    className={clsx('flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] font-medium border transition-colors',
+                      form.visibility === 'private'
+                        ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
+                        : 'border-[var(--border)] text-slate-500 hover:border-slate-400 dark:text-slate-400'
+                    )}>
+                    <Lock size={10} /> Private
+                  </button>
+                  <button type="button" onClick={() => setForm(p => ({ ...p, visibility: 'shared' }))}
+                    className={clsx('flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] font-medium border transition-colors',
+                      form.visibility === 'shared'
+                        ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
+                        : 'border-[var(--border)] text-slate-500 hover:border-slate-400 dark:text-slate-400'
+                    )}>
+                    <Users size={10} /> Shared
+                  </button>
+                </div>
+                {form.visibility === 'private' && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Only visible to owners.</p>}
+                {form.visibility === 'shared' && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Visible in the shared CRM.</p>}
+              </div>
+            )}
+
+            {isOwner && form.visibility === 'shared' && teamMembers.length > 0 && (
+              <div>
+                <label className="v-label">Share with <span className="text-[9px] font-normal text-slate-400 ml-1">(blank = all)</span></label>
+                <div className="border border-[var(--border)] p-1.5 space-y-0.5 max-h-20 overflow-y-auto">
+                  {teamMembers.map(m => (
+                    <label key={m.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-100 px-1.5 py-0.5">
+                      <input
+                        type="checkbox"
+                        checked={form.sharedWith.length === 0 || form.sharedWith.includes(m.id)}
+                        onChange={() => {
+                          setForm(p => {
+                            if (p.sharedWith.length === 0) {
+                              return { ...p, sharedWith: teamMembers.filter(tm => tm.id !== m.id).map(tm => tm.id) }
+                            }
+                            const next = p.sharedWith.includes(m.id)
+                              ? p.sharedWith.filter(id => id !== m.id)
+                              : [...p.sharedWith, m.id]
+                            return { ...p, sharedWith: next.length === teamMembers.length ? [] : next }
+                          })
+                        }}
+                      />
+                      <span className="text-slate-700 dark:text-slate-300">{m.displayName || m.email}</span>
+                      {m.id === user?.id && <span className="text-[10px] text-slate-400 font-mono">(you)</span>}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      <div>
-        <label className="v-label">Tags</label>
-        <TagInput tags={form.tags || []} onChange={(tags) => setForm(p => ({ ...p, tags }))} />
-      </div>
-      <div>
-        <label className="v-label">Notes</label>
-        <textarea value={form.notes} onChange={f('notes')} rows={3} className="v-input resize-y" placeholder="Background, preferences, how you met..." />
+        {/* ── Column 2: Personal (private) ── */}
+        <div className="border border-[var(--border)] p-3 flex flex-col gap-2">
+          <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono flex items-center gap-1">
+            <Lock size={9} /> Personal <span className="font-normal normal-case text-[9px] text-slate-400 dark:text-slate-500">(private to you)</span>
+          </p>
+
+          <div>
+            <label className="v-label">Notes</label>
+            <textarea value={form.notes} onChange={f('notes')} rows={4} className="v-input resize-y w-full" placeholder="Background, preferences, how you met..." />
+          </div>
+
+          <div>
+            <label className="v-label">Phones</label>
+            <MultiValueInput
+              values={form.personalPhones}
+              onChange={(v) => setForm(p => ({ ...p, personalPhones: v }))}
+              placeholder="212-555-0100"
+              addLabel="Add phone"
+            />
+          </div>
+
+          <div>
+            <label className="v-label">Emails</label>
+            <MultiValueInput
+              values={form.personalEmails}
+              onChange={(v) => setForm(p => ({ ...p, personalEmails: v }))}
+              type="email"
+              placeholder="name@company.com"
+              addLabel="Add email"
+            />
+          </div>
+        </div>
+
+        {/* ── Column 3: Shared ── */}
+        <div className={clsx('border p-3 flex flex-col gap-2', form.visibility === 'shared' ? 'border-brand-200 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-900/10' : 'border-[var(--border)]')}>
+          <p className={clsx('text-[10px] font-semibold uppercase tracking-wide font-mono flex items-center gap-1', form.visibility === 'shared' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500')}>
+            <Users size={9} /> Shared <span className="font-normal normal-case text-[9px] ml-1">(visible to team)</span>
+          </p>
+
+          {form.visibility === 'shared' ? (
+            <>
+              <div>
+                <label className="v-label">Notes</label>
+                <textarea value={form.sharedNotes} onChange={f('sharedNotes')} rows={4} className="v-input resize-y w-full" placeholder="Team-facing notes..." />
+              </div>
+
+              <div>
+                <label className="v-label">Phones</label>
+                <MultiValueInput
+                  values={form.sharedCellPhones}
+                  onChange={(v) => setForm(p => ({ ...p, sharedCellPhones: v }))}
+                  placeholder="212-555-0100"
+                  addLabel="Add phone"
+                />
+              </div>
+
+              <div>
+                <label className="v-label">Emails</label>
+                <MultiValueInput
+                  values={form.sharedEmails}
+                  onChange={(v) => setForm(p => ({ ...p, sharedEmails: v }))}
+                  type="email"
+                  placeholder="name@company.com"
+                  addLabel="Add email"
+                />
+              </div>
+            </>
+          ) : (
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">Set visibility to Shared to enable shared fields.</p>
+          )}
+        </div>
+
       </div>
 
-      <div className="flex gap-2 pt-1">
-        <button type="submit" className="v-btn-primary flex-1">Save Contact</button>
-        <button type="button" onClick={onCancel} className="v-btn-secondary">Cancel</button>
+      <div className="flex gap-2 pt-3">
+        <button type="submit" disabled={saving} className="v-btn-primary flex-1 disabled:opacity-60">{saving ? 'Saving…' : 'Save Contact'}</button>
+        <button type="button" onClick={onCancel} disabled={saving} className="v-btn-secondary">Cancel</button>
       </div>
     </form>
   )
 }
 
 // ── Detail ──
-function ContactDetail() {
+export function ContactDetail({ backTo }) {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getContact, getCompany, updateContact, deleteContact, properties, reminders, activities, teamMembers } = useCRM()
+  const location = useLocation()
+  const { getContact, getCompany, updateContact, deleteContact, properties, updatePropertyWithStage, reminders, activities, teamMembers } = useCRM()
+  const { user } = useAuth()
+  const { contactHealth } = useIntelligence()
+  const [editingHealth, setEditingHealth] = useState(false)
+  const [healthInput, setHealthInput] = useState('')
   const [editing, setEditing] = useState(false)
+  const [privateData, setPrivateData] = useState(null)
+  const [editingPrivate, setEditingPrivate] = useState(false)
+  const [privateForm, setPrivateForm] = useState({ privateNotes: '', privateCellPhones: [], privatePersonalEmails: [] })
+  const [savingPrivate, setSavingPrivate] = useState(false)
+
+  // Determine back link: use explicit backTo prop, else detect from current path
+  const resolvedBackTo = backTo || (location.pathname.startsWith('/personal/') ? '/personal/contacts' : '/contacts')
 
   const contact = getContact(id)
+
+  // Fetch per-user private data when viewing a shared contact
+  useEffect(() => {
+    if (contact?.visibility === 'shared' && user) {
+      db.contactPrivateData.forUser(contact.id, user.id).then(d => {
+        setPrivateData(d)
+        if (d) setPrivateForm({ privateNotes: d.privateNotes || '', privateCellPhones: d.privateCellPhones || [], privatePersonalEmails: d.privatePersonalEmails || [] })
+      }).catch(() => {})
+    }
+  }, [contact?.id, contact?.visibility, user])
+
   if (!contact) return <div className="p-4 text-slate-400 dark:text-slate-500 font-mono text-[11px]">CONTACT NOT FOUND</div>
 
   const company = getCompany(contact.companyId)
   const relatedProps = properties.filter(p => p.contactIds?.includes(id))
+  const contactLinkedDeals = relatedProps.filter(p => !p.deletedAt)
+
+  async function linkContactToDeal(dealId) {
+    const deal = properties.find(p => p.id === dealId)
+    if (!deal) return
+    const newIds = [...new Set([...(deal.contactIds || []), id])]
+    await updatePropertyWithStage(dealId, { ...deal, contactIds: newIds })
+  }
 
   const lastTouchItems = [
     ...activities.filter(a => a.contactId === id).map(a => ({ date: a.date || a.createdAt, type: a.type })),
@@ -171,10 +406,24 @@ function ContactDetail() {
     setEditing(false)
   }
 
+  async function handlePrivateSave() {
+    if (!user) return
+    setSavingPrivate(true)
+    try {
+      const saved = await db.contactPrivateData.upsert(contact.id, user.id, privateForm)
+      setPrivateData(saved)
+      setEditingPrivate(false)
+    } catch (err) {
+      console.error('Failed to save private data:', err)
+    } finally {
+      setSavingPrivate(false)
+    }
+  }
+
   async function handleDelete() {
     if (confirm(`Delete ${fullName(contact)}? This cannot be undone.`)) {
       await deleteContact(id)
-      navigate('/contacts')
+      navigate(resolvedBackTo)
     }
   }
 
@@ -182,7 +431,7 @@ function ContactDetail() {
     <div className="h-full flex flex-col animate-fade-in">
       {/* ─ Contact command header ─ */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--border)] bg-surface-0 flex-shrink-0">
-        <Link to="/contacts" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+        <Link to={resolvedBackTo} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
           <ArrowLeft size={14} />
         </Link>
         <div className="w-8 h-8 bg-brand-600 flex items-center justify-center flex-shrink-0">
@@ -239,6 +488,62 @@ function ContactDetail() {
             )}
           </div>
 
+          {/* Health score */}
+          {(() => {
+            const ch = contactHealth.find(h => h.id === id)
+            const score = ch?.healthScore ?? 0
+            const lbl = ch?.healthLabel || 'cold'
+            return (
+              <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+                <div className="p-2 bg-surface-50 dark:bg-surface-100">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono">Health</span>
+                    <div className="flex items-center gap-1.5">
+                      {contact.healthOverride != null && (
+                        <span className="text-[9px] font-mono text-amber-500 dark:text-amber-400">override</span>
+                      )}
+                      {editingHealth ? (
+                        <div className="flex items-center gap-1">
+                          <input type="number" min="0" max="100"
+                            value={healthInput}
+                            onChange={e => setHealthInput(e.target.value)}
+                            className="w-14 text-[11px] text-center border border-[var(--border)] bg-white dark:bg-surface-200 text-slate-700 dark:text-slate-300 outline-none px-1 py-0"
+                            autoFocus
+                          />
+                          <button type="button"
+                            onClick={async () => {
+                              const val = healthInput === '' ? null : Math.max(0, Math.min(100, Number(healthInput)))
+                              await updateContact(id, { ...contact, healthOverride: val })
+                              setEditingHealth(false)
+                            }}
+                            className="text-[10px] text-brand-600 dark:text-brand-400 font-medium hover:underline">Set</button>
+                          <button type="button" onClick={() => setEditingHealth(false)}
+                            className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">Cancel</button>
+                        </div>
+                      ) : (
+                        <button type="button"
+                          onClick={() => { setHealthInput(contact.healthOverride?.toString() ?? score.toString()); setEditingHealth(true) }}
+                          className={clsx('text-[10px] font-bold font-mono tabular-nums',
+                            score >= 75 ? 'text-emerald-500' : score >= 50 ? 'text-blue-500' : score >= 25 ? 'text-amber-500' : 'text-red-500')}>
+                          {score}/100
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-surface-200 dark:bg-surface-200 overflow-hidden">
+                    <div className={clsx('h-full transition-all duration-500',
+                      score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-blue-500' : score >= 25 ? 'bg-amber-500' : 'bg-red-500'
+                    )} style={{ width: `${score}%` }} />
+                  </div>
+                  <p className={clsx('text-[10px] mt-1 font-mono',
+                    score >= 75 ? 'text-emerald-500' : score >= 50 ? 'text-blue-500' : score >= 25 ? 'text-amber-500' : 'text-red-500')}>
+                    {lbl}
+                  </p>
+                </div>
+              </div>
+            )
+          })()}
+
           {/* Metadata */}
           <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)] space-y-1 text-[10px]">
             <div className="flex justify-between">
@@ -279,11 +584,113 @@ function ContactDetail() {
             </div>
           )}
 
-          {/* Notes */}
+          {/* Notes (private to you for shared contacts, just notes for private contacts) */}
           {contact.notes && (
             <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
-              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1 font-mono uppercase">Notes</p>
+              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1 font-mono uppercase">
+                Notes {contact.visibility === 'shared' && <span className="text-[9px] font-normal text-slate-400 ml-1">(private)</span>}
+              </p>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{contact.notes}</p>
+            </div>
+          )}
+
+          {/* Shared fields — only for shared contacts */}
+          {contact.visibility === 'shared' && (contact.sharedNotes || contact.sharedCellPhones?.length > 0 || contact.sharedEmails?.length > 0) && (
+            <div className="px-3 py-2 border-b border-brand-200/60 dark:border-brand-800/60 bg-brand-50/30 dark:bg-brand-900/10 space-y-1.5">
+              <p className="text-[10px] font-semibold text-brand-600 dark:text-brand-400 mb-1 font-mono uppercase flex items-center gap-1"><Users size={9} /> Shared Fields</p>
+              {contact.sharedNotes && (
+                <div>
+                  <p className="text-[9px] text-brand-500 dark:text-brand-500 font-mono uppercase mb-0.5">Notes</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{contact.sharedNotes}</p>
+                </div>
+              )}
+              {contact.sharedCellPhones?.length > 0 && (
+                <div>
+                  <p className="text-[9px] text-brand-500 dark:text-brand-500 font-mono uppercase mb-0.5">Cell Phones</p>
+                  <div className="space-y-0.5">
+                    {contact.sharedCellPhones.map((ph, i) => (
+                      <a key={i} href={`tel:${ph}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400">
+                        <Phone size={11} className="text-brand-400 flex-shrink-0" /> {ph}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {contact.sharedEmails?.length > 0 && (
+                <div>
+                  <p className="text-[9px] text-brand-500 dark:text-brand-500 font-mono uppercase mb-0.5">Personal Emails</p>
+                  <div className="space-y-0.5">
+                    {contact.sharedEmails.map((em, i) => (
+                      <a key={i} href={`mailto:${em}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 truncate">
+                        <Mail size={11} className="text-brand-400 flex-shrink-0" /> <span className="truncate">{em}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Your private fields — only for shared contacts */}
+          {contact.visibility === 'shared' && (
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 font-mono uppercase flex items-center gap-1"><Lock size={9} /> Your Private Notes</p>
+                {!editingPrivate && (
+                  <button onClick={() => { setEditingPrivate(true); setPrivateForm({ privateNotes: privateData?.privateNotes || '', privateCellPhones: privateData?.privateCellPhones || [], privatePersonalEmails: privateData?.privatePersonalEmails || [] }) }}
+                    className="text-[9px] text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400">Edit</button>
+                )}
+              </div>
+              {editingPrivate ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={privateForm.privateNotes}
+                    onChange={e => setPrivateForm(p => ({ ...p, privateNotes: e.target.value }))}
+                    rows={2} className="v-input resize-y text-[11px]" placeholder="Private notes (only you see this)..."
+                  />
+                  <div>
+                    <label className="v-label">Private Cell Phones</label>
+                    <TagInput tags={privateForm.privateCellPhones} onChange={t => setPrivateForm(p => ({ ...p, privateCellPhones: t }))} placeholder="Add phone..." />
+                  </div>
+                  <div>
+                    <label className="v-label">Private Personal Emails</label>
+                    <TagInput tags={privateForm.privatePersonalEmails} onChange={t => setPrivateForm(p => ({ ...p, privatePersonalEmails: t }))} placeholder="Add email..." />
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button onClick={handlePrivateSave} disabled={savingPrivate} className="v-btn-primary text-[10px] flex-1 disabled:opacity-60">
+                      <Save size={10} /> {savingPrivate ? 'Saving…' : 'Save'}
+                    </button>
+                    <button onClick={() => setEditingPrivate(false)} className="v-btn-secondary text-[10px]"><X size={10} /></button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {(privateData?.privateNotes || privateData?.privateCellPhones?.length > 0 || privateData?.privatePersonalEmails?.length > 0) ? (
+                    <>
+                      {privateData.privateNotes && <p className="text-[11px] text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{privateData.privateNotes}</p>}
+                      {privateData.privateCellPhones?.map((ph, i) => (
+                        <a key={i} href={`tel:${ph}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400">
+                          <Phone size={11} className="text-slate-400 flex-shrink-0" /> {ph} <span className="text-[9px] text-slate-400 font-mono">CELL</span>
+                        </a>
+                      ))}
+                      {privateData.privatePersonalEmails?.map((em, i) => (
+                        <a key={i} href={`mailto:${em}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 truncate">
+                          <Mail size={11} className="text-slate-400 flex-shrink-0" /> <span className="truncate">{em}</span>
+                        </a>
+                      ))}
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 italic">No private notes yet. Click Edit to add.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Visibility badge */}
+          {contact.visibility === 'private' && (
+            <div className="px-3 py-1.5 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
+              <span className="v-badge bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400 flex items-center gap-1 w-fit"><Lock size={9} /> Private</span>
             </div>
           )}
 
@@ -313,7 +720,7 @@ function ContactDetail() {
           <div className="p-4 space-y-3">
             <CommunicationHeatmap contactId={id} />
             <ReminderList contactId={id} />
-            <ActivityFeed contactId={id} />
+            <ActivityFeed contactId={id} contactDeals={contactLinkedDeals} onLinkDeal={linkContactToDeal} />
             <OutlookMessages email={contact.email} contactId={id} />
             <OutlookAttachments email={contact.email} />
           </div>
@@ -321,7 +728,7 @@ function ContactDetail() {
       </div>
 
       {editing && (
-        <Modal title={`Edit ${fullName(contact)}`} onClose={() => setEditing(false)} size="lg" disableBackdropClose>
+        <Modal title={`Edit ${fullName(contact)}`} onClose={() => setEditing(false)} size="2xl" disableBackdropClose>
           <ContactForm initial={contact} onSubmit={handleUpdate} onCancel={() => setEditing(false)} />
         </Modal>
       )}
@@ -334,7 +741,8 @@ export default function Contacts() {
   const { id } = useParams()
   if (id) return <ContactDetail />
 
-  const { contacts, companies, addContact, updateContact, getCompany, teamMembers } = useCRM()
+  const { sharedContacts: contacts, companies, addContact, updateContact, getCompany, teamMembers } = useCRM()
+  const { isAdmin } = useAuth()
   const { contactHealth } = useIntelligence()
   const { contactDuplicates } = useDuplicates()
   const [search, setSearch] = useState('')
@@ -423,7 +831,7 @@ export default function Contacts() {
           {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
         </select>
         <div className="flex-1" />
-        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">{filtered.length} / {contacts.length}</span>
+        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">{filtered.length} / {contacts.length} shared</span>
         {filtered.length > PAGE_SIZE && (
           <div className="flex items-center gap-1">
             <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="v-btn-ghost px-1.5 py-0.5 text-[10px] disabled:opacity-30">‹</button>
@@ -578,7 +986,7 @@ export default function Contacts() {
       </div>
 
       {showAdd && (
-        <Modal title="Add Contact" onClose={() => setShowAdd(false)} size="lg" disableBackdropClose>
+        <Modal title="Add Contact" onClose={() => setShowAdd(false)} size="2xl" disableBackdropClose>
           <ContactForm onSubmit={handleAdd} onCancel={() => setShowAdd(false)} />
         </Modal>
       )}
@@ -609,7 +1017,8 @@ export default function Contacts() {
             if (dupCheck.newData.tags?.length) {
               merged.tags = [...new Set([...(dupCheck.existing.tags || []), ...dupCheck.newData.tags])]
             }
-            if (dupCheck.newData.ownerIds?.length) {
+            // Only admins can add new owners via merge; non-admins preserve existing owners
+            if (isAdmin && dupCheck.newData.ownerIds?.length) {
               merged.ownerIds = [...new Set([...(dupCheck.existing.ownerIds || []), ...dupCheck.newData.ownerIds])]
             }
             await updateContact(dupCheck.existing.id, merged)

@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { Plus, Search, Building2, MapPin, Mail, Phone, Globe, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, X, CheckSquare, ChevronDown, AlertTriangle } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
@@ -71,6 +71,81 @@ function TypeCombobox({ value, onChange, disabled, allTypes }) {
   )
 }
 
+// ── BulkSelectModal ──────────────────────────────────────────────────────────
+function BulkSelectModal({ title, items, onConfirm, onClose }) {
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState(new Set())
+  const [saving, setSaving] = useState(false)
+
+  const filtered = search.trim()
+    ? items.filter(i => (i.primary + ' ' + i.secondary).toLowerCase().includes(search.toLowerCase()))
+    : items
+
+  function toggle(id) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  async function confirm() {
+    setSaving(true)
+    try { await onConfirm([...selected]) } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white dark:bg-slate-800 w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border)]">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+          <button onClick={onClose} className="v-btn-ghost p-1.5"><X size={15} /></button>
+        </div>
+        <div className="px-5 py-3 border-b border-[var(--border)] space-y-2">
+          <div className="relative">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search…"
+              className="v-input pl-7 text-xs py-1.5"
+            />
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
+            <span>{filtered.length} shown · {selected.size} selected</span>
+            <div className="flex gap-2">
+              <button type="button" className="text-brand-600 dark:text-brand-400 hover:underline"
+                onClick={() => setSelected(new Set(filtered.map(i => i.id)))}>Select all</button>
+              <button type="button" className="hover:underline"
+                onClick={() => setSelected(new Set())}>Clear</button>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <p className="px-5 py-6 text-sm text-slate-400 dark:text-slate-500 text-center">No items found</p>
+          ) : filtered.map(item => (
+            <label key={item.id}
+              className="flex items-center gap-3 px-5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer border-b border-[var(--border-subtle)] dark:border-[var(--border)] last:border-0">
+              <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} className="flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] text-slate-800 dark:text-slate-200 truncate font-medium">{item.primary}</p>
+                {item.secondary && <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{item.secondary}</p>}
+              </div>
+            </label>
+          ))}
+        </div>
+        <div className="px-5 py-3.5 border-t border-[var(--border)] flex justify-end gap-2">
+          <button onClick={onClose} className="v-btn-secondary text-sm">Cancel</button>
+          <button onClick={confirm} disabled={selected.size === 0 || saving} className="v-btn-primary text-sm disabled:opacity-50">
+            {saving ? 'Saving…' : `Add ${selected.size > 0 ? selected.size + ' ' : ''}Selected`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const BLANK = { name: '', type: '', address: '', phone: '', email: '', website: '', notes: '', tags: [], capitalType: '', propertyTypes: [], minDealSize: '', maxDealSize: '', targetMarkets: [], targetReturns: '', investmentCriteria: '' }
 
 function toggleArrayItem(arr, item) {
@@ -80,6 +155,8 @@ function toggleArrayItem(arr, item) {
 export function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
   const { companies } = useCRM()
   const [form, setForm] = useState({ ...BLANK, ...initial })
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   const allTypes = [...new Set([...COMPANY_TYPES, ...companies.map(c => c.type).filter(Boolean)])].sort((a, b) => {
@@ -87,8 +164,22 @@ export function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
     if (aBuiltin && !bBuiltin) return -1; if (!aBuiltin && bBuiltin) return 1; return a.localeCompare(b)
   })
 
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSaveError(null)
+    setSaving(true)
+    try {
+      await onSubmit(form)
+    } catch (err) {
+      setSaveError(err?.message || 'Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form) }} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800">{saveError}</p>}
       <div>
         <label className="v-label">Company name <span className="text-red-500">*</span></label>
         <input value={form.name} onChange={f('name')} className="v-input" required placeholder="Acme Properties LLC" />
@@ -183,8 +274,8 @@ export function CompanyForm({ initial = BLANK, onSubmit, onCancel }) {
       )}
 
       <div className="flex gap-2 pt-1">
-        <button type="submit" className="v-btn-primary flex-1">Save Company</button>
-        <button type="button" onClick={onCancel} className="v-btn-secondary">Cancel</button>
+        <button type="submit" disabled={saving} className="v-btn-primary flex-1 disabled:opacity-60">{saving ? 'Saving…' : 'Save Company'}</button>
+        <button type="button" onClick={onCancel} disabled={saving} className="v-btn-secondary">Cancel</button>
       </div>
     </form>
   )
@@ -214,11 +305,15 @@ function DetailRow({ icon: Icon, label, value, href, external }) {
 }
 
 // ---- Detail ----
-function CompanyDetail() {
+export function CompanyDetail({ backTo }) {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getCompany, contacts, properties, updateCompany, deleteCompany, teamMembers } = useCRM()
+  const location = useLocation()
+  const { getCompany, contacts, updateContact, properties, updatePropertyWithStage, updateCompany, deleteCompany, teamMembers } = useCRM()
   const [editing, setEditing] = useState(false)
+  const [showAddContacts, setShowAddContacts] = useState(false)
+  const [showAddDeals, setShowAddDeals] = useState(false)
+  const resolvedBackTo = backTo || (location.pathname.startsWith('/personal/') ? '/personal/companies' : '/companies')
 
   const company = getCompany(id)
   if (!company) return <div className="p-4 text-slate-400 dark:text-slate-500 font-mono text-[11px]">COMPANY NOT FOUND</div>
@@ -229,14 +324,14 @@ function CompanyDetail() {
 
   async function handleUpdate(form) { await updateCompany(id, form); setEditing(false) }
   async function handleDelete() {
-    if (confirm(`Delete ${company.name}?`)) { await deleteCompany(id); navigate('/companies') }
+    if (confirm(`Delete ${company.name}?`)) { await deleteCompany(id); navigate(resolvedBackTo) }
   }
 
   return (
     <div className="h-full flex flex-col animate-fade-in">
       {/* ─ Company command header ─ */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--border)] bg-surface-0 flex-shrink-0">
-        <Link to="/companies" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+        <Link to={resolvedBackTo} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
           <ArrowLeft size={14} />
         </Link>
         <div className="w-8 h-8 bg-brand-600 flex items-center justify-center flex-shrink-0">
@@ -352,7 +447,12 @@ function CompanyDetail() {
 
           {/* Contacts */}
           <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
-            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1.5 font-mono uppercase">Contacts ({relatedContacts.length})</p>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 font-mono uppercase">Contacts ({relatedContacts.length})</p>
+              <button onClick={() => setShowAddContacts(true)} className="text-slate-400 hover:text-brand-500 dark:hover:text-brand-400 transition-colors p-0.5">
+                <Plus size={12} />
+              </button>
+            </div>
             {relatedContacts.length > 0 ? (
               <div className="space-y-1.5">
                 {relatedContacts.map(c => {
@@ -377,7 +477,12 @@ function CompanyDetail() {
 
           {/* Properties */}
           <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
-            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1.5 font-mono uppercase">Properties ({ownedProperties.length + tenantProperties.length})</p>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 font-mono uppercase">Properties ({ownedProperties.length + tenantProperties.length})</p>
+              <button onClick={() => setShowAddDeals(true)} className="text-slate-400 hover:text-brand-500 dark:hover:text-brand-400 transition-colors p-0.5">
+                <Plus size={12} />
+              </button>
+            </div>
             {ownedProperties.length > 0 && (
               <>
                 <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase mb-1">Owns ({ownedProperties.length})</p>
@@ -421,6 +526,34 @@ function CompanyDetail() {
         <Modal title="Edit Company" onClose={() => setEditing(false)} size="lg" disableBackdropClose>
           <CompanyForm initial={company} onSubmit={handleUpdate} onCancel={() => setEditing(false)} />
         </Modal>
+      )}
+      {showAddContacts && (
+        <BulkSelectModal
+          title="Add Contacts to Company"
+          items={contacts.filter(c => c.companyId !== id).map(c => ({ id: c.id, primary: fullName(c), secondary: c.title || '' }))}
+          onConfirm={async (selectedIds) => {
+            for (const cid of selectedIds) {
+              const c = contacts.find(x => x.id === cid)
+              if (c) await updateContact(cid, { ...c, companyId: id })
+            }
+            setShowAddContacts(false)
+          }}
+          onClose={() => setShowAddContacts(false)}
+        />
+      )}
+      {showAddDeals && (
+        <BulkSelectModal
+          title="Link Deals to Company"
+          items={properties.filter(p => !p.deletedAt && p.ownerCompanyId !== id && p.tenantCompanyId !== id).map(p => ({ id: p.id, primary: p.name || p.address || 'Unnamed', secondary: p.status || '' }))}
+          onConfirm={async (selectedIds) => {
+            for (const pid of selectedIds) {
+              const p = properties.find(x => x.id === pid)
+              if (p) await updatePropertyWithStage(pid, { ...p, ownerCompanyId: id })
+            }
+            setShowAddDeals(false)
+          }}
+          onClose={() => setShowAddDeals(false)}
+        />
       )}
     </div>
   )

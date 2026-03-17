@@ -3,7 +3,6 @@ import { Download, BarChart3, Users, Building2, Briefcase, TrendingUp } from 'lu
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { formatCurrency, formatDealType, formatDealStatus, fullName, daysDiff, DEAL_STATUSES, DEAL_STATUS_COLORS, formatDate, DEAL_TYPES, DEAL_TYPE_COLORS } from '../utils/helpers'
-import PageHeader from '../components/PageHeader'
 
 function exportTableCSV(headers, rows, filename) {
   const csv = [headers, ...rows].map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n')
@@ -222,9 +221,7 @@ export default function Reports() {
   ]
 
   return (
-    <div className="h-full flex flex-col animate-fade-in">
-      <PageHeader title="Reports" subtitle="Analytics and exports" />
-
+    <div className="h-full flex flex-col animate-fade-in px-6 py-5">
       <div className="flex gap-1 bg-surface-50 dark:bg-surface-100 p-0.5 mb-6 w-fit">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}

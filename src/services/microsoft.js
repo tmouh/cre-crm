@@ -121,21 +121,17 @@ export async function signInMicrosoft(fullScopes = false) {
   await ensureInit()
   const scopes = fullScopes ? graphScopesFull : graphScopes
 
-  // If already signed in and requesting more scopes, use popup incremental consent
-  // instead of loginRedirect (which would navigate away and return to a blank page).
+  // If already signed in and requesting more scopes, ONLY use popup for incremental
+  // consent — never loginRedirect, which navigates away and returns to a blank page.
   const existingAccounts = msalInstance.getAllAccounts()
   if (fullScopes && existingAccounts.length > 0) {
-    try {
-      await msalInstance.acquireTokenPopup({
-        scopes: scopes.scopes,
-        account: existingAccounts[0],
-        prompt: 'consent',
-      })
-      return
-    } catch (err) {
-      // Popup blocked or closed — fall through to redirect
-      if (err?.errorCode === 'user_cancelled') throw err
-    }
+    await msalInstance.acquireTokenPopup({
+      scopes: scopes.scopes,
+      account: existingAccounts[0],
+      prompt: 'consent',
+    })
+    // Throws on popup blocked, user_cancelled, or other errors — caller handles it.
+    return
   }
 
   await msalInstance.loginRedirect(scopes)
@@ -180,7 +176,25 @@ export async function getEmailsForContact(email, daysBack = 90) {
   const search = encodeURIComponent(`"participants:${email} received>=${since}"`)
   try {
     const data = await graphGet(
-      `/me/messages?$search=${search}&$select=id,subject,from,toRecipients,receivedDateTime,bodyPreview,isDraft,webLink,hasAttachments,isRead,importance&$top=50`
+      `/me/messages?$search=${search}&$select=id,subject,from,toRecipients,receivedDateTime,bodyPreview,isDraft,webLink,hasAttachments,isRead,importance,conversationId&$top=50`
+    )
+    return (data?.value || []).filter(m => !m.isDraft)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Search inbox + sent items for emails containing a keyword (property address, deal name, etc.)
+ * Uses Microsoft Graph KQL search. Returns up to 50 results, deduped by id.
+ */
+export async function searchEmailsByKeyword(keyword, daysBack = 180) {
+  if (!keyword?.trim()) return []
+  const since = new Date(Date.now() - daysBack * 86_400_000).toISOString().slice(0, 10)
+  const q = encodeURIComponent(`"${keyword.trim()}" received>=${since}`)
+  try {
+    const data = await graphGet(
+      `/me/messages?$search=${q}&$select=id,subject,from,toRecipients,receivedDateTime,bodyPreview,isDraft,webLink,hasAttachments,isRead,importance,conversationId&$top=50`
     )
     return (data?.value || []).filter(m => !m.isDraft)
   } catch {
@@ -489,6 +503,7 @@ export async function checkCapabilities() {
 /**
  * Fetch recent messages from the Sent Items folder.
  * Used by the deal activity scoring pipeline to detect outbound deal emails.
+ * Note: ccRecipients is fetched but the scoring engine only uses toRecipients.
  * @param {number} count    - max messages to return
  * @param {number} daysBack - how far back to look (default 2 days)
  */
@@ -496,10 +511,28 @@ export async function getSentMessages(count = 50, daysBack = 2) {
   try {
     const since = new Date(Date.now() - daysBack * 86_400_000).toISOString()
     const data = await graphGet(
-      `/me/mailFolders/SentItems/messages?$top=${count}&$orderby=sentDateTime desc&$select=id,subject,conversationId,from,toRecipients,ccRecipients,sentDateTime,bodyPreview,hasAttachments`
+      `/me/mailFolders/SentItems/messages?$top=${count}&$orderby=sentDateTime desc&$select=id,subject,conversationId,from,toRecipients,sentDateTime,bodyPreview,hasAttachments`
     )
-    // Filter client-side to messages after `since` (Graph $filter + $orderby together can conflict with some tenants)
     return (data?.value || []).filter(m => (m.sentDateTime || '') >= since)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Fetch recent messages from the Inbox folder.
+ * Used by the deal activity scoring pipeline to detect inbound deal emails
+ * from clients and prospects (where the client is the sender).
+ * @param {number} count    - max messages to return
+ * @param {number} daysBack - how far back to look (default 2 days)
+ */
+export async function getInboxMessages(count = 50, daysBack = 2) {
+  try {
+    const since = new Date(Date.now() - daysBack * 86_400_000).toISOString()
+    const data = await graphGet(
+      `/me/mailFolders/Inbox/messages?$top=${count}&$orderby=receivedDateTime desc&$select=id,subject,conversationId,from,toRecipients,receivedDateTime,bodyPreview,hasAttachments,isDraft`
+    )
+    return (data?.value || []).filter(m => !m.isDraft && (m.receivedDateTime || '') >= since)
   } catch {
     return []
   }

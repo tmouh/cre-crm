@@ -87,10 +87,9 @@ export default function RecentlyDeleted() {
   const show = (id) => activeTab === 'all' || activeTab === id
 
   return (
-    <div className="h-full flex flex-col animate-fade-in">
+    <div className="h-full flex flex-col animate-fade-in px-6 py-5">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Recently Deleted</h1>
-        <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1">Items are permanently deleted after {RETENTION_DAYS} days</p>
+        <p className="text-[13px] text-slate-500 dark:text-slate-400">Items are permanently deleted after {RETENTION_DAYS} days</p>
       </div>
 
       {/* Tabs */}

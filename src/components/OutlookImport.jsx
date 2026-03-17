@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { X, Loader2, CheckCircle2, AlertCircle, ChevronRight, Mail, Users, RefreshCw, Search } from 'lucide-react'
+import { X, Loader2, CheckCircle2, AlertCircle, ChevronRight, Mail, Users, RefreshCw, Search, Lock } from 'lucide-react'
 import clsx from 'clsx'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCRM } from '../context/CRMContext'
@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { signInMicrosoft, getMicrosoftAccount, getOutlookContacts, getEmailsForContact, getLinkedInMap } from '../lib/graphClient'
 
 const STEP = {
+  CHOOSE:    'choose',
   CONNECT:   'connect',
   FETCHING:  'fetching',
   PREVIEW:   'preview',
@@ -20,7 +21,8 @@ export default function OutlookImport({ onClose }) {
   const { contacts, companies, addContact, addCompany, addActivity } = useCRM()
   const { user } = useAuth()
 
-  const [step, setStep]           = useState(STEP.CONNECT)
+  const [step, setStep]           = useState(STEP.CHOOSE)
+  const [importVisibility, setImportVisibility] = useState('shared')
   const [msAccount, setMsAccount] = useState(null)
   const [outlookContacts, setOutlookContacts] = useState([])
   const [selected, setSelected]   = useState(new Set())
@@ -32,15 +34,11 @@ export default function OutlookImport({ onClose }) {
 
   const scrollRef = useRef(null)
 
-  // If already signed in (e.g. just returned from Microsoft redirect), auto-fetch
+  // If already signed in, populate msAccount state but don't auto-fetch
+  // (user must first choose Personal vs Shared on the CHOOSE step)
   useEffect(() => {
     getMicrosoftAccount()
-      .then(acc => {
-        if (acc) {
-          setMsAccount(acc)
-          doFetch()
-        }
-      })
+      .then(acc => { if (acc) setMsAccount(acc) })
       .catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -210,6 +208,7 @@ export default function OutlookImport({ onClose }) {
           notes:  oc.personalNotes || '',
           tags:   (oc.categories || []).map(c => c.trim().toLowerCase().replace(/\s+/g, '-')).filter(Boolean),
           ownerIds: user ? [user.id] : [],
+          visibility: importVisibility,
         })
         contactsCreated++
       } catch {
@@ -281,6 +280,73 @@ export default function OutlookImport({ onClose }) {
 
         {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
+
+          {/* CHOOSE — Personal vs Shared */}
+          {step === STEP.CHOOSE && (
+            <div className="flex flex-col gap-4 py-4">
+              <div className="text-center">
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">Import Outlook contacts as…</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Choose where imported contacts will appear.</p>
+              </div>
+
+              <div className="space-y-3">
+                {/* Personal option */}
+                <button
+                  type="button"
+                  onClick={() => setImportVisibility('private')}
+                  className={clsx(
+                    'w-full flex items-start gap-4 p-4 border-2 transition-colors text-left',
+                    importVisibility === 'private'
+                      ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 dark:border-brand-600'
+                      : 'border-[var(--border)] hover:border-slate-400 dark:hover:border-slate-500'
+                  )}
+                >
+                  <div className={clsx('w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0', importVisibility === 'private' ? 'bg-brand-100 dark:bg-brand-900/40' : 'bg-slate-100 dark:bg-slate-700')}>
+                    <Lock size={18} className={importVisibility === 'private' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500'} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Personal</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Private to you only. Appears in <strong>My Contacts</strong>. Not visible to your team.</p>
+                  </div>
+                  <div className={clsx('w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 ml-auto flex items-center justify-center', importVisibility === 'private' ? 'border-brand-500 bg-brand-500' : 'border-slate-300 dark:border-slate-600')}>
+                    {importVisibility === 'private' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                </button>
+
+                {/* Shared option */}
+                <button
+                  type="button"
+                  onClick={() => setImportVisibility('shared')}
+                  className={clsx(
+                    'w-full flex items-start gap-4 p-4 border-2 transition-colors text-left',
+                    importVisibility === 'shared'
+                      ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 dark:border-brand-600'
+                      : 'border-[var(--border)] hover:border-slate-400 dark:hover:border-slate-500'
+                  )}
+                >
+                  <div className={clsx('w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0', importVisibility === 'shared' ? 'bg-brand-100 dark:bg-brand-900/40' : 'bg-slate-100 dark:bg-slate-700')}>
+                    <Users size={18} className={importVisibility === 'shared' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500'} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Shared <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 ml-1">(default)</span></p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Visible to all team members. Appears in both <strong>My Contacts</strong> and <strong>CRM Contacts</strong>.</p>
+                  </div>
+                  <div className={clsx('w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 ml-auto flex items-center justify-center', importVisibility === 'shared' ? 'border-brand-500 bg-brand-500' : 'border-slate-300 dark:border-slate-600')}>
+                    {importVisibility === 'shared' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                </button>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  onClick={() => setStep(STEP.CONNECT)}
+                  className="v-btn-primary flex items-center gap-2"
+                >
+                  Next <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* CONNECT */}
           {step === STEP.CONNECT && (
