@@ -4,7 +4,7 @@
  * This is the same data model (properties table) with a "Deals" label.
  */
 
-import { useState, useEffect, useMemo, Component } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ArrowLeft, Edit2, Trash2, MapPin, Building2,

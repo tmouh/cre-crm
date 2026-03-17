@@ -242,8 +242,8 @@ export const db = {
         .from('deal_activities')
         .select('*')
         .neq('status', 'dismissed')
-        .gte('last_message_at', cutoff)
-        .order('last_message_at', { ascending: false })
+        .or(`last_message_at.gte.${cutoff},last_message_at.is.null`)
+        .order('last_message_at', { ascending: false, nullsFirst: false })
       if (error) throw error
       return rows(data)
     },

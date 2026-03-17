@@ -53,9 +53,9 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
     if (!text.trim()) return
     await addActivity({
       type, description: text.trim(), contactId, companyId, propertyId,
-      createdAt: activityDate
+      date: activityDate
         ? new Date(activityDate + 'T' + (activityTime || '12:00') + ':00').toISOString()
-        : undefined,
+        : new Date().toISOString(),
     })
     setText('')
     setType('note')
@@ -65,12 +65,13 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
   }
 
   function startEdit(a) {
+    const dateStr = a.date || a.createdAt || ''
     setEditingId(a.id)
     setEditForm({
       type: a.type,
       description: a.description,
-      date: (a.createdAt || '').slice(0, 10),
-      time: a.createdAt ? new Date(a.createdAt).toTimeString().slice(0, 5) : '12:00',
+      date: dateStr.slice(0, 10),
+      time: dateStr ? new Date(dateStr).toTimeString().slice(0, 5) : '12:00',
     })
   }
 
@@ -80,7 +81,7 @@ export default function ActivityFeed({ contactId, companyId, propertyId }) {
     await updateActivity(editingId, {
       type: editForm.type,
       description: editForm.description,
-      createdAt: editForm.date
+      date: editForm.date
         ? new Date(editForm.date + 'T' + (editForm.time || '12:00') + ':00').toISOString()
         : undefined,
     })
