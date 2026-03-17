@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom'
 import {
   Activity, Mail, Phone, Calendar, FileText, MessageSquare,
   Clock, Users, Trash2, AlertCircle, Bell, ChevronDown, ChevronRight,
-  Check, X, Zap, ArrowUpRight, ArrowDownLeft, Inbox as InboxIcon,
+  Check, X, Zap, ArrowUpRight, ArrowDownLeft, Inbox as InboxIcon, Plus,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useMicrosoft } from '../context/MicrosoftContext'
+import { useAuth } from '../context/AuthContext'
 import { fullName, formatDate, formatDateTime, TYPE_COLORS, isOverdue, isDueToday } from '../utils/helpers'
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
@@ -15,6 +16,16 @@ import { fullName, formatDate, formatDateTime, TYPE_COLORS, isOverdue, isDueToda
 const ACTIVITY_ICONS = {
   call: Phone, email: Mail, meeting: Calendar,
   note: FileText, tour: MessageSquare, proposal: FileText, other: Activity,
+}
+
+const ACTIVITY_VERBS = {
+  call:     'called',
+  email:    'emailed',
+  meeting:  'met with',
+  note:     'left a note on',
+  tour:     'toured with',
+  proposal: 'sent a proposal to',
+  other:    'logged activity on',
 }
 
 const FILTERS = ['all', 'call', 'email', 'meeting', 'note', 'tour', 'proposal']
@@ -67,6 +78,14 @@ function timeAgo(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+function formatActivityTime(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  return `${dateStr} · ${timeStr}`
+}
+
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
 function DateGroupHeader({ label }) {
@@ -80,48 +99,125 @@ function DateGroupHeader({ label }) {
   )
 }
 
-function ActivityCard({ a, getContact, getCompany, getProperty, deleteActivity }) {
-  const Icon = ACTIVITY_ICONS[a.type] || Activity
-  const contact = a.contactId ? getContact(a.contactId) : null
-  const company = a.companyId ? getCompany(a.companyId) : null
+function ActivityCard({ a, getContact, getCompany, getProperty, deleteActivity, updateActivity, actorName, avatarLetter }) {
+  const [showNotes, setShowNotes]   = useState(false)
+  const [draftNotes, setDraftNotes] = useState(a.description || '')
+  const [saving, setSaving]         = useState(false)
+
+  const Icon    = ACTIVITY_ICONS[a.type] || Activity
+  const verb    = ACTIVITY_VERBS[a.type] || 'logged activity on'
+  const contact = a.contactId  ? getContact(a.contactId)   : null
+  const company = a.companyId  ? getCompany(a.companyId)   : null
   const deal    = a.propertyId ? getProperty(a.propertyId) : null
 
+  async function saveNotes() {
+    if (draftNotes === (a.description || '')) { setShowNotes(false); return }
+    setSaving(true)
+    await updateActivity(a.id, { description: draftNotes }).catch(() => {})
+    setSaving(false)
+    setShowNotes(false)
+  }
+
+  const target = contact
+    ? <Link to={`/contacts/${contact.id}`} className="font-semibold text-brand-600 dark:text-brand-400 hover:underline">{fullName(contact)}</Link>
+    : company
+    ? <Link to={`/companies/${company.id}`} className="font-semibold text-brand-600 dark:text-brand-400 hover:underline">{company.name}</Link>
+    : deal
+    ? <Link to={`/deals/${deal.id}`} className="font-semibold text-brand-600 dark:text-brand-400 hover:underline">{deal.name || deal.address}</Link>
+    : <span className="text-slate-400 dark:text-slate-500">—</span>
+
   return (
-    <div className="v-card p-3 flex gap-3 hover:border-slate-300 dark:hover:border-slate-600 transition-colors group">
-      <div className={clsx('w-6 h-6 flex items-center justify-center flex-shrink-0', TYPE_COLORS[a.type] || TYPE_COLORS.other)}>
-        <Icon size={13} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="v-badge capitalize">{a.type}</span>
-          <span className="text-2xs text-slate-400 dark:text-slate-500">{timeAgo(a.date || a.createdAt)}</span>
+    <div className="v-card overflow-hidden group">
+      <div className="p-3 flex gap-3">
+        {/* Avatar circle */}
+        <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <span className="text-[11px] font-bold font-mono text-brand-700 dark:text-brand-300 select-none">{avatarLetter}</span>
         </div>
-        <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2">{a.description}</p>
-        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-          {contact && (
-            <Link to={`/contacts/${contact.id}`} className="text-2xs text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
-              <Users size={10} /> {fullName(contact)}
-            </Link>
+
+        <div className="flex-1 min-w-0">
+          {/* Type · Date · Time */}
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Icon size={10} className={clsx(TYPE_COLORS[a.type] || TYPE_COLORS.other)} />
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono capitalize">
+              {a.type} · {formatActivityTime(a.date || a.createdAt)}
+            </span>
+          </div>
+
+          {/* [Actor] [verb] [Contact/Company/Deal] */}
+          <p className="text-xs text-slate-800 dark:text-slate-200 leading-snug">
+            <span className="font-semibold">{actorName}</span>{' '}
+            <span className="text-slate-500 dark:text-slate-400">{verb}</span>{' '}
+            {target}
+          </p>
+
+          {/* Secondary context links */}
+          {contact && (company || deal) && (
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              {company && (
+                <Link to={`/companies/${company.id}`} className="text-[10px] text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400">
+                  {company.name}
+                </Link>
+              )}
+              {deal && (
+                <Link to={`/deals/${deal.id}`} className="text-[10px] text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400">
+                  {deal.name || deal.address}
+                </Link>
+              )}
+            </div>
           )}
-          {company && (
-            <Link to={`/companies/${company.id}`} className="text-2xs text-slate-500 hover:text-brand-600 dark:text-slate-400">
-              {company.name}
-            </Link>
+
+          {/* Existing notes preview */}
+          {a.description && !showNotes && (
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 italic line-clamp-2 leading-relaxed">
+              {a.description}
+            </p>
           )}
-          {deal && (
-            <Link to={`/deals/${deal.id}`} className="text-2xs text-slate-500 hover:text-brand-600 dark:text-slate-400">
-              {deal.name || deal.address}
-            </Link>
+
+          {/* Add / Edit notes toggle */}
+          {!showNotes && (
+            <button
+              onClick={() => { setDraftNotes(a.description || ''); setShowNotes(true) }}
+              className="mt-1.5 flex items-center gap-0.5 text-[10px] text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+            >
+              <Plus size={9} />
+              {a.description ? 'Edit notes' : 'Add notes'}
+            </button>
           )}
         </div>
+
+        {/* Delete button (hover-reveal) */}
+        <button
+          onClick={() => deleteActivity(a.id)}
+          className="p-1 text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 self-start"
+          title="Delete activity"
+        >
+          <Trash2 size={13} />
+        </button>
       </div>
-      <button
-        onClick={() => deleteActivity(a.id)}
-        className="p-1 text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 self-center"
-        title="Delete activity"
-      >
-        <Trash2 size={13} />
-      </button>
+
+      {/* Inline notes editor */}
+      {showNotes && (
+        <div className="px-3 pb-3 border-t border-slate-100 dark:border-slate-700/40 pt-2 space-y-1.5">
+          <textarea
+            autoFocus
+            value={draftNotes}
+            onChange={e => setDraftNotes(e.target.value)}
+            rows={3}
+            placeholder="Notes from this activity..."
+            className="v-input text-xs resize-none w-full leading-relaxed"
+          />
+          <div className="flex gap-1.5">
+            <button
+              onClick={saveNotes}
+              disabled={saving}
+              className="v-btn-primary text-[10px] py-0.5 px-2.5 disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            <button onClick={() => setShowNotes(false)} className="v-btn-secondary text-[10px] py-0.5 px-2">Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -301,12 +397,17 @@ export default function Inbox() {
   const {
     activities, dealActivities, reminders, properties,
     getContact, getCompany, getProperty,
-    deleteActivity, updateDealActivity, completeReminder,
+    deleteActivity, updateActivity, updateDealActivity, completeReminder,
   } = useCRM()
   const { isConnected, recentEmails, upcomingEvents } = useMicrosoft()
+  const { user } = useAuth()
 
   const [activeFilter, setActiveFilter] = useState('all')
   const [activeTab, setActiveTab]       = useState('activity')
+
+  // Actor display for activity cards
+  const actorName    = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'You'
+  const avatarLetter = (actorName[0] || 'U').toUpperCase()
 
   // ─── Action-needed items ──────────────────────────────────────────────────
   const needsReviewThreads = useMemo(() =>
@@ -437,7 +538,7 @@ export default function Inbox() {
                 {GROUP_ORDER.filter(g => grouped[g]?.length).map(groupLabel => (
                   <div key={groupLabel}>
                     <DateGroupHeader label={groupLabel} />
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {grouped[groupLabel].map(item => (
                         <ActivityCard
                           key={item.id}
@@ -446,6 +547,9 @@ export default function Inbox() {
                           getCompany={getCompany}
                           getProperty={getProperty}
                           deleteActivity={deleteActivity}
+                          updateActivity={updateActivity}
+                          actorName={actorName}
+                          avatarLetter={avatarLetter}
                         />
                       ))}
                     </div>

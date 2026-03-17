@@ -176,7 +176,25 @@ export async function getEmailsForContact(email, daysBack = 90) {
   const search = encodeURIComponent(`"participants:${email} received>=${since}"`)
   try {
     const data = await graphGet(
-      `/me/messages?$search=${search}&$select=id,subject,from,toRecipients,receivedDateTime,bodyPreview,isDraft,webLink,hasAttachments,isRead,importance&$top=50`
+      `/me/messages?$search=${search}&$select=id,subject,from,toRecipients,receivedDateTime,bodyPreview,isDraft,webLink,hasAttachments,isRead,importance,conversationId&$top=50`
+    )
+    return (data?.value || []).filter(m => !m.isDraft)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Search inbox + sent items for emails containing a keyword (property address, deal name, etc.)
+ * Uses Microsoft Graph KQL search. Returns up to 50 results, deduped by id.
+ */
+export async function searchEmailsByKeyword(keyword, daysBack = 180) {
+  if (!keyword?.trim()) return []
+  const since = new Date(Date.now() - daysBack * 86_400_000).toISOString().slice(0, 10)
+  const q = encodeURIComponent(`"${keyword.trim()}" received>=${since}`)
+  try {
+    const data = await graphGet(
+      `/me/messages?$search=${q}&$select=id,subject,from,toRecipients,receivedDateTime,bodyPreview,isDraft,webLink,hasAttachments,isRead,importance,conversationId&$top=50`
     )
     return (data?.value || []).filter(m => !m.isDraft)
   } catch {

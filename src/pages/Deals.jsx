@@ -4,15 +4,16 @@
  * This is the same data model (properties table) with a "Deals" label.
  */
 
-import { useState, Component } from 'react'
+import { useState, useEffect, useMemo, Component } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ArrowLeft, Edit2, Trash2, MapPin, Building2,
-  Users, Upload, Clock, TrendingUp, ChevronRight, Briefcase,
+  Users, Clock, ChevronRight, Briefcase, Mail, FileText, ArrowUpRight,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
+import { useMicrosoft } from '../context/MicrosoftContext'
 import { useIntelligence } from '../hooks/useIntelligence'
 import {
   formatCurrency, formatDate, fullName, formatDealType, formatDealStatus,
@@ -24,6 +25,7 @@ import TagInput from '../components/TagInput'
 import ActivityFeed from '../components/ActivityFeed'
 import ReminderList from '../components/ReminderList'
 import CompanyCombobox from '../components/CompanyCombobox'
+import { getEmailsForContact, searchEmailsByKeyword } from '../services/microsoft'
 
 const BLANK = {
   name: '', address: '', dealType: '', propertyType: '', size: '', sizeUnit: 'SF',
@@ -189,12 +191,176 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
   )
 }
 
+// ─── Deal email scanning ────────────────────────────────────────────────────
+
+function DealEmailThread({ thread }) {
+  const [expanded, setExpanded] = useState(false)
+  // thread is sorted newest-first; latest = thread[0]
+  const latest = thread[0]
+
+  return (
+    <div className="v-card overflow-hidden">
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full text-left p-3 flex items-start gap-2.5 hover:bg-slate-50 dark:hover:bg-surface-100 transition-colors"
+      >
+        <Mail size={13} className={clsx('mt-0.5 flex-shrink-0', latest.isRead ? 'text-slate-300 dark:text-slate-600' : 'text-brand-500')} />
+        <div className="flex-1 min-w-0">
+          <p className={clsx('text-xs truncate', latest.isRead ? 'text-slate-600 dark:text-slate-400' : 'font-semibold text-slate-800 dark:text-slate-200')}>
+            {latest.subject || '(no subject)'}
+          </p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+              {latest.from?.emailAddress?.name || latest.from?.emailAddress?.address}
+            </span>
+            <span className="text-slate-300 dark:text-slate-600 text-[10px]">·</span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{formatDate(latest.receivedDateTime)}</span>
+            {thread.length > 1 && (
+              <>
+                <span className="text-slate-300 dark:text-slate-600 text-[10px]">·</span>
+                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">{thread.length} msgs</span>
+              </>
+            )}
+          </div>
+        </div>
+        <a
+          href={latest.webLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className="p-1 text-slate-300 hover:text-brand-500 dark:text-slate-600 dark:hover:text-brand-400 transition-colors flex-shrink-0"
+          title="Open in Outlook"
+        >
+          <ArrowUpRight size={12} />
+        </a>
+      </button>
+
+      {expanded && thread.length > 0 && (
+        <div className="border-t border-slate-100 dark:border-slate-700/40 divide-y divide-slate-50 dark:divide-slate-800/50">
+          {thread.map(email => (
+            <a
+              key={email.id}
+              href={email.webLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-surface-100 transition-colors"
+            >
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate">
+                  {email.from?.emailAddress?.name || email.from?.emailAddress?.address}
+                </span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono flex-shrink-0 ml-2">
+                  {formatDate(email.receivedDateTime)}
+                </span>
+              </div>
+              {email.bodyPreview && (
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 line-clamp-1">{email.bodyPreview}</p>
+              )}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DealEmails({ deal, relatedContacts }) {
+  const [threads, setThreads] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function fetchEmails() {
+      setLoading(true)
+      const promises = []
+
+      // Fetch by each linked contact's email
+      for (const contact of relatedContacts) {
+        if (contact.email)  promises.push(getEmailsForContact(contact.email,  180))
+        if (contact.email2) promises.push(getEmailsForContact(contact.email2, 180))
+      }
+
+      // Search by property address and deal name as keywords
+      if (deal.address) promises.push(searchEmailsByKeyword(deal.address, 180))
+      if (deal.name)    promises.push(searchEmailsByKeyword(deal.name,    180))
+
+      const results = await Promise.allSettled(promises)
+      if (cancelled) return
+
+      const allEmails = results.flatMap(r => r.status === 'fulfilled' ? r.value : [])
+
+      // Deduplicate by email id
+      const seen = new Set()
+      const unique = allEmails.filter(e => {
+        if (seen.has(e.id)) return false
+        seen.add(e.id)
+        return true
+      })
+
+      // Sort newest first
+      unique.sort((a, b) => (b.receivedDateTime || '').localeCompare(a.receivedDateTime || ''))
+
+      // Group into threads by conversationId
+      const threadMap = new Map()
+      for (const email of unique) {
+        const key = email.conversationId || email.id
+        if (!threadMap.has(key)) threadMap.set(key, [])
+        threadMap.get(key).push(email)
+      }
+
+      // Sort threads by most recent message
+      const sortedThreads = Array.from(threadMap.values()).sort((a, b) =>
+        (b[0].receivedDateTime || '').localeCompare(a[0].receivedDateTime || '')
+      )
+
+      setThreads(sortedThreads)
+      setLoading(false)
+    }
+
+    fetchEmails()
+    return () => { cancelled = true }
+  }, [deal.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading) {
+    return (
+      <div className="v-card p-6 text-center">
+        <Mail size={16} className="text-slate-300 dark:text-slate-600 mx-auto mb-1.5" />
+        <p className="text-xs text-slate-400 dark:text-slate-500">Scanning Outlook…</p>
+      </div>
+    )
+  }
+
+  if (threads.length === 0) {
+    return (
+      <div className="v-card p-6 text-center">
+        <Mail size={16} className="text-slate-300 dark:text-slate-600 mx-auto mb-1.5" />
+        <p className="text-xs text-slate-400 dark:text-slate-500">No related emails found</p>
+        <p className="text-[10px] text-slate-300 dark:text-slate-600 mt-0.5">Searched by contact emails, address, and deal name</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
+        {threads.length} thread{threads.length !== 1 ? 's' : ''} found
+      </p>
+      {threads.map(thread => (
+        <DealEmailThread key={thread[0].conversationId || thread[0].id} thread={thread} />
+      ))}
+    </div>
+  )
+}
+
 function DealDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { getProperty, getCompany, getContact, updatePropertyWithStage, deleteProperty, contacts, teamMembers } = useCRM()
   const { dealMomentum } = useIntelligence()
+  const { isConnected } = useMicrosoft()
   const [editing, setEditing] = useState(false)
+  const [rightTab, setRightTab] = useState('activity')
 
   const deal = getProperty(id)
   if (!deal) return <div className="p-8 text-slate-400 dark:text-slate-500">Deal not found.</div>
@@ -385,10 +551,42 @@ function DealDetail() {
           )}
         </div>
 
-        {/* Right: Activity & Reminders */}
-        <div className="flex-1 overflow-auto bg-surface-50 dark:bg-surface-50 p-4 space-y-4">
-          <ReminderList propertyId={id} />
-          <ActivityFeed propertyId={id} />
+        {/* Right: tabbed Activity / Emails */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-surface-50 dark:bg-surface-50">
+          {/* Tab bar */}
+          <div className="flex border-b border-[var(--border)] bg-surface-0 flex-shrink-0 px-1">
+            {[
+              { id: 'activity', label: 'Activity', icon: Briefcase },
+              ...(isConnected ? [{ id: 'emails', label: 'Emails', icon: Mail }] : []),
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setRightTab(tab.id)}
+                className={clsx(
+                  'flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium border-b-2 -mb-px transition-colors',
+                  rightTab === tab.id
+                    ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400'
+                    : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
+                )}
+              >
+                <tab.icon size={11} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div className="flex-1 overflow-auto p-4 space-y-4">
+            {rightTab === 'activity' && (
+              <>
+                <ReminderList propertyId={id} />
+                <ActivityFeed propertyId={id} />
+              </>
+            )}
+            {rightTab === 'emails' && isConnected && (
+              <DealEmails deal={deal} relatedContacts={relatedContacts} />
+            )}
+          </div>
         </div>
       </div>
 
