@@ -766,7 +766,7 @@ export default function Contacts() {
     const q = search.toLowerCase()
     const matches = !q || fullName(c).toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.title?.toLowerCase().includes(q) || (c.tags || []).some(t => t.toLowerCase().includes(q))
     const comp = !filterCompany || c.companyId === filterCompany
-    const owner = !filterOwner || (c.ownerIds || []).includes(filterOwner)
+    const owner = !filterOwner || (c.ownerIds || []).length === 0 || (c.ownerIds || []).includes(filterOwner)
     const fn = !filterFunction || c.contactFunction === filterFunction
     return matches && comp && owner && fn
   }).sort((a, b) => {

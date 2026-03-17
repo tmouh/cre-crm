@@ -393,10 +393,10 @@ export function CRMProvider({ children }) {
     )
   }, [contacts, user])
 
-  // personalContacts: all contacts the current user owns (private + shared they created)
+  // personalContacts: contacts the current user owns, plus ownerless contacts (visible to all)
   const personalContacts = useMemo(() => {
     if (!user) return []
-    return contacts.filter(c => (c.ownerIds || []).includes(user.id))
+    return contacts.filter(c => (c.ownerIds || []).length === 0 || (c.ownerIds || []).includes(user.id))
   }, [contacts, user])
 
   const sharedCompanies = useMemo(() => {
