@@ -26,7 +26,7 @@ A private CRM built for commercial real estate dealmakers. Manages contacts, com
 | **Dashboard** | KPIs, deal pipeline summary, upcoming reminders, recent activity |
 | **Contacts** | Full contact list with health scores, last-touch tracking, LinkedIn enrichment |
 | **Companies** | Company directory with type classification and contact associations |
-| **Deals** | Deal management with status pipeline, comps, and document tracking |
+| **Deals** | Deal management with status pipeline, comps, document tracking, and CSV bulk import |
 | **Pipeline** | Kanban board view across all deal stages |
 | **Investors** | LP investor company tracking with contact associations |
 | **Comps** | Comparable sales database with CSV import |
@@ -168,11 +168,9 @@ npm run dev        # http://localhost:5173
 
 ## Deployment
 
-```bash
-npx vercel --prod
-```
+The project auto-deploys via Vercel on every push to `main`. No manual deploy command needed.
 
-The project is linked to Vercel. All `VITE_*` variables are injected at build time.
+All `VITE_*` variables are injected at build time from Vercel's environment variable settings.
 
 ---
 
@@ -206,6 +204,13 @@ The project is linked to Vercel. All `VITE_*` variables are injected at build ti
 ### Core tables
 
 `contacts`, `companies`, `properties` (deals), `reminders`, `activities`, `automations`, `comps`
+
+Recent column additions to `properties`:
+```sql
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS deal_group TEXT;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS state TEXT;
+```
 
 ### Microsoft integration tables
 

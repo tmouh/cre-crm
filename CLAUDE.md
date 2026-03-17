@@ -32,7 +32,9 @@ Common types: `TEXT` (strings, enums), `NUMERIC` (decimals), `BOOLEAN`, `TIMESTA
 - `src/context/CRMContext.jsx` — all data/state logic; loads and exposes contacts, companies, properties, activities, dealActivities, reminders, teamMembers, etc.
 - `src/context/MicrosoftContext.jsx` — Microsoft Graph connection, sync loop, webhook polling; calls `syncDealActivities` after every sync
 - `src/lib/supabase.js` — DB access layer + seed data; all table CRUD is here
+- `src/utils/helpers.js` — all constants (DEAL_TYPES, DEAL_STATUSES, DEAL_TYPE_COLORS, etc.) and formatters
 - `src/pages/` — page components (Contacts, Companies, Deals, Pipeline, Dashboard, Reminders, Inbox, Documents, Map, etc.)
+- `src/components/ImportModal.jsx` — CSV bulk import for contacts, companies, properties, comps, and deals (with contact-review step)
 - `src/components/LinkedInProfile.jsx` — LinkedIn enrichment display
 - `src/components/ActivityFeed.jsx` — shared activity log UI; merges manual activities + deal_activity threads
 - `src/components/DealActivityItem.jsx` — renders a single deal_activity thread entry with correction UI
@@ -43,6 +45,25 @@ Common types: `TEXT` (strings, enums), `NUMERIC` (decimals), `BOOLEAN`, `TIMESTA
 - `api/linkedin.js` — serverless PDL enrichment endpoint
 - `api/graph-webhook.js` — webhook receiver for Microsoft change notifications
 - `vercel.json` — build config + function timeout
+
+## Deal types & statuses
+Defined in `src/utils/helpers.js` as `DEAL_TYPES` and `DEAL_STATUSES`. When adding a new type or status, update all three objects: the array, the color map, and the label map in `formatDealType`/`formatDealStatus`.
+
+**Current deal types:** `acquisition`, `note-acquisition`, `recapitalization`, `sale`, `equity-raise`, `preferred-equity`, `mezzanine`, `senior-debt`, `bridge-financing`, `construction-financing`, `development`, `debt-equity`, `full`
+
+**Current deal statuses:** `prospect`, `engaged`, `under-loi`, `under-contract`, `due-diligence`, `closed`, `dead`
+
+## properties table — extra columns (added)
+In addition to the core deal fields, the `properties` table has these additional columns:
+```sql
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS deal_group TEXT;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS state TEXT;
+```
+These map to `dealGroup`, `city`, `state` in camelCase and are used by the deals bulk import.
+
+## Bulk import — deals
+`ImportModal` supports `entity="deals"` with CSV columns: `name*, group, city/region, state, stage, property type, deal type, amount, contact, company, notes, tags`. After preview, if any contact names don't match existing records, a contact-review step prompts the user to add all, select specific, or skip unmatched names before importing.
 
 ## Email / Activity Log architecture (important — do not break this)
 
