@@ -274,36 +274,30 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
               <Lock size={9} /> Personal <span className="font-normal normal-case text-[9px] text-slate-400 dark:text-slate-500">(private to you)</span>
             </p>
             {form.visibility === 'shared' && (
-              <div className="flex items-center gap-2">
-                {[
-                  { label: 'Phones', fn: p => ({ personalPhones: p.sharedCellPhones, sharedCellPhones: p.personalPhones }) },
-                  { label: 'Emails', fn: p => ({ personalEmails: p.sharedEmails, sharedEmails: p.personalEmails }) },
-                  { label: 'Notes',  fn: p => ({ notes: p.sharedNotes, sharedNotes: p.notes }) },
-                ].map(({ label, fn }) => (
-                  <button key={label} type="button" onClick={() => setForm(p => ({ ...p, ...fn(p) }))}
-                    className="text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">
-                    {label}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setForm(p => ({
-                    ...p,
-                    notes: p.sharedNotes, sharedNotes: p.notes,
-                    personalPhones: p.sharedCellPhones, sharedCellPhones: p.personalPhones,
-                    personalEmails: p.sharedEmails, sharedEmails: p.personalEmails,
-                  }))}
-                  className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
-                >
-                  <ArrowLeftRight size={11} /> Swap All
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setForm(p => ({
+                  ...p,
+                  notes: p.sharedNotes, sharedNotes: p.notes,
+                  personalPhones: p.sharedCellPhones, sharedCellPhones: p.personalPhones,
+                  personalEmails: p.sharedEmails, sharedEmails: p.personalEmails,
+                }))}
+                className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+              >
+                <ArrowLeftRight size={11} /> Swap All
+              </button>
             )}
           </div>
 
           <div>
             <label className="v-label">Notes</label>
             <textarea value={form.notes} onChange={f('notes')} rows={4} className="v-input resize-y w-full" placeholder="Background, preferences, how you met..." />
+            {form.visibility === 'shared' && (
+              <button type="button" onClick={() => setForm(p => ({ ...p, notes: p.sharedNotes, sharedNotes: p.notes }))}
+                className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">
+                Swap
+              </button>
+            )}
           </div>
 
           <div>
@@ -314,6 +308,12 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
               placeholder="212-555-0100"
               addLabel="Add phone"
             />
+            {form.visibility === 'shared' && (
+              <button type="button" onClick={() => setForm(p => ({ ...p, personalPhones: p.sharedCellPhones, sharedCellPhones: p.personalPhones }))}
+                className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">
+                Swap
+              </button>
+            )}
           </div>
 
           <div>
@@ -325,6 +325,12 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
               placeholder="name@company.com"
               addLabel="Add email"
             />
+            {form.visibility === 'shared' && (
+              <button type="button" onClick={() => setForm(p => ({ ...p, personalEmails: p.sharedEmails, sharedEmails: p.personalEmails }))}
+                className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">
+                Swap
+              </button>
+            )}
           </div>
         </div>
 
