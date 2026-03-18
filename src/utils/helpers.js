@@ -44,6 +44,20 @@ export function daysDiff(iso) {
 }
 
 export const PROPERTY_TYPES = ['hotel', 'industrial', 'land', 'mixed-use', 'multifamily', 'office', 'other', 'retail']
+
+export const PROPERTY_TYPE_COLORS = {
+  'hotel':        'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  'industrial':   'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  'land':         'bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-300',
+  'mixed-use':    'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
+  'multifamily':  'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+  'office':       'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  'retail':       'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
+  'self-storage': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  'medical':      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  'data-center':  'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+  'other':        'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400',
+}
 export const PROPERTY_STATUSES = ['available', 'leased', 'under-contract', 'sold', 'off-market', 'pending']
 
 // Stage — what type of transaction it is (alphabetical by display label)
