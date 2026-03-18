@@ -22,8 +22,10 @@ const PAGE_TITLES = {
   '/reports':          { title: 'Reports',          subtitle: 'Analytics & insights' },
   '/automations':      { title: 'Automations',      subtitle: 'Workflow rules' },
   '/settings':         { title: 'Settings',         subtitle: 'Configuration & integrations' },
-  '/recently-deleted':  { title: 'Recently Deleted', subtitle: '15-day recovery window' },
-  '/personal/contacts': { title: 'My Contacts',      subtitle: 'Your private & shared contacts' },
+  '/recently-deleted':    { title: 'Recently Deleted',  subtitle: '15-day recovery window' },
+  '/personal/contacts':   { title: 'My Contacts',       subtitle: 'Your private & shared contacts' },
+  '/personal/companies':  { title: 'My Companies',      subtitle: 'Your private & shared companies' },
+  '/activities':          { title: 'Activities',         subtitle: 'Activity tracker & history' },
 }
 
 function getPageInfo(pathname) {

@@ -395,15 +395,19 @@ function ReminderActionCard({ r, getContact, getCompany, getProperty, completeRe
 
 export default function Inbox() {
   const {
-    activities, dealActivities, reminders, properties,
+    activities, dealActivities, reminders, properties, contacts, companies,
     getContact, getCompany, getProperty,
-    deleteActivity, updateActivity, updateDealActivity, completeReminder,
+    addActivity, deleteActivity, updateActivity, updateDealActivity, completeReminder,
   } = useCRM()
   const { isConnected, recentEmails, upcomingEvents } = useMicrosoft()
   const { user } = useAuth()
 
   const [activeFilter, setActiveFilter] = useState('all')
   const [activeTab, setActiveTab]       = useState('activity')
+  const [showLogForm, setShowLogForm]   = useState(false)
+  const [logType, setLogType]           = useState('call')
+  const [logContactId, setLogContactId] = useState('')
+  const [logNotes, setLogNotes]         = useState('')
 
   // Actor display for activity cards
   const actorName    = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'You'
@@ -509,7 +513,7 @@ export default function Inbox() {
               </div>
             )}
 
-            {/* Type filter pills */}
+            {/* Type filter pills + Log button */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {FILTERS.map(f => (
                 <button
@@ -525,7 +529,69 @@ export default function Inbox() {
                   {f}
                 </button>
               ))}
+              <button
+                onClick={() => setShowLogForm(v => !v)}
+                className="ml-auto v-btn-primary text-2xs flex items-center gap-1"
+              >
+                <Plus size={11} /> Log Activity
+              </button>
             </div>
+
+            {/* Quick log form */}
+            {showLogForm && (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  const contact = logContactId ? getContact(logContactId) : null
+                  await addActivity({
+                    type: logType,
+                    description: logNotes.trim() || null,
+                    contactId: logContactId || null,
+                    companyId: contact?.companyId || null,
+                    date: new Date().toISOString(),
+                  })
+                  setLogType('call')
+                  setLogContactId('')
+                  setLogNotes('')
+                  setShowLogForm(false)
+                }}
+                className="v-card p-3 space-y-2"
+              >
+                <div className="flex gap-2 flex-wrap">
+                  <select
+                    value={logType}
+                    onChange={e => setLogType(e.target.value)}
+                    className="v-select text-xs py-1.5 flex-1 min-w-[100px]"
+                  >
+                    {FILTERS.filter(f => f !== 'all').map(t => (
+                      <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                    ))}
+                    <option value="other">Other</option>
+                  </select>
+                  <select
+                    value={logContactId}
+                    onChange={e => setLogContactId(e.target.value)}
+                    className="v-select text-xs py-1.5 flex-1 min-w-[140px]"
+                  >
+                    <option value="">No contact</option>
+                    {contacts.map(c => (
+                      <option key={c.id} value={c.id}>{fullName(c)}</option>
+                    ))}
+                  </select>
+                </div>
+                <textarea
+                  value={logNotes}
+                  onChange={e => setLogNotes(e.target.value)}
+                  placeholder="Notes (optional)"
+                  rows={2}
+                  className="v-input text-xs resize-y w-full"
+                />
+                <div className="flex gap-1.5">
+                  <button type="submit" className="v-btn-primary text-xs py-1.5">Save</button>
+                  <button type="button" onClick={() => setShowLogForm(false)} className="v-btn-secondary text-xs py-1.5">Cancel</button>
+                </div>
+              </form>
+            )}
 
             {/* Date-grouped stream */}
             {streamItems.length === 0 ? (

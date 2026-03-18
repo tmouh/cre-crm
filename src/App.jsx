@@ -22,6 +22,7 @@ import Settings              from './pages/Settings'
 import RecentlyDeleted       from './pages/RecentlyDeleted'
 import MapPage               from './pages/Map'
 import PersonalContacts      from './pages/PersonalContacts'
+import PersonalCompanies     from './pages/PersonalCompanies'
 import Activities            from './pages/Activities'
 
 export default function App() {
@@ -51,6 +52,8 @@ export default function App() {
               <Route path="/activities"        element={<Activities />} />
               <Route path="/personal/contacts"     element={<PersonalContacts />} />
               <Route path="/personal/contacts/:id" element={<PersonalContacts />} />
+              <Route path="/personal/companies"     element={<PersonalCompanies />} />
+              <Route path="/personal/companies/:id" element={<PersonalCompanies />} />
               <Route path="/contacts"          element={<Contacts />} />
               <Route path="/contacts/:id"      element={<Contacts />} />
               <Route path="/companies"         element={<Companies />} />
