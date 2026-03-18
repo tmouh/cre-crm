@@ -267,7 +267,10 @@ function rowToDeal(row, map, companies, contacts) {
     ownerCompanyId,
     contactIds,
     notes:        v('notes') === '-' ? '' : v('notes'),
-    tags:         v('tags') ? v('tags').split(';').map(t => t.trim()).filter(t => t && t !== '-') : [],
+    tags:         [...new Set([
+                    ...(v('tags') ? v('tags').split(';').map(t => t.trim()).filter(t => t && t !== '-') : []),
+                    ...(v('dealGroup') && v('dealGroup') !== '-' ? [v('dealGroup').trim()] : []),
+                  ])],
     ownerIds:     [],
     _rawContactName: contactName,
   }
