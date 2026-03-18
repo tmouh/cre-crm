@@ -143,6 +143,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
   )
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-4">
       {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800">{saveError}</p>}
       <div>
@@ -291,20 +292,21 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
         <button type="submit" disabled={saving} className="v-btn-primary flex-1 disabled:opacity-60">{saving ? 'Saving…' : 'Save Deal'}</button>
         <button type="button" onClick={onCancel} disabled={saving} className="v-btn-secondary">Cancel</button>
       </div>
-      {showNewContact && (
-        <Modal title="New Contact" onClose={() => setShowNewContact(false)} size="2xl" disableBackdropClose>
-          <ContactForm
-            onSubmit={async (contactForm) => {
-              const newContact = await addContact(contactForm)
-              if (!newContact?.id) throw new Error('Contact could not be saved — please try again.')
-              setForm(p => ({ ...p, contactIds: [...(p.contactIds || []), newContact.id] }))
-              setShowNewContact(false)
-            }}
-            onCancel={() => setShowNewContact(false)}
-          />
-        </Modal>
-      )}
     </form>
+    {showNewContact && (
+      <Modal title="New Contact" onClose={() => setShowNewContact(false)} size="2xl" disableBackdropClose>
+        <ContactForm
+          onSubmit={async (contactForm) => {
+            const newContact = await addContact(contactForm)
+            if (!newContact?.id) throw new Error('Contact could not be saved — please try again.')
+            setForm(p => ({ ...p, contactIds: [...(p.contactIds || []), newContact.id] }))
+            setShowNewContact(false)
+          }}
+          onCancel={() => setShowNewContact(false)}
+        />
+      </Modal>
+    )}
+    </>
   )
 }
 
