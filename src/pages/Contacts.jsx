@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, Component } from 'react'
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle, Lock, Users, Save, X, CheckSquare, Share2 } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle, Lock, Users, Save, X, CheckSquare, Share2, ArrowLeftRight } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
@@ -269,9 +269,29 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
 
         {/* ── Column 2: Personal (private) ── */}
         <div className="border border-[var(--border)] p-3 flex flex-col gap-2">
-          <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono flex items-center gap-1">
-            <Lock size={9} /> Personal <span className="font-normal normal-case text-[9px] text-slate-400 dark:text-slate-500">(private to you)</span>
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono flex items-center gap-1">
+              <Lock size={9} /> Personal <span className="font-normal normal-case text-[9px] text-slate-400 dark:text-slate-500">(private to you)</span>
+            </p>
+            {form.visibility === 'shared' && (
+              <button
+                type="button"
+                title="Swap phones, emails & notes with Shared"
+                onClick={() => setForm(p => ({
+                  ...p,
+                  notes: p.sharedNotes,
+                  sharedNotes: p.notes,
+                  personalPhones: p.sharedCellPhones,
+                  sharedCellPhones: p.personalPhones,
+                  personalEmails: p.sharedEmails,
+                  sharedEmails: p.personalEmails,
+                }))}
+                className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+              >
+                <ArrowLeftRight size={11} /> Swap
+              </button>
+            )}
+          </div>
 
           <div>
             <label className="v-label">Notes</label>
