@@ -48,6 +48,7 @@ export default function App() {
               <Route path="/"                  element={<Dashboard />} />
               <Route path="/inbox"             element={<Inbox />} />
               <Route path="/reminders"         element={<Reminders />} />
+              <Route path="/activities"        element={<Activities />} />
               <Route path="/personal/contacts"     element={<PersonalContacts />} />
               <Route path="/personal/contacts/:id" element={<PersonalContacts />} />
               <Route path="/activities"         element={<Activities />} />

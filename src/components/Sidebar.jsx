@@ -14,6 +14,7 @@ const NAV_GROUPS = [
       { to: '/reminders',   label: 'Reminders',   Icon: Bell },
       { to: '/activities',  label: 'Activities',  Icon: ListChecks },
       { to: '/automations', label: 'Automations', Icon: Zap },
+      { to: '/activities',  label: 'Activities',  Icon: ListChecks },
     ],
   },
   {
