@@ -69,7 +69,7 @@ export function formatDealCategory(c) {
 // Deal Type — capital structure / scope of work (alphabetical by display label)
 export const DEAL_TYPES = [
   'bridge', 'co-gp', 'construction-loan', 'debt', 'debt-equity',
-  'equity', 'full', 'hma', 'mezzanine', 'note-acquisition', 'preferred-equity', 'principal', 'tbd',
+  'equity', 'full', 'hma', 'mezzanine', 'preferred-equity', 'principal', 'tbd',
 ]
 
 export const DEAL_STATUSES = [
@@ -97,7 +97,6 @@ export const DEAL_TYPE_COLORS = {
   'full':              'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
   'hma':               'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-300',
   'mezzanine':         'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
-  'note-acquisition':  'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   'preferred-equity':  'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
   'principal':         'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
   'tbd':               'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400',
@@ -107,7 +106,7 @@ export function formatDealType(t) {
   const labels = {
     'bridge': 'Bridge', 'co-gp': 'co-GP', 'construction-loan': 'Construction Loan',
     'debt': 'Debt', 'debt-equity': 'Debt / Equity', 'equity': 'Equity',
-    'full': 'Full', 'hma': 'HMA', 'mezzanine': 'Mezzanine', 'note-acquisition': 'Note Acquisition',
+    'full': 'Full', 'hma': 'HMA', 'mezzanine': 'Mezzanine',
     'preferred-equity': 'Preferred Equity', 'principal': 'Principal', 'tbd': 'TBD',
   }
   return labels[t] || (t ? t.charAt(0).toUpperCase() + t.slice(1).replace(/-/g, ' ') : '')
