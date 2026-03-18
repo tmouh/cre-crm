@@ -248,7 +248,7 @@ function rowToDeal(row, map, companies, contacts) {
     city:         v('city'),
     state:        v('state'),
     dealCategory: normalizeDealCategory(v('dealCategory')),
-    status:       v('status') || 'prospect',
+    status:       (v('status') || 'prospect').toLowerCase().trim().replace(/\s+/g, '-'),
     propertyType: v('propertyType') === '-' ? '' : v('propertyType'),
     dealType:     normalizeDealType(v('dealType')),
     dealValue:    v('dealValue') && v('dealValue') !== '-' ? Number(v('dealValue').replace(/[$,m]/gi, '')) * (v('dealValue').toLowerCase().includes('m') ? 1000000 : 1) : undefined,
