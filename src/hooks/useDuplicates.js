@@ -129,8 +129,9 @@ export function useDuplicates() {
         let score = 0
 
         // 1. Email — definitive, skip remaining signals
-        const emailA = norm(a.email), emailB = norm(b.email)
-        if (emailA && emailB && emailA === emailB) {
+        const emailsA = [a.email, ...(a.personalEmails || []), ...(a.sharedEmails || [])].filter(Boolean).map(e => norm(e)).filter(Boolean)
+        const emailsB = [b.email, ...(b.personalEmails || []), ...(b.sharedEmails || [])].filter(Boolean).map(e => norm(e)).filter(Boolean)
+        if (emailsA.length && emailsB.length && emailsA.some(ea => emailsB.includes(ea))) {
           reasons.push('Same email')
           score = 95
         }

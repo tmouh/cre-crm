@@ -519,21 +519,22 @@ export function ContactDetail({ backTo }) {
                 {formatContactFunction(contact.contactFunction)}
               </span>
             )}
-            {contact.email && (
-              <a href={`mailto:${contact.email}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
-                <Mail size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> <span className="truncate">{contact.email}</span>
-              </a>
-            )}
-            {contact.phone && (
-              <a href={`tel:${contact.phone}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
-                <Phone size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {contact.phone}
-              </a>
-            )}
-            {contact.mobile && (
-              <a href={`tel:${contact.mobile}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
-                <Phone size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {contact.mobile} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">MOB</span>
-              </a>
-            )}
+            {(() => {
+              const allEmails = [...new Set([contact.email, ...(contact.personalEmails || []), ...(contact.sharedEmails || [])].filter(Boolean))]
+              const allPhones = [...new Set([contact.phone, contact.mobile, ...(contact.personalPhones || []), ...(contact.sharedCellPhones || [])].filter(Boolean))]
+              return (<>
+                {allEmails.map((em, i) => (
+                  <a key={em} href={`mailto:${em}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                    <Mail size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> <span className="truncate">{em}</span>
+                  </a>
+                ))}
+                {allPhones.map((ph, i) => (
+                  <a key={ph} href={`tel:${ph}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                    <Phone size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {ph} {ph === contact.mobile && <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">MOB</span>}
+                  </a>
+                ))}
+              </>)
+            })()}
             {contact.linkedIn && (
               <a href={`https://${contact.linkedIn}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
                 <Linkedin size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> LinkedIn <ExternalLink size={9} className="text-slate-400" />
@@ -774,8 +775,8 @@ export function ContactDetail({ backTo }) {
             <CommunicationHeatmap contactId={id} />
             <ReminderList contactId={id} />
             <ActivityFeed contactId={id} contactDeals={contactLinkedDeals} onLinkDeal={linkContactToDeal} />
-            <OutlookMessages email={contact.email} contactId={id} />
-            <OutlookAttachments email={contact.email} />
+            <OutlookMessages email={contact.email || contact.personalEmails?.[0] || contact.sharedEmails?.[0]} contactId={id} />
+            <OutlookAttachments email={contact.email || contact.personalEmails?.[0] || contact.sharedEmails?.[0]} />
           </div>
         </div>
       </div>
@@ -836,7 +837,8 @@ export default function Contacts() {
 
   const filtered = contacts.filter(c => {
     const q = search.toLowerCase()
-    const matches = !q || fullName(c).toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.title?.toLowerCase().includes(q) || (c.tags || []).some(t => t.toLowerCase().includes(q))
+    const allEmails = [c.email, ...(c.personalEmails || []), ...(c.sharedEmails || [])].filter(Boolean)
+    const matches = !q || fullName(c).toLowerCase().includes(q) || allEmails.some(e => e.toLowerCase().includes(q)) || c.title?.toLowerCase().includes(q) || (c.tags || []).some(t => t.toLowerCase().includes(q))
     const comp = !filterCompany || c.companyId === filterCompany
     const owner = !filterOwner || (c.ownerIds || []).length === 0 || (c.ownerIds || []).includes(filterOwner)
     const fn = !filterFunction || c.contactFunction === filterFunction
@@ -937,10 +939,13 @@ export default function Contacts() {
   )
 
   async function handleAdd(form) {
-    const dup = contacts.find(c =>
-      ((c.firstName || '').toLowerCase() === form.firstName.toLowerCase() && (c.lastName || '').toLowerCase() === form.lastName.toLowerCase()) ||
-      (form.email && c.email && c.email.toLowerCase() === form.email.toLowerCase())
-    )
+    const dup = contacts.find(c => {
+      if ((c.firstName || '').toLowerCase() === form.firstName.toLowerCase() && (c.lastName || '').toLowerCase() === form.lastName.toLowerCase()) return true
+      const formEmail = (form.email || form.personalEmails?.[0] || '').toLowerCase()
+      if (!formEmail) return false
+      const cEmails = [c.email, ...(c.personalEmails || []), ...(c.sharedEmails || [])].filter(Boolean).map(e => e.toLowerCase())
+      return cEmails.includes(formEmail)
+    })
     if (dup) {
       setDupCheck({ newData: form, existing: dup })
     } else {
@@ -1089,8 +1094,8 @@ export default function Contacts() {
                     </td>
                     <td>
                       <div className="flex gap-1.5">
-                        {(c.email || c.sharedEmails?.length > 0) && <a href={`mailto:${c.email || c.sharedEmails[0]}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Mail size={12} /></a>}
-                        {(c.phone || c.mobile || c.sharedCellPhones?.length > 0) && <a href={`tel:${c.phone || c.mobile || c.sharedCellPhones[0]}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Phone size={12} /></a>}
+                        {(c.email || c.personalEmails?.length > 0 || c.sharedEmails?.length > 0) && <a href={`mailto:${c.email || c.personalEmails?.[0] || c.sharedEmails?.[0]}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Mail size={12} /></a>}
+                        {(c.phone || c.mobile || c.personalPhones?.length > 0 || c.sharedCellPhones?.length > 0) && <a href={`tel:${c.phone || c.mobile || c.personalPhones?.[0] || c.sharedCellPhones?.[0]}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Phone size={12} /></a>}
                         {c.linkedIn && <a href={`https://${c.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Linkedin size={12} /></a>}
                       </div>
                     </td>

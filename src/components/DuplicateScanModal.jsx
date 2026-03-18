@@ -24,9 +24,8 @@ function ContactPair({ pair, onMerge, onDismiss }) {
       pair={pair}
       fields={[
         { label: 'Name', aVal: fullName(a), bVal: fullName(b) },
-        { label: 'Email', aVal: a.email, bVal: b.email },
-        { label: 'Phone', aVal: a.phone, bVal: b.phone },
-        { label: 'Mobile', aVal: a.mobile, bVal: b.mobile },
+        { label: 'Email', aVal: [a.email, ...(a.personalEmails || []), ...(a.sharedEmails || [])].filter(Boolean).join(', ') || '', bVal: [b.email, ...(b.personalEmails || []), ...(b.sharedEmails || [])].filter(Boolean).join(', ') || '' },
+        { label: 'Phone', aVal: [a.phone, a.mobile, ...(a.personalPhones || []), ...(a.sharedCellPhones || [])].filter(Boolean).join(', ') || '', bVal: [b.phone, b.mobile, ...(b.personalPhones || []), ...(b.sharedCellPhones || [])].filter(Boolean).join(', ') || '' },
         { label: 'Title', aVal: a.title, bVal: b.title },
       ]}
       labelA={fullName(a)}

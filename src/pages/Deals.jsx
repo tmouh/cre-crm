@@ -405,10 +405,10 @@ function DealEmails({ deal, relatedContacts }) {
       setLoading(true)
       const promises = []
 
-      // Fetch by each linked contact's email
+      // Fetch by each linked contact's email (legacy + array fields)
       for (const contact of relatedContacts) {
-        if (contact.email)  promises.push(getEmailsForContact(contact.email,  180))
-        if (contact.email2) promises.push(getEmailsForContact(contact.email2, 180))
+        const emails = [...new Set([contact.email, ...(contact.personalEmails || []), ...(contact.sharedEmails || [])].filter(Boolean))]
+        for (const em of emails) promises.push(getEmailsForContact(em, 180))
       }
 
       // Search by property address and deal name as keywords

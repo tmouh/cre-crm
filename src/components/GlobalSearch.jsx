@@ -31,8 +31,11 @@ export default function GlobalSearch() {
     const q = query.toLowerCase()
     const items = []
 
-    contacts.filter(c => fullName(c).toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.title?.toLowerCase().includes(q))
-      .slice(0, 5).forEach(c => items.push({ type: 'contact', id: c.id, title: fullName(c), subtitle: c.title || c.email, icon: Users, to: `/contacts/${c.id}` }))
+    contacts.filter(c => {
+        const emails = [c.email, ...(c.personalEmails || []), ...(c.sharedEmails || [])].filter(Boolean)
+        return fullName(c).toLowerCase().includes(q) || emails.some(e => e.toLowerCase().includes(q)) || c.title?.toLowerCase().includes(q)
+      })
+      .slice(0, 5).forEach(c => items.push({ type: 'contact', id: c.id, title: fullName(c), subtitle: c.title || c.email || c.personalEmails?.[0] || c.sharedEmails?.[0], icon: Users, to: `/contacts/${c.id}` }))
 
     companies.filter(c => c.name?.toLowerCase().includes(q) || c.address?.toLowerCase().includes(q))
       .slice(0, 5).forEach(c => items.push({ type: 'company', id: c.id, title: c.name, subtitle: c.type, icon: Building2, to: `/companies/${c.id}` }))

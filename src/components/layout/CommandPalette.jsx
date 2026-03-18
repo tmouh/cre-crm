@@ -74,11 +74,14 @@ export default function CommandPalette({ open, onClose, onQuickCreate }) {
 
     // Search entities
     contacts
-      .filter(c => fullName(c).toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.title?.toLowerCase().includes(q))
+      .filter(c => {
+        const emails = [c.email, ...(c.personalEmails || []), ...(c.sharedEmails || [])].filter(Boolean)
+        return fullName(c).toLowerCase().includes(q) || emails.some(e => e.toLowerCase().includes(q)) || c.title?.toLowerCase().includes(q)
+      })
       .slice(0, 5)
       .forEach(c => items.push({
         type: 'contact', id: c.id, title: fullName(c),
-        subtitle: [c.title, c.email].filter(Boolean).join(' · '),
+        subtitle: [c.title, c.email || c.personalEmails?.[0] || c.sharedEmails?.[0]].filter(Boolean).join(' · '),
         icon: Users,
         onSelect: () => { navigate(`/contacts/${c.id}`); onClose() },
       }))

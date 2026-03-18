@@ -191,7 +191,11 @@ function ActivityReport({ activities, contacts, getContact }) {
 function ContactsReport({ contacts, reminders }) {
   function handleExport() {
     const headers = ['Name', 'Title', 'Email', 'Phone', 'Last Contacted', 'Days Since', 'Tags']
-    const rows = contacts.map(c => [fullName(c), c.title || '', c.email || '', c.phone || '', c.lastContacted?.slice(0, 10) || '', c.lastContacted ? daysDiff(c.lastContacted) : '', (c.tags || []).join('; ')])
+    const rows = contacts.map(c => {
+      const email = c.email || c.personalEmails?.[0] || c.sharedEmails?.[0] || ''
+      const phone = c.phone || c.mobile || c.personalPhones?.[0] || c.sharedCellPhones?.[0] || ''
+      return [fullName(c), c.title || '', email, phone, c.lastContacted?.slice(0, 10) || '', c.lastContacted ? daysDiff(c.lastContacted) : '', (c.tags || []).join('; ')]
+    })
     exportTableCSV(headers, rows, 'contacts-report.csv')
   }
 

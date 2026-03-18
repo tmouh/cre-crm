@@ -44,7 +44,10 @@ export default function OutlookImport({ onClose }) {
 
   // Pre-build lookup maps from existing data
   const existingByEmail = Object.fromEntries(
-    contacts.filter(c => c.email).map(c => [c.email.toLowerCase(), c.id])
+    contacts.flatMap(c => {
+      const emails = [c.email, ...(c.personalEmails || []), ...(c.sharedEmails || [])].filter(Boolean)
+      return emails.map(e => [e.toLowerCase(), c.id])
+    })
   )
   const existingCompanyByName = Object.fromEntries(
     companies.map(c => [c.name.toLowerCase(), c.id])
@@ -188,10 +191,13 @@ export default function OutlookImport({ onClose }) {
         }
       }
 
-      // Look up LinkedIn URL from People API
-      const linkedIn = email
-        ? (linkedInMap.get(email.toLowerCase()) || '').replace(/^https?:\/\/(www\.)?/, '')
-        : ''
+      // Look up LinkedIn URL — first from the contact's own websites/imAddresses, then People API
+      const directLinkedIn = [
+        ...(oc.websites || []).map(w => w.address || ''),
+        ...(oc.imAddresses || []),
+      ].find(url => url && url.toLowerCase().includes('linkedin.com')) || ''
+      const peopleLinkedIn = email ? (linkedInMap.get(email.toLowerCase()) || '') : ''
+      const linkedIn = (directLinkedIn || peopleLinkedIn).replace(/^https?:\/\/(www\.)?/, '')
 
       // Create the contact
       let newContact = null
