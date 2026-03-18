@@ -837,9 +837,10 @@ export default function Deals() {
               <tr>
                 {[
                   { field: 'name', label: 'Deal' },
-                  { field: 'dealCategory', label: 'Category' },
+                  { field: 'dealCategory', label: 'Stage' },
                   { field: 'status', label: 'Status' },
                   { field: 'type', label: 'Deal Type' },
+                  { field: 'propertyType', label: 'Property Type' },
                   { field: 'value', label: 'Value' },
                   { field: null, label: 'Momentum' },
                   { field: null, label: 'Company' },
@@ -865,6 +866,7 @@ export default function Deals() {
                     <td>{p.dealCategory ? <span className={clsx('v-badge', DEAL_CATEGORY_COLORS[p.dealCategory])}>{formatDealCategory(p.dealCategory)}</span> : '—'}</td>
                     <td><span className={clsx('v-badge', DEAL_STATUS_COLORS[p.status])}>{formatDealStatus(p.status)}</span></td>
                     <td>{p.dealType ? <span className={clsx('v-badge', DEAL_TYPE_COLORS[p.dealType])}>{formatDealType(p.dealType)}</span> : '—'}</td>
+                    <td>{p.propertyType ? <span className="text-[11px] text-slate-600 dark:text-slate-300">{formatAssetType(p.propertyType)}</span> : '—'}</td>
                     <td className="font-bold font-mono tabular-nums text-slate-800 dark:text-slate-200">{formatCurrency(p.dealValue)}</td>
                     <td>
                       {p.momentumScore != null ? (
