@@ -28,6 +28,7 @@ export function CRMProvider({ children }) {
   const [dealInvestors,  setDealInvestors]  = useState([])
   const [automations,    setAutomations]    = useState([])
   const [dealActivities, setDealActivities] = useState([])
+  const [customOptions,  setCustomOptions]  = useState([])
   const [loading,        setLoading]        = useState(true)
   const [error,          setError]          = useState(null)
 
@@ -56,7 +57,7 @@ export function CRMProvider({ children }) {
           await seedDatabase()
           await db.config.markSeeded()
         }
-        const [co, ct, pr, re, ac, tm, delCo, delCt, delPr, delRe, cp, inv, di, auto, da] = await Promise.all([
+        const [co, ct, pr, re, ac, tm, delCo, delCt, delPr, delRe, cp, inv, di, auto, da, custOpts] = await Promise.all([
           db.companies.getAll(),
           db.contacts.getAll(),
           db.properties.getAll(),
@@ -72,6 +73,7 @@ export function CRMProvider({ children }) {
           db.dealInvestors.getAll().catch(() => []),
           db.automations.getAll().catch(() => []),
           db.dealActivities.getAll().catch(() => []),
+          db.customOptions.getAll().catch(() => []),
         ])
         setCompanies(co)
         setContacts(ct)
@@ -88,6 +90,7 @@ export function CRMProvider({ children }) {
         setDealInvestors(di)
         setAutomations(auto)
         setDealActivities(da)
+        setCustomOptions(custOpts)
       } catch (err) {
         setError(err.message || 'Failed to load data.')
       } finally {
@@ -538,6 +541,12 @@ export function CRMProvider({ children }) {
       .sort((a, b) => (b.lastMessageAt || b.createdAt || '').localeCompare(a.lastMessageAt || a.createdAt || '')),
   [dealActivities])
 
+  const addCustomOption = useCallback(async (field, value) => {
+    const rec = await db.customOptions.insert(field, value)
+    setCustomOptions(prev => [...prev, rec])
+    return rec
+  }, [])
+
   return (
     <CRMContext.Provider value={{
       contacts, companies, properties, reminders, activities, teamMembers,
@@ -557,6 +566,7 @@ export function CRMProvider({ children }) {
       addDealInvestor, updateDealInvestor, deleteDealInvestor,
       addAutomation, updateAutomation, deleteAutomation,
       addDealActivity, updateDealActivity,
+      customOptions, addCustomOption,
       undoStack, undoLastDelete, dismissUndo,
       getContact, getCompany, getProperty,
       activitiesFor, remindersFor, dealActivitiesFor,

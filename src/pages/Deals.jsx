@@ -36,20 +36,18 @@ const BLANK = {
   contactIds: [], tags: [], notes: '', ownerIds: [],
 }
 
-function InlineSelect({ value, onChange, options, formatOption, placeholder = 'Select or type…', storageKey }) {
+function InlineSelect({ value, onChange, options, formatOption, placeholder = 'Select or type…', optionsField }) {
+  const { customOptions, addCustomOption } = useCRM()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [customOptions, setCustomOptions] = useState(() => {
-    if (!storageKey) return []
-    try { return JSON.parse(localStorage.getItem(storageKey) || '[]') } catch { return [] }
-  })
   const ref = useRef(null)
   useEffect(() => {
     function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [])
-  const allOptions = [...options, ...customOptions.filter(c => !options.includes(c))]
+  const fieldCustom = optionsField ? customOptions.filter(o => o.field === optionsField).map(o => o.value) : []
+  const allOptions = [...options, ...fieldCustom.filter(c => !options.includes(c))]
   const q = query.toLowerCase().trim()
   const filtered = q ? allOptions.filter(o => o.toLowerCase().includes(q)) : allOptions
   const sorted = [...filtered].sort((a, b) => {
@@ -60,10 +58,8 @@ function InlineSelect({ value, onChange, options, formatOption, placeholder = 'S
   const hasExact = allOptions.some(o => o.toLowerCase() === q)
   const canCreate = q.length > 1 && !hasExact
   function select(v) {
-    if (storageKey && v && !options.includes(v) && !customOptions.includes(v)) {
-      const updated = [...customOptions, v]
-      setCustomOptions(updated)
-      try { localStorage.setItem(storageKey, JSON.stringify(updated)) } catch {}
+    if (optionsField && v && !options.includes(v) && !fieldCustom.includes(v)) {
+      addCustomOption(optionsField, v).catch(() => {})
     }
     onChange(v); setQuery(''); setOpen(false)
   }
@@ -175,7 +171,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             options={DEAL_CATEGORIES}
             formatOption={formatDealCategory}
             placeholder="Acquisition, Development…"
-            storageKey="custom_deal_categories"
+            optionsField="dealCategory"
           />
         </div>
         <div>
@@ -195,7 +191,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             options={DEAL_TYPES}
             formatOption={formatDealType}
             placeholder="Full, Equity, Debt/Equity…"
-            storageKey="custom_deal_types"
+            optionsField="dealType"
           />
         </div>
         <div>
@@ -206,7 +202,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             options={PROPERTY_TYPES}
             formatOption={formatAssetType}
             placeholder="Select or add type…"
-            storageKey="custom_property_types"
+            optionsField="propertyType"
           />
         </div>
       </div>

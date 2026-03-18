@@ -104,6 +104,21 @@ export const db = {
   dealInvestors: table('deal_investors'),
   automations:   table('automations'),
 
+  // ─── Custom dropdown options ───────────────────────────────────────────────
+  customOptions: {
+    getAll: async () => {
+      const { data, error } = await supabase.from('custom_options').select('*').order('created_at')
+      if (error) throw error
+      return rows(data)
+    },
+    insert: async (field, value) => {
+      const { data, error } = await supabase
+        .from('custom_options').insert({ field, value }).select().single()
+      if (error) throw error
+      return toCamel(data)
+    },
+  },
+
   // ─── Microsoft integration tables ─────────────────────────────────────────
   emailInteractions: {
     forContact: async (contactId) => {
