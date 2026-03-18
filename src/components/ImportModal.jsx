@@ -374,14 +374,19 @@ export default function ImportModal({ entity, onClose }) {
     } else if (contactAction === 'select') {
       namesToCreate = unmatchedContacts.filter(u => selectedContacts[u.name]).map(u => u.name)
     }
+    // else 'none' → namesToCreate stays [], no contacts created
     // Create minimal contact records and collect them
     const newContactsByName = {}
     for (const name of namesToCreate) {
-      const parts = name.trim().split(/\s+/)
-      const firstName = parts[0] || name
-      const lastName  = parts.slice(1).join(' ') || ''
-      const created = await addContact({ firstName, lastName, ownerIds: [], contactIds: [], tags: [] })
-      if (created) newContactsByName[name] = created
+      try {
+        const parts = name.trim().split(/\s+/)
+        const firstName = parts[0] || name
+        const lastName  = parts.slice(1).join(' ') || ''
+        const created = await addContact({ firstName, lastName, ownerIds: [], tags: [] })
+        if (created) newContactsByName[name] = created
+      } catch (err) {
+        console.error('Failed to create contact:', name, err)
+      }
     }
     handleImport(newContactsByName)
   }
@@ -540,18 +545,27 @@ export default function ImportModal({ entity, onClose }) {
 
               {/* Selectable list (only shown in 'select' mode) */}
               {contactAction === 'select' && (
-                <div className="border border-[var(--border)] divide-y divide-slate-100 dark:divide-slate-700 max-h-52 overflow-y-auto">
-                  {unmatchedContacts.map(u => (
-                    <label key={u.name} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={!!selectedContacts[u.name]}
-                        onChange={e => setSelectedContacts(p => ({ ...p, [u.name]: e.target.checked }))}
-                      />
-                      <span className="text-sm text-slate-700 dark:text-slate-200">{u.name}</span>
-                      <span className="ml-auto text-[10px] text-slate-400">{u.rows.length} row{u.rows.length !== 1 ? 's' : ''}</span>
-                    </label>
-                  ))}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-0.5">
+                    <span>{Object.values(selectedContacts).filter(Boolean).length} of {unmatchedContacts.length} selected to create</span>
+                    <div className="flex gap-3">
+                      <button type="button" className="underline hover:text-brand-600" onClick={() => setSelectedContacts(Object.fromEntries(unmatchedContacts.map(u => [u.name, true])))}>All</button>
+                      <button type="button" className="underline hover:text-brand-600" onClick={() => setSelectedContacts(Object.fromEntries(unmatchedContacts.map(u => [u.name, false])))}>None</button>
+                    </div>
+                  </div>
+                  <div className="border border-[var(--border)] divide-y divide-slate-100 dark:divide-slate-700 max-h-52 overflow-y-auto">
+                    {unmatchedContacts.map(u => (
+                      <label key={u.name} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!!selectedContacts[u.name]}
+                          onChange={e => setSelectedContacts(p => ({ ...p, [u.name]: e.target.checked }))}
+                        />
+                        <span className="text-sm text-slate-700 dark:text-slate-200">{u.name}</span>
+                        <span className="ml-auto text-[10px] text-slate-400">{u.rows.length} row{u.rows.length !== 1 ? 's' : ''}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
 
