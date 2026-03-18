@@ -36,7 +36,7 @@ const BLANK = {
   contactIds: [], tags: [], notes: '', ownerIds: [],
 }
 
-function InlineSelect({ value, onChange, options, formatOption, placeholder = 'Select or type…' }) {
+function InlineSelect({ value, onChange, options, formatOption, placeholder = 'Select or type…', disableCreate = false }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const ref = useRef(null)
@@ -53,7 +53,7 @@ function InlineSelect({ value, onChange, options, formatOption, placeholder = 'S
     return la.localeCompare(lb)
   })
   const hasExact = options.some(o => o.toLowerCase() === q)
-  const canCreate = q.length > 1 && !hasExact
+  const canCreate = !disableCreate && q.length > 1 && !hasExact
   function select(v) { onChange(v); setQuery(''); setOpen(false) }
   const displayValue = value ? (formatOption ? formatOption(value) : value) : ''
   return (
@@ -163,6 +163,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             options={DEAL_CATEGORIES}
             formatOption={formatDealCategory}
             placeholder="Acquisition, Development…"
+            disableCreate
           />
         </div>
         <div>
@@ -182,6 +183,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             options={DEAL_TYPES}
             formatOption={formatDealType}
             placeholder="Full, Equity, Debt/Equity…"
+            disableCreate
           />
         </div>
         <div>
@@ -191,7 +193,8 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             onChange={v => setForm(p => ({ ...p, propertyType: v }))}
             options={PROPERTY_TYPES}
             formatOption={formatAssetType}
-            placeholder="Select or add type…"
+            placeholder="Select type…"
+            disableCreate
           />
         </div>
       </div>
