@@ -109,6 +109,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
 
   async function handleSubmit(e) {
     e.preventDefault()
+    e.stopPropagation()
     setSaveError(null)
     setSaving(true)
     try {
