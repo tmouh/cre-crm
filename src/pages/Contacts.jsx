@@ -747,6 +747,8 @@ export default function Contacts() {
   const { contactHealth } = useIntelligence()
   const { contactDuplicates } = useDuplicates()
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 200
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showOutlookImport, setShowOutlookImport] = useState(false)
@@ -808,7 +810,13 @@ export default function Contacts() {
     return sortDir === 'asc' ? cmp : -cmp
   })
 
-  const allVisibleSelected = filtered.length > 0 && filtered.every(c => selected.has(c.id))
+  // Reset page when filters change
+  useEffect(() => { setPage(0) }, [search, filterCompany, filterOwner, filterFunction])
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  const allVisibleSelected = paged.length > 0 && paged.every(c => selected.has(c.id))
 
   function toggleOne(id) {
     setSelected(prev => {
@@ -820,9 +828,9 @@ export default function Contacts() {
 
   function toggleAll() {
     if (allVisibleSelected) {
-      setSelected(prev => { const next = new Set(prev); filtered.forEach(c => next.delete(c.id)); return next })
+      setSelected(prev => { const next = new Set(prev); paged.forEach(c => next.delete(c.id)); return next })
     } else {
-      setSelected(prev => { const next = new Set(prev); filtered.forEach(c => next.add(c.id)); return next })
+      setSelected(prev => { const next = new Set(prev); paged.forEach(c => next.add(c.id)); return next })
     }
   }
 
@@ -913,6 +921,13 @@ export default function Contacts() {
         </select>
         <div className="flex-1" />
         <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">{filtered.length} / {contacts.length} shared</span>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1">
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="v-btn-secondary text-[10px] px-1.5 py-0.5 disabled:opacity-30">Prev</button>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">{page + 1}/{totalPages}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="v-btn-secondary text-[10px] px-1.5 py-0.5 disabled:opacity-30">Next</button>
+          </div>
+        )}
         <div className="flex gap-1">
           <button onClick={() => setShowImport(true)} className="v-btn-secondary text-[10px]"><Upload size={11} /> CSV</button>
           {contactDuplicates.length > 0 && (
@@ -981,7 +996,7 @@ export default function Contacts() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(c => {
+              {paged.map(c => {
                 const company = getCompany(c.companyId)
                 const stale = c.lastContacted && daysDiff(c.lastContacted) >= 90
                 const ch = contactHealth.find(h => h.id === c.id)

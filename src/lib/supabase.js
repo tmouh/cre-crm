@@ -126,6 +126,18 @@ export const db = {
       if (error) throw error
       return rows(data)
     },
+    getRecent: async (daysBack = 90) => {
+      const since = new Date()
+      since.setDate(since.getDate() - daysBack)
+      const { data, error } = await supabase
+        .from('email_interactions')
+        .select('contact_id, received_at')
+        .gte('received_at', since.toISOString())
+        .order('received_at', { ascending: false })
+        .limit(10000)
+      if (error) throw error
+      return rows(data)
+    },
     deleteOld: async (daysOld = 90) => {
       const cutoff = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000).toISOString()
       const { error } = await supabase

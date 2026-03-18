@@ -14,7 +14,7 @@ const TODAY = () => new Date()
  * Calculate relationship health score (0-100) for a contact.
  * Factors: recency of last touch, frequency of activity, depth (types of interaction), email volume.
  */
-function contactHealthScore(contact, activities, reminders, emailInteractions) {
+function contactHealthScore(contact, contactActivities, contactReminders, contactEmails) {
   if (contact.healthOverride != null) return contact.healthOverride
   const now = TODAY()
   let score = 50 // baseline
@@ -32,11 +32,9 @@ function contactHealthScore(contact, activities, reminders, emailInteractions) {
     score -= 20 // never contacted
   }
 
-  // Activity frequency (last 90 days)
-  const recentActivities = activities.filter(a =>
-    a.contactId === contact.id &&
-    a.createdAt &&
-    differenceInDays(now, parseISO(a.createdAt)) <= 90
+  // Activity frequency (last 90 days) — pre-filtered by caller
+  const recentActivities = (contactActivities || []).filter(a =>
+    a.createdAt && differenceInDays(now, parseISO(a.createdAt)) <= 90
   )
   if (recentActivities.length >= 10) score += 15
   else if (recentActivities.length >= 5) score += 10
@@ -48,20 +46,14 @@ function contactHealthScore(contact, activities, reminders, emailInteractions) {
   score += Math.min(types.size * 3, 12)
 
   // Pending tasks (positive signal — means we're engaged)
-  const pendingReminders = reminders.filter(r => r.contactId === contact.id && r.status === 'pending')
+  const pendingReminders = (contactReminders || []).filter(r => r.status === 'pending')
   if (pendingReminders.length > 0) score += 5
 
-  // Email interactions from Outlook (last 90 days)
-  if (emailInteractions?.length) {
-    const recentEmails = emailInteractions.filter(e =>
-      e.contactId === contact.id &&
-      e.receivedAt &&
-      differenceInDays(now, parseISO(e.receivedAt)) <= 90
-    )
-    if (recentEmails.length >= 10) score += 12
-    else if (recentEmails.length >= 5) score += 8
-    else if (recentEmails.length >= 1) score += 4
-  }
+  // Email interactions from Outlook (already limited to recent by getRecent)
+  const emailCount = (contactEmails || []).length
+  if (emailCount >= 10) score += 12
+  else if (emailCount >= 5) score += 8
+  else if (emailCount >= 1) score += 4
 
   return Math.max(0, Math.min(100, score))
 }
@@ -127,19 +119,41 @@ export function useIntelligence() {
   const [emailInteractions, setEmailInteractions] = useState([])
 
   useEffect(() => {
-    db.emailInteractions.getAll()
+    db.emailInteractions.getRecent(90)
       .then(setEmailInteractions)
       .catch(() => {})
   }, [])
 
   const contactHealth = useMemo(() => {
-    return contacts.map(c => ({
-      ...c,
-      healthScore: contactHealthScore(c, activities, reminders, emailInteractions),
-    })).map(c => ({
-      ...c,
-      healthLabel: healthLabel(c.healthScore),
-    }))
+    // Build O(1) lookup maps so scoring is O(n) total instead of O(n²)
+    const actsByContact = new Map()
+    for (const a of activities) {
+      if (!a.contactId) continue
+      if (!actsByContact.has(a.contactId)) actsByContact.set(a.contactId, [])
+      actsByContact.get(a.contactId).push(a)
+    }
+    const remindersByContact = new Map()
+    for (const r of reminders) {
+      if (!r.contactId) continue
+      if (!remindersByContact.has(r.contactId)) remindersByContact.set(r.contactId, [])
+      remindersByContact.get(r.contactId).push(r)
+    }
+    const emailsByContact = new Map()
+    for (const e of emailInteractions) {
+      if (!e.contactId) continue
+      if (!emailsByContact.has(e.contactId)) emailsByContact.set(e.contactId, [])
+      emailsByContact.get(e.contactId).push(e)
+    }
+
+    return contacts.map(c => {
+      const hs = contactHealthScore(
+        c,
+        actsByContact.get(c.id),
+        remindersByContact.get(c.id),
+        emailsByContact.get(c.id),
+      )
+      return { ...c, healthScore: hs, healthLabel: healthLabel(hs) }
+    })
   }, [contacts, activities, reminders, emailInteractions])
 
   const dealMomentum = useMemo(() => {

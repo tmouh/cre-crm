@@ -336,6 +336,8 @@ export default function ActivityFeed({
   const { activitiesFor, dealActivitiesFor, addActivity, updateActivity, deleteActivity, contacts, properties } = useCRM()
   const { user } = useAuth()
 
+  const [showAll,       setShowAll]       = useState(false)
+  const FEED_LIMIT = 50
   const [showForm,      setShowForm]      = useState(false)
   const [type,          setType]          = useState('call')
   const [text,          setText]          = useState('')
@@ -573,7 +575,7 @@ export default function ActivityFeed({
       {/* Timeline */}
       {mergedItems.length > 0 && (
         <div className="px-3 py-3 space-y-1.5">
-          {mergedItems.map((item, i) => {
+          {(showAll ? mergedItems : mergedItems.slice(0, FEED_LIMIT)).map((item, i) => {
             // Deal activity thread (email threads from the smart layer)
             if (item._kind === 'deal') {
               return <DealActivityItem key={`da-${item.id}`} da={item} />
@@ -667,6 +669,14 @@ export default function ActivityFeed({
               </div>
             )
           })}
+          {mergedItems.length > FEED_LIMIT && (
+            <button
+              onClick={() => setShowAll(v => !v)}
+              className="w-full text-center text-[11px] text-brand-600 dark:text-brand-400 hover:underline py-2"
+            >
+              {showAll ? 'Show less' : `Show all ${mergedItems.length} entries`}
+            </button>
+          )}
         </div>
       )}
     </div>

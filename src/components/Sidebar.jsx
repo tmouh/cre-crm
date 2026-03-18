@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Users, Building2, Briefcase, Bell, LogOut, Settings, Trash2, Map, Kanban, Database, Users2, Zap, BarChart3, ChevronDown, UserCircle, Building, FileText } from 'lucide-react'
+import { LayoutDashboard, Users, Building2, Briefcase, Bell, LogOut, Settings, Trash2, Map, Kanban, Database, Users2, Zap, BarChart3, ChevronDown, UserCircle, Building, FileText, ListChecks } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
@@ -12,6 +12,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/',            label: 'Dashboard',   Icon: LayoutDashboard },
       { to: '/reminders',   label: 'Reminders',   Icon: Bell },
+      { to: '/activities',  label: 'Activities',  Icon: ListChecks },
       { to: '/automations', label: 'Automations', Icon: Zap },
     ],
   },
