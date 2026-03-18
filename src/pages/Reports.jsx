@@ -45,7 +45,13 @@ function PipelineReport({ properties, getCompany }) {
       </div>
 
       <div className="card overflow-hidden">
-        <table className="w-full text-[12px]">
+        <table className="w-full text-[12px] table-fixed">
+          <colgroup>
+            <col className="w-[40%]" />
+            <col className="w-[20%]" />
+            <col className="w-[20%]" />
+            <col className="w-[20%]" />
+          </colgroup>
           <thead>
             <tr className="border-b border-[var(--border)] bg-surface-50 dark:bg-surface-100">
               <th className="text-left px-4 py-3 font-mono uppercase text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-wider">Status</th>
@@ -75,7 +81,13 @@ function PipelineReport({ properties, getCompany }) {
 
       {byType.length > 0 && (
         <div className="card overflow-hidden">
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[12px] table-fixed">
+            <colgroup>
+              <col className="w-[40%]" />
+              <col className="w-[20%]" />
+              <col className="w-[20%]" />
+              <col className="w-[20%]" />
+            </colgroup>
             <thead>
               <tr className="border-b border-[var(--border)] bg-surface-50 dark:bg-surface-100">
                 <th className="text-left px-4 py-3 font-mono uppercase text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-wider">Deal Type</th>
