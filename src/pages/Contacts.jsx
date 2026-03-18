@@ -1089,8 +1089,8 @@ export default function Contacts() {
                     </td>
                     <td>
                       <div className="flex gap-1.5">
-                        {c.email && <a href={`mailto:${c.email}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Mail size={12} /></a>}
-                        {(c.phone || c.mobile) && <a href={`tel:${c.phone || c.mobile}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Phone size={12} /></a>}
+                        {(c.email || c.sharedEmails?.length > 0) && <a href={`mailto:${c.email || c.sharedEmails[0]}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Mail size={12} /></a>}
+                        {(c.phone || c.mobile || c.sharedCellPhones?.length > 0) && <a href={`tel:${c.phone || c.mobile || c.sharedCellPhones[0]}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Phone size={12} /></a>}
                         {c.linkedIn && <a href={`https://${c.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Linkedin size={12} /></a>}
                       </div>
                     </td>
