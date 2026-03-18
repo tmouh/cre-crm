@@ -167,16 +167,16 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
           </div>
 
           <div>
-            <label className="v-label">LinkedIn</label>
-            <input value={form.linkedIn} onChange={f('linkedIn')} className="v-input" placeholder="linkedin.com/in/..." />
-          </div>
-
-          <div>
             <label className="v-label">Function</label>
             <select value={form.contactFunction || ''} onChange={f('contactFunction')} className="v-select">
               <option value="">— Select —</option>
               {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
             </select>
+          </div>
+
+          <div>
+            <label className="v-label">LinkedIn</label>
+            <input value={form.linkedIn} onChange={f('linkedIn')} className="v-input" placeholder="linkedin.com/in/..." />
           </div>
 
           <div>
