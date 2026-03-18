@@ -86,9 +86,10 @@ const DEAL_ALIASES = {
   name:         ['name','dealname'],
   city:         ['city','cityregion','city/region','region'],
   state:        ['state'],
-  status:       ['stage','status','dealstatus','dealstage'],
+  dealCategory: ['stage','dealcategory','category','transactiontype'],
+  status:       ['status','dealstatus','dealstage'],
   propertyType: ['propertytype','assettype'],
-  dealType:     ['dealtype','type'],
+  dealType:     ['dealtype','type','dealstructure'],
   dealValue:    ['amount','dealvalue','value','price'],
   contact:      ['contact','contactname'],
   company:      ['company','companyname'],
@@ -216,6 +217,19 @@ function rowToProperty(row, map, companies) {
   }
 }
 
+function normalizeDealCategory(raw) {
+  if (!raw || raw === '-') return ''
+  return raw.trim().toLowerCase().replace(/\s+/g, '-')
+}
+
+function normalizeDealType(raw) {
+  if (!raw || raw === '-') return ''
+  return raw.trim().toLowerCase()
+    .replace(/\s*\/\s*/g, '-')   // debt/equity → debt-equity
+    .replace(/\s+/g, '-')        // spaces → hyphens
+    .replace(/-{2,}/g, '-')      // collapse double hyphens
+}
+
 function rowToDeal(row, map, companies, contacts) {
   const v = (f) => getCell(row, map, f)
   const compName     = v('company')
@@ -233,14 +247,15 @@ function rowToDeal(row, map, companies, contacts) {
     name:         v('name'),
     city:         v('city'),
     state:        v('state'),
+    dealCategory: normalizeDealCategory(v('dealCategory')),
     status:       v('status') || 'prospect',
-    propertyType: v('propertyType'),
-    dealType:     v('dealType'),
-    dealValue:    v('dealValue') ? Number(v('dealValue').replace(/[$,]/g, '')) : undefined,
+    propertyType: v('propertyType') === '-' ? '' : v('propertyType'),
+    dealType:     normalizeDealType(v('dealType')),
+    dealValue:    v('dealValue') && v('dealValue') !== '-' ? Number(v('dealValue').replace(/[$,m]/gi, '')) * (v('dealValue').toLowerCase().includes('m') ? 1000000 : 1) : undefined,
     ownerCompanyId,
     contactIds,
-    notes:        v('notes'),
-    tags:         v('tags') ? v('tags').split(';').map(t => t.trim()).filter(Boolean) : [],
+    notes:        v('notes') === '-' ? '' : v('notes'),
+    tags:         v('tags') ? v('tags').split(';').map(t => t.trim()).filter(t => t && t !== '-') : [],
     ownerIds:     [],
     _rawContactName: contactName,
   }
@@ -250,7 +265,7 @@ function rowToDeal(row, map, companies, contacts) {
 const ENTITY_LABELS = { contacts: 'Contacts', companies: 'Companies', properties: 'Properties', comps: 'Comps', deals: 'Deals' }
 
 export default function ImportModal({ entity, onClose }) {
-  const { companies, contacts, addContact, addCompany, addProperty, addComp } = useCRM()
+  const { companies, contacts, properties, addContact, addCompany, addProperty, updateProperty, addComp } = useCRM()
   const [rawText, setRawText]   = useState('')
   const [phase, setPhase]       = useState('idle') // idle | preview | contact-review | importing | done
   const [parsed, setParsed]     = useState(null)   // { headers, rows, mapping, mapped }
@@ -260,6 +275,7 @@ export default function ImportModal({ entity, onClose }) {
   // contact-review state
   const [unmatchedContacts, setUnmatchedContacts] = useState([]) // [{ name, rows: [rowIdx] }]
   const [selectedContacts, setSelectedContacts] = useState({})   // name -> bool
+  const [overwriteDeals, setOverwriteDeals] = useState(false)
 
   function handleFile(e) {
     const file = e.target.files[0]
@@ -348,6 +364,14 @@ export default function ImportModal({ entity, onClose }) {
           const obj = rowToDeal(row, mapping, companies, allContacts)
           if (!obj.name) throw new Error('Missing name')
           const { _rawContactName, ...dealObj } = obj
+          if (overwriteDeals) {
+            const existing = properties.find(p => !p.deletedAt && p.name?.toLowerCase() === dealObj.name.toLowerCase())
+            if (existing) {
+              await updateProperty(existing.id, dealObj)
+              res.push({ ok: true })
+              continue
+            }
+          }
           await addProperty(dealObj)
         } else {
           const obj = rowToProperty(row, mapping, companies)
@@ -447,7 +471,7 @@ export default function ImportModal({ entity, onClose }) {
                 <div className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 px-3 py-2.5 space-y-1.5">
                   <p className="font-medium text-slate-500 dark:text-slate-400">Expected column order:</p>
                   <p className="font-mono bg-white dark:bg-slate-800 px-2 py-1 border border-[var(--border)] text-[11px] overflow-x-auto whitespace-nowrap">name*, group, city/region, state, stage, property type, deal type, amount, contact, company, notes, tags</p>
-                  <p>* Required. <code className="font-mono">contact</code> = full name (First Last). <code className="font-mono">company</code> = exact company name. <code className="font-mono">stage</code>: prospect, engaged, under-loi, under-contract, due-diligence, closed, dead. Tags separated by semicolons.</p>
+                  <p>* Required. <code className="font-mono">stage</code> = deal category (Acquisition, Development, Recapitalization, Sale, RFP). <code className="font-mono">deal type</code> = capital structure (Full, Equity, Debt/Equity, Principal, HMA, co-GP). <code className="font-mono">contact</code> = full name. Tags separated by semicolons.</p>
                 </div>
               )}
 
@@ -585,6 +609,12 @@ export default function ImportModal({ entity, onClose }) {
           {phase === 'preview' && (
             <>
               <button onClick={() => setPhase('idle')} className="v-btn-secondary">Back</button>
+              {entity === 'deals' && (
+                <label className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 cursor-pointer mr-auto">
+                  <input type="checkbox" checked={overwriteDeals} onChange={e => setOverwriteDeals(e.target.checked)} className="flex-shrink-0" />
+                  Overwrite existing deals (match by name)
+                </label>
+              )}
               <button onClick={handlePreviewContinue} className="v-btn-primary">
                 Import {parsed.rows.length} rows
               </button>

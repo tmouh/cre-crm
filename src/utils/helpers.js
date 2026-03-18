@@ -46,11 +46,30 @@ export function daysDiff(iso) {
 export const PROPERTY_TYPES = ['office', 'industrial', 'retail', 'multifamily', 'land', 'mixed-use', 'hotel', 'other']
 export const PROPERTY_STATUSES = ['available', 'leased', 'under-contract', 'sold', 'off-market', 'pending']
 
+export const DEAL_CATEGORIES = [
+  'acquisition', 'development', 'recapitalization', 'sale', 'rfp',
+]
+
+export const DEAL_CATEGORY_COLORS = {
+  'acquisition':      'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  'development':      'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-300',
+  'recapitalization': 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+  'sale':             'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  'rfp':              'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+}
+
+export function formatDealCategory(c) {
+  if (!c) return ''
+  const labels = { rfp: 'RFP' }
+  return labels[c] || c.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+}
+
 export const DEAL_TYPES = [
   'acquisition', 'note-acquisition', 'recapitalization', 'sale',
   'equity-raise', 'preferred-equity', 'mezzanine',
   'senior-debt', 'bridge-financing', 'construction-financing',
-  'development', 'debt-equity', 'full'
+  'development', 'debt-equity', 'full',
+  'equity', 'principal', 'hma', 'co-gp', 'tbd',
 ]
 
 export const DEAL_STATUSES = [
@@ -82,6 +101,11 @@ export const DEAL_TYPE_COLORS = {
   'development':            'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-300',
   'debt-equity':            'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
   'full':                   'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+  'equity':                 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  'principal':              'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+  'hma':                    'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+  'co-gp':                  'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+  'tbd':                    'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400',
 }
 
 export function formatDealType(t) {
@@ -92,6 +116,7 @@ export function formatDealType(t) {
     'mezzanine': 'Mezzanine', 'senior-debt': 'Senior Debt',
     'bridge-financing': 'Bridge Financing', 'construction-financing': 'Construction Financing',
     'development': 'Development', 'debt-equity': 'Debt/Equity', 'full': 'Full',
+    'equity': 'Equity', 'principal': 'Principal', 'hma': 'HMA', 'co-gp': 'co-GP', 'tbd': 'TBD',
   }
   return labels[t] || (t ? t.charAt(0).toUpperCase() + t.slice(1).replace(/-/g, ' ') : '')
 }

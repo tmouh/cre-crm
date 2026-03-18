@@ -18,6 +18,7 @@ import { useIntelligence } from '../hooks/useIntelligence'
 import {
   formatCurrency, formatDate, fullName, formatDealType, formatDealStatus,
   DEAL_TYPES, DEAL_STATUSES, DEAL_STATUS_COLORS, DEAL_TYPE_COLORS,
+  DEAL_CATEGORIES, DEAL_CATEGORY_COLORS, formatDealCategory,
   PROPERTY_TYPES, formatAssetType,
 } from '../utils/helpers'
 import Modal from '../components/Modal'
@@ -30,7 +31,7 @@ import { getEmailsForContact, searchEmailsByKeyword } from '../services/microsof
 import { ContactForm } from './Contacts'
 
 const BLANK = {
-  name: '', address: '', dealType: '', propertyType: '', size: '', sizeUnit: 'SF',
+  name: '', address: '', dealCategory: '', dealType: '', propertyType: '', size: '', sizeUnit: 'SF',
   status: 'prospect', dealValue: '', ownerCompanyId: '', tenantCompanyId: '',
   contactIds: [], tags: [], notes: '', ownerIds: [],
 }
@@ -143,25 +144,35 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
+          <label className="v-label">Category</label>
+          <InlineSelect
+            value={form.dealCategory}
+            onChange={v => setForm(p => ({ ...p, dealCategory: v }))}
+            options={DEAL_CATEGORIES}
+            formatOption={formatDealCategory}
+            placeholder="Acquisition, Development…"
+          />
+        </div>
+        <div>
           <label className="v-label">Deal type</label>
           <InlineSelect
             value={form.dealType}
             onChange={v => setForm(p => ({ ...p, dealType: v }))}
             options={DEAL_TYPES}
             formatOption={formatDealType}
-            placeholder="Select or add type…"
+            placeholder="Full, Equity, Debt/Equity…"
           />
         </div>
-        <div>
-          <label className="v-label">Property type</label>
-          <InlineSelect
-            value={form.propertyType}
-            onChange={v => setForm(p => ({ ...p, propertyType: v }))}
-            options={PROPERTY_TYPES}
-            formatOption={formatAssetType}
-            placeholder="Select or add type…"
-          />
-        </div>
+      </div>
+      <div>
+        <label className="v-label">Property type</label>
+        <InlineSelect
+          value={form.propertyType}
+          onChange={v => setForm(p => ({ ...p, propertyType: v }))}
+          options={PROPERTY_TYPES}
+          formatOption={formatAssetType}
+          placeholder="Select or add type…"
+        />
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
@@ -495,7 +506,10 @@ function DealDetail() {
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-[13px] font-bold text-slate-900 dark:text-white truncate">{deal.name || 'Untitled Deal'}</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {deal.dealCategory && (
+              <span className={clsx('v-badge text-[10px]', DEAL_CATEGORY_COLORS[deal.dealCategory])}>{formatDealCategory(deal.dealCategory)}</span>
+            )}
             {deal.status && (
               <span className={clsx('v-badge text-[10px]', DEAL_STATUS_COLORS[deal.status])}>{formatDealStatus(deal.status)}</span>
             )}
@@ -815,8 +829,9 @@ export default function Deals() {
               <tr>
                 {[
                   { field: 'name', label: 'Deal' },
+                  { field: 'dealCategory', label: 'Category' },
                   { field: 'status', label: 'Status' },
-                  { field: 'type', label: 'Type' },
+                  { field: 'type', label: 'Deal Type' },
                   { field: 'value', label: 'Value' },
                   { field: null, label: 'Momentum' },
                   { field: null, label: 'Company' },
@@ -839,6 +854,7 @@ export default function Deals() {
                       </Link>
                       {p.address && p.name && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{p.address}</p>}
                     </td>
+                    <td>{p.dealCategory ? <span className={clsx('v-badge', DEAL_CATEGORY_COLORS[p.dealCategory])}>{formatDealCategory(p.dealCategory)}</span> : '—'}</td>
                     <td><span className={clsx('v-badge', DEAL_STATUS_COLORS[p.status])}>{formatDealStatus(p.status)}</span></td>
                     <td>{p.dealType ? <span className={clsx('v-badge', DEAL_TYPE_COLORS[p.dealType])}>{formatDealType(p.dealType)}</span> : '—'}</td>
                     <td className="font-bold font-mono tabular-nums text-slate-800 dark:text-slate-200">{formatCurrency(p.dealValue)}</td>
