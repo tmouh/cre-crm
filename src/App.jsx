@@ -51,7 +51,6 @@ export default function App() {
               <Route path="/activities"        element={<Activities />} />
               <Route path="/personal/contacts"     element={<PersonalContacts />} />
               <Route path="/personal/contacts/:id" element={<PersonalContacts />} />
-              <Route path="/activities"         element={<Activities />} />
               <Route path="/contacts"          element={<Contacts />} />
               <Route path="/contacts/:id"      element={<Contacts />} />
               <Route path="/companies"         element={<Companies />} />
