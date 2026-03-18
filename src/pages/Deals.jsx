@@ -144,7 +144,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="v-label">Category</label>
+          <label className="v-label">Stage</label>
           <InlineSelect
             value={form.dealCategory}
             onChange={v => setForm(p => ({ ...p, dealCategory: v }))}
@@ -153,6 +153,14 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             placeholder="Acquisition, Development…"
           />
         </div>
+        <div>
+          <label className="v-label">Status</label>
+          <select value={form.status} onChange={f('status')} className="v-select">
+            {DEAL_STATUSES.map(s => <option key={s} value={s}>{formatDealStatus(s)}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="v-label">Deal type</label>
           <InlineSelect
@@ -163,16 +171,16 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             placeholder="Full, Equity, Debt/Equity…"
           />
         </div>
-      </div>
-      <div>
-        <label className="v-label">Property type</label>
-        <InlineSelect
-          value={form.propertyType}
-          onChange={v => setForm(p => ({ ...p, propertyType: v }))}
-          options={PROPERTY_TYPES}
-          formatOption={formatAssetType}
-          placeholder="Select or add type…"
-        />
+        <div>
+          <label className="v-label">Property type</label>
+          <InlineSelect
+            value={form.propertyType}
+            onChange={v => setForm(p => ({ ...p, propertyType: v }))}
+            options={PROPERTY_TYPES}
+            formatOption={formatAssetType}
+            placeholder="Select or add type…"
+          />
+        </div>
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
@@ -190,12 +198,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
           <input type="number" value={form.dealValue} onChange={f('dealValue')} className="v-input" placeholder="0" />
         </div>
       </div>
-      <div>
-        <label className="v-label">Status</label>
-        <select value={form.status} onChange={f('status')} className="v-select">
-          {DEAL_STATUSES.map(s => <option key={s} value={s}>{formatDealStatus(s)}</option>)}
-        </select>
-      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="v-label">Owner / Buyer</label>
