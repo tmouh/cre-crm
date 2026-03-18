@@ -2,10 +2,11 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Phone, Mail, Users, FileText, Building2, Map, MessageSquare, Briefcase,
-  Plus, Trash2, Edit3, ChevronDown, X, ListChecks,
+  Plus, Trash2, Edit3, ChevronDown, ChevronRight, X, ListChecks,
+  AlertCircle, Bell, Check, Zap, ArrowUpRight, ArrowDownLeft, Calendar,
 } from 'lucide-react'
 import clsx from 'clsx'
-import { ACTIVITY_TYPES, TYPE_COLORS, fullName } from '../utils/helpers'
+import { ACTIVITY_TYPES, TYPE_COLORS, fullName, formatDate, isOverdue, isDueToday } from '../utils/helpers'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
 
@@ -34,6 +35,52 @@ const ACTIVITY_VERBS = {
 const PAGE_SIZE = 200
 
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
+
+// ─── Date grouping ──────────────────────────────────────────────────────────
+
+function startOfDay(d) {
+  const r = new Date(d)
+  r.setHours(0, 0, 0, 0)
+  return r
+}
+
+function groupKey(iso) {
+  if (!iso) return 'Earlier'
+  const d = startOfDay(new Date(iso))
+  const now = new Date()
+  const today = startOfDay(now)
+  const yesterday = startOfDay(new Date(now - 86400000))
+  const weekAgo = startOfDay(new Date(now - 7 * 86400000))
+  if (d >= today) return 'Today'
+  if (d >= yesterday) return 'Yesterday'
+  if (d >= weekAgo) return 'This Week'
+  return 'Earlier'
+}
+
+const GROUP_ORDER = ['Today', 'Yesterday', 'This Week', 'Earlier']
+
+function groupItems(items) {
+  const groups = {}
+  for (const item of items) {
+    const key = groupKey(item._sortDate)
+    if (!groups[key]) groups[key] = []
+    groups[key].push(item)
+  }
+  return groups
+}
+
+function timeAgo(iso) {
+  if (!iso) return ''
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins  = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days  = Math.floor(diff / 86400000)
+  if (mins < 1)   return 'just now'
+  if (mins < 60)  return `${mins}m ago`
+  if (hours < 24) return `${hours}h ago`
+  if (days < 7)   return `${days}d ago`
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
 
 function formatActivityTime(iso) {
   if (!iso) return ''
@@ -255,12 +302,199 @@ function DealCombobox({ allDeals, value, onChange, contactDeals }) {
   )
 }
 
+// ─── Deal Thread Card (from Inbox) ──────────────────────────────────────────
+
+function DealThreadCard({ da, getContact, getCompany, getProperty, properties, updateDealActivity }) {
+  const [expanded, setExpanded] = useState(false)
+  const [resolving, setResolving] = useState(false)
+  const [candidatePick, setCandidatePick] = useState('')
+
+  const contact  = da.contactId  ? getContact(da.contactId)   : null
+  const company  = da.companyId  ? getCompany(da.companyId)   : null
+  const property = da.propertyId ? getProperty(da.propertyId) : null
+  const needsReview  = da.status === 'needs_review'
+  const hasCandidates = (da.candidatePropertyIds || []).length > 1
+
+  async function dismiss()  { await updateDealActivity(da.id, { status: 'dismissed' }).catch(() => {}) }
+  async function confirm()  { await updateDealActivity(da.id, { status: 'confirmed' }).catch(() => {}) }
+  async function resolveProperty() {
+    if (!candidatePick) return
+    await updateDealActivity(da.id, { propertyId: candidatePick, candidatePropertyIds: [], status: 'confirmed' }).catch(() => {})
+    setResolving(false)
+  }
+
+  const DirectionIcon  = da.lastDirection === 'inbound' ? ArrowDownLeft : ArrowUpRight
+  const directionColor = da.lastDirection === 'inbound' ? 'text-green-500 dark:text-green-400' : 'text-blue-500 dark:text-blue-400'
+
+  return (
+    <div className={clsx(
+      'border transition-colors',
+      needsReview
+        ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800/40 dark:bg-amber-900/10'
+        : 'border-slate-100 bg-slate-50/30 dark:border-slate-700/40 dark:bg-slate-800/20'
+    )}>
+      <div className="flex items-start gap-2.5 px-3 py-2.5">
+        <div className={clsx('w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5',
+          needsReview ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                      : 'bg-blue-50 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400')}>
+          <Mail size={13} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <button onClick={() => setExpanded(v => !v)} className="flex items-center gap-1 w-full text-left group">
+            {expanded ? <ChevronDown size={11} className="flex-shrink-0 text-slate-400" /> : <ChevronRight size={11} className="flex-shrink-0 text-slate-400" />}
+            <span className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{da.subject || '(no subject)'}</span>
+          </button>
+          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+            {contact && <span className="text-2xs text-slate-500 dark:text-slate-400">{contact.firstName} {contact.lastName}</span>}
+            {company && <><span className="text-slate-300 dark:text-slate-600 text-2xs">·</span><span className="text-2xs text-slate-500 dark:text-slate-400">{company.name}</span></>}
+            {property && <><span className="text-slate-300 dark:text-slate-600 text-2xs">·</span><span className="text-2xs text-brand-600 dark:text-brand-400 font-medium truncate max-w-[140px]">{property.name || property.address}</span></>}
+            {!property && hasCandidates && <><span className="text-slate-300 dark:text-slate-600 text-2xs">·</span><span className="text-2xs text-amber-600 dark:text-amber-400 italic">deal unclear</span></>}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{da.messageCount || 1} msg{(da.messageCount || 1) !== 1 ? 's' : ''}</span>
+            <DirectionIcon size={10} className={directionColor} />
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">{timeAgo(da.lastMessageAt)}</span>
+            {needsReview && <span className="flex items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400 font-medium"><AlertCircle size={10} /> Review</span>}
+            {da.status === 'confirmed' && <span className="flex items-center gap-0.5 text-[10px] text-green-600 dark:text-green-400"><Check size={10} /> Confirmed</span>}
+            {da.confidence === 'high' && da.status === 'auto' && <span className="flex items-center gap-0.5 text-[10px] text-blue-400 dark:text-blue-500"><Zap size={9} /> Auto</span>}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+          {needsReview && (
+            <button onClick={confirm} className="p-1 text-slate-300 hover:text-green-500 dark:text-slate-600 dark:hover:text-green-400 transition-colors" title="Confirm">
+              <Check size={12} />
+            </button>
+          )}
+          <button onClick={dismiss} className="p-1 text-slate-300 hover:text-red-400 dark:text-slate-600 dark:hover:text-red-400 transition-colors" title="Dismiss">
+            <X size={12} />
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="px-3 pb-3 border-t border-slate-100 dark:border-slate-700/40 pt-2 space-y-2">
+          {(da.relevanceSignals || []).length > 0 && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Matched on</p>
+              <div className="flex flex-wrap gap-1">
+                {da.relevanceSignals.map((sig, i) => (
+                  <span key={i} className={clsx('text-[10px] px-1.5 py-0.5 font-medium',
+                    (sig.type === 'deal_folder_attachment' || sig.type === 'om_uw_attachment')
+                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                      : sig.type === 'active_deal_contact'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300')}>
+                    {sig.type === 'deal_folder_attachment' && '📁 OM/UW folder attachment'}
+                    {sig.type === 'om_uw_attachment'       && '📎 OM/UW file attached'}
+                    {sig.type === 'active_deal_contact'    && 'Active deal contact'}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {hasCandidates && !da.propertyId && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-1">Multiple deals matched — pick one</p>
+              {resolving ? (
+                <div className="flex items-center gap-2">
+                  <select value={candidatePick} onChange={e => setCandidatePick(e.target.value)} className="v-input text-xs py-1 flex-1">
+                    <option value="">Select deal...</option>
+                    {(da.candidatePropertyIds || []).map(pid => { const p = properties.find(x => x.id === pid); return p ? <option key={pid} value={pid}>{p.name || p.address}</option> : null })}
+                  </select>
+                  <button onClick={resolveProperty} className="v-btn-primary text-xs py-1">Link</button>
+                  <button onClick={() => setResolving(false)} className="v-btn-secondary text-xs py-1">Cancel</button>
+                </div>
+              ) : (
+                <button onClick={() => setResolving(true)} className="text-xs text-amber-600 dark:text-amber-400 hover:underline">Pick the correct deal →</button>
+              )}
+            </div>
+          )}
+          {da.propertyId && !resolving && (
+            <button onClick={() => { setCandidatePick(''); setResolving(true) }} className="text-[11px] text-slate-400 dark:text-slate-500 hover:text-brand-500 dark:hover:text-brand-400 transition-colors">
+              Wrong deal? Change it →
+            </button>
+          )}
+          {resolving && da.propertyId && (
+            <div className="flex items-center gap-2">
+              <select value={candidatePick} onChange={e => setCandidatePick(e.target.value)} className="v-input text-xs py-1 flex-1">
+                <option value="">Select deal...</option>
+                {properties.filter(p => !p.deletedAt).map(p => <option key={p.id} value={p.id}>{p.name || p.address}</option>)}
+              </select>
+              <button onClick={resolveProperty} className="v-btn-primary text-xs py-1">Save</button>
+              <button onClick={() => setResolving(false)} className="v-btn-secondary text-xs py-1">Cancel</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Reminder Action Card ───────────────────────────────────────────────────
+
+function ReminderActionCard({ r, getContact, getCompany, getProperty, completeReminder }) {
+  const overdue = isOverdue(r.dueDate)
+  const contact = r.contactId  ? getContact(r.contactId)   : null
+  const company = r.companyId  ? getCompany(r.companyId)   : null
+  const deal    = r.propertyId ? getProperty(r.propertyId) : null
+
+  const linkTo = deal    ? `/deals/${deal.id}`
+               : contact ? `/contacts/${contact.id}`
+               : company ? `/companies/${company.id}`
+               : '/reminders'
+
+  return (
+    <div className={clsx(
+      'border px-3 py-2.5 flex items-start gap-2.5 group',
+      overdue
+        ? 'border-red-200 bg-red-50/50 dark:border-red-800/40 dark:bg-red-900/10'
+        : 'border-amber-200 bg-amber-50/30 dark:border-amber-800/40 dark:bg-amber-900/10'
+    )}>
+      <Bell size={13} className={clsx('mt-0.5 flex-shrink-0', overdue ? 'text-red-500' : 'text-amber-500')} />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{r.title}</p>
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          <span className={clsx('text-[10px] font-mono', overdue ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400')}>
+            {overdue ? `Overdue · ` : 'Due today · '}{formatDate(r.dueDate)}
+          </span>
+          {(contact || company || deal) && (
+            <Link to={linkTo} className="text-[10px] text-brand-600 dark:text-brand-400 hover:underline truncate">
+              {deal ? (deal.name || deal.address) : contact ? fullName(contact) : company?.name}
+            </Link>
+          )}
+        </div>
+      </div>
+      <button
+        onClick={() => completeReminder(r.id)}
+        className="p-1 text-slate-300 hover:text-green-500 dark:text-slate-600 dark:hover:text-green-400 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 self-center"
+        title="Mark done"
+      >
+        <Check size={13} />
+      </button>
+    </div>
+  )
+}
+
+// ─── Date Group Header ──────────────────────────────────────────────────────
+
+function DateGroupHeader({ label }) {
+  return (
+    <div className="flex items-center gap-2 pt-5 pb-1.5 first:pt-0">
+      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500 font-mono">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
+    </div>
+  )
+}
+
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function Activities() {
   const {
-    activities, contacts, companies, properties,
+    activities, contacts, companies, properties, dealActivities, reminders,
     addActivity, updateActivity, deleteActivity, updateProperty,
+    getContact, getCompany, getProperty, updateDealActivity, completeReminder,
   } = useCRM()
   const { user } = useAuth()
 
@@ -295,20 +529,30 @@ export default function Activities() {
   const selectedContactCompany = selectedContact?.companyId ? companyMap[selectedContact.companyId] : null
   const autoCompanyId          = selectedContact?.companyId || null
 
-  // When deal is selected: get its contact list for the contact picker
   const selectedDeal    = formDealId ? dealMap[formDealId] : null
   const dealContactObjs = selectedDeal ? contacts.filter(c => (selectedDeal.contactIds || []).includes(c.id)) : null
 
-  // Is the selected contact already in the selected deal's contacts?
   const contactInDeal      = !formContactId || !selectedDeal || (selectedDeal.contactIds || []).includes(formContactId)
   const willAddToDeal      = formContactId && formDealId && !contactInDeal
 
-  // When contact is selected: prioritise their deals in the deal picker
   const contactLinkedDeals = formContactId
     ? properties.filter(p => !p.deletedAt && (p.contactIds || []).includes(formContactId))
     : null
 
-  // ─── Filtered & paginated activities ─────────────────────────────────────
+  // ─── Action Needed items ──────────────────────────────────────────────────
+  const needsReviewThreads = useMemo(() =>
+    dealActivities.filter(d => d.status === 'needs_review')
+      .sort((a, b) => (b.lastMessageAt || b.createdAt || '').localeCompare(a.lastMessageAt || a.createdAt || '')),
+  [dealActivities])
+
+  const urgentReminders = useMemo(() =>
+    reminders.filter(r => r.status !== 'done' && (isOverdue(r.dueDate) || isDueToday(r.dueDate)))
+      .sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || '')),
+  [reminders])
+
+  const actionCount = needsReviewThreads.length + urgentReminders.length
+
+  // ─── Filtered & date-grouped activities ───────────────────────────────────
   const filtered = useMemo(() => {
     let list = [...activities].sort((a, b) =>
       (b.date || b.createdAt || '').localeCompare(a.date || a.createdAt || '')
@@ -328,7 +572,10 @@ export default function Activities() {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated  = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
-  // Reset page when filters change
+  // Build date groups from paginated items
+  const paginatedWithSort = paginated.map(a => ({ ...a, _sortDate: a.date || a.createdAt }))
+  const grouped = useMemo(() => groupItems(paginatedWithSort), [paginatedWithSort])
+
   useEffect(() => { setPage(0) }, [filterType, filterContactSearch])
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
@@ -344,10 +591,8 @@ export default function Activities() {
 
   async function submitForm(e) {
     e.preventDefault()
-    // Require at least a contact or some notes
     if (!formContactId && !formNotes.trim()) return
 
-    // Optionally add contact to deal's contactIds
     if (willAddToDeal && selectedDeal) {
       const newIds = [...new Set([...(selectedDeal.contactIds || []), formContactId])]
       await updateProperty(formDealId, { contactIds: newIds }).catch(() => {})
@@ -392,17 +637,13 @@ export default function Activities() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="h-full flex flex-col animate-fade-in px-6 py-5">
 
       {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <ListChecks size={20} className="text-slate-400 dark:text-slate-500" />
-            Activities
-          </h1>
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-            {activities.length} total · {filtered.length !== activities.length ? `${filtered.length} shown` : 'all shown'}
+            {activities.length} total{filtered.length !== activities.length ? ` · ${filtered.length} shown` : ''}
           </p>
         </div>
         <button onClick={openForm} className="v-btn-primary flex items-center gap-1.5 text-sm">
@@ -412,7 +653,7 @@ export default function Activities() {
 
       {/* ── Log form ── */}
       {showForm && (
-        <form onSubmit={submitForm} className="card px-4 py-4 mb-6 space-y-3">
+        <form onSubmit={submitForm} className="card px-4 py-4 mb-5 space-y-3">
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Log Activity</h3>
 
           {/* Type pills */}
@@ -441,7 +682,6 @@ export default function Activities() {
                 onChange={setFormContactId}
                 dealContacts={dealContactObjs}
               />
-              {/* Show auto-resolved company */}
               {selectedContactCompany && (
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
                   <Building2 size={9} /> {selectedContactCompany.name}
@@ -460,13 +700,11 @@ export default function Activities() {
                 onChange={setFormDealId}
                 contactDeals={contactLinkedDeals}
               />
-              {/* Warn if contact will be added to deal contacts */}
               {willAddToDeal && (
                 <p className="text-[10px] text-brand-500 dark:text-brand-400 mt-1">
                   {fullName(selectedContact)} will be added to deal contacts.
                 </p>
               )}
-              {/* Show deal contacts when deal is selected */}
               {selectedDeal && dealContactObjs && dealContactObjs.length > 0 && (
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                   Deal contacts: {dealContactObjs.map(c => fullName(c)).join(', ')}
@@ -498,6 +736,42 @@ export default function Activities() {
             <button type="button" onClick={() => setShowForm(false)} className="v-btn-secondary text-xs py-1.5">Cancel</button>
           </div>
         </form>
+      )}
+
+      {/* ── Action Needed section ── */}
+      {actionCount > 0 && (
+        <div className="border border-red-200 dark:border-red-800/40 overflow-hidden mb-5">
+          <div className="px-3 py-2 bg-red-50 dark:bg-red-900/20 flex items-center gap-2 border-b border-red-200 dark:border-red-800/40">
+            <AlertCircle size={12} className="text-red-500 flex-shrink-0" />
+            <span className="text-[11px] font-semibold text-red-700 dark:text-red-400 font-mono uppercase tracking-wide">
+              Action Needed
+            </span>
+            <span className="ml-auto text-[10px] text-red-500 dark:text-red-400 font-mono">{actionCount} item{actionCount !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="divide-y divide-red-100 dark:divide-red-900/30">
+            {urgentReminders.map(r => (
+              <ReminderActionCard
+                key={r.id}
+                r={r}
+                getContact={getContact}
+                getCompany={getCompany}
+                getProperty={getProperty}
+                completeReminder={completeReminder}
+              />
+            ))}
+            {needsReviewThreads.map(da => (
+              <DealThreadCard
+                key={da.id}
+                da={da}
+                getContact={getContact}
+                getCompany={getCompany}
+                getProperty={getProperty}
+                properties={properties}
+                updateDealActivity={updateDealActivity}
+              />
+            ))}
+          </div>
+        </div>
       )}
 
       {/* ── Filter bar ── */}
@@ -544,148 +818,150 @@ export default function Activities() {
         )}
       </div>
 
-      {/* ── Activity list ── */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <MessageSquare size={28} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
-          <p className="text-sm text-slate-400 dark:text-slate-500">No activities found</p>
-          <button onClick={openForm} className="text-xs text-brand-600 dark:text-brand-400 hover:underline mt-1">
-            Log first activity
-          </button>
-        </div>
-      ) : (
-        <div className="card overflow-hidden">
-          <div className="divide-y divide-[var(--border)]">
-            {paginated.map(a => {
-              const Icon       = TYPE_ICONS[a.type] || MessageSquare
-              const contact    = a.contactId  ? contactMap[a.contactId]  : null
-              const deal       = a.propertyId ? dealMap[a.propertyId]    : null
-              // Prefer activity's own companyId, fall back to contact's company
-              const company    = a.companyId  ? companyMap[a.companyId]
-                               : contact?.companyId ? companyMap[contact.companyId]
-                               : null
-              const verb       = ACTIVITY_VERBS[a.type] || 'logged'
-
-              return (
-                <div key={a.id} className="px-4 py-3 group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                  {editingId === a.id ? (
-                    /* ── Inline edit form ── */
-                    <form onSubmit={saveEdit} className="space-y-2">
-                      <div className="flex gap-2 flex-wrap">
-                        <select
-                          value={editForm.type}
-                          onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}
-                          className="v-select text-xs py-1.5 flex-1 min-w-[100px]"
-                        >
-                          {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
-                        </select>
-                        <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} className="v-input text-xs py-1.5 w-32" />
-                        <input type="time" value={editForm.time} onChange={e => setEditForm(f => ({ ...f, time: e.target.value }))} className="v-input text-xs py-1.5 w-24" />
-                      </div>
-                      <textarea
-                        value={editForm.description}
-                        onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
-                        placeholder="Notes (optional)"
-                        className="v-input text-xs resize-y w-full"
-                        rows={2}
-                      />
-                      <div className="flex gap-2">
-                        <button type="submit" className="v-btn-primary text-xs py-1.5">Save</button>
-                        <button type="button" onClick={() => setEditingId(null)} className="v-btn-secondary text-xs py-1.5">Cancel</button>
-                      </div>
-                    </form>
-                  ) : (
-                    /* ── Display row ── */
-                    <div className="flex items-start gap-3">
-                      {/* Avatar */}
-                      <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-[11px] font-bold font-mono text-brand-700 dark:text-brand-300 select-none">{avatarLetter}</span>
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        {/* Type · Date · Edit/Delete */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <div className="flex items-center gap-1">
-                            <Icon size={11} className={TYPE_COLORS[a.type] || 'text-slate-400'} />
-                            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 capitalize">{a.type}</span>
-                          </div>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                            {formatActivityTime(a.date || a.createdAt)}
-                          </span>
-                          {/* Edit / delete — hover reveal */}
-                          <div className="ml-auto flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => startEdit(a)} className="p-1 text-slate-300 hover:text-brand-500 dark:text-slate-600 dark:hover:text-brand-400 transition-colors">
-                              <Edit3 size={11} />
-                            </button>
-                            <button onClick={() => deleteActivity(a.id)} className="p-1 text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 transition-colors">
-                              <Trash2 size={11} />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* [Actor] [verb] [Contact] */}
-                        <p className="text-sm text-slate-800 dark:text-slate-200 leading-snug mt-0.5">
-                          <span className="font-semibold">{actorName}</span>{' '}
-                          <span className="text-slate-500 dark:text-slate-400">{verb}</span>{' '}
-                          {contact
-                            ? <Link to={`/contacts/${contact.id}`} className="font-semibold text-brand-600 dark:text-brand-400 hover:underline">{fullName(contact)}</Link>
-                            : <span className="text-slate-400 dark:text-slate-500">—</span>
-                          }
-                        </p>
-
-                        {/* Company / Deal pills */}
-                        {(company || deal) && (
-                          <div className="flex items-center gap-3 mt-1 flex-wrap">
-                            {company && (
-                              <Link to={`/companies/${company.id}`}
-                                className="text-[10px] text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400 flex items-center gap-0.5 transition-colors">
-                                <Building2 size={9} /> {company.name}
-                              </Link>
-                            )}
-                            {deal && (
-                              <Link to={`/deals/${deal.id}`}
-                                className="text-[10px] text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400 flex items-center gap-0.5 transition-colors">
-                                <Briefcase size={9} /> {deal.name || deal.address || 'Unnamed deal'}
-                              </Link>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Notes */}
-                        {a.description && (
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 italic leading-relaxed line-clamp-2">
-                            {a.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+      {/* ── Activity list (date-grouped) ── */}
+      <div className="flex-1 overflow-auto">
+        {filtered.length === 0 ? (
+          <div className="text-center py-16">
+            <MessageSquare size={28} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+            <p className="text-sm text-slate-400 dark:text-slate-500">No activities found</p>
+            <button onClick={openForm} className="text-xs text-brand-600 dark:text-brand-400 hover:underline mt-1">
+              Log first activity
+            </button>
           </div>
+        ) : (
+          <div>
+            {GROUP_ORDER.filter(g => grouped[g]?.length).map(groupLabel => (
+              <div key={groupLabel}>
+                <DateGroupHeader label={groupLabel} />
+                <div className="space-y-1">
+                  {grouped[groupLabel].map(a => {
+                    const Icon       = TYPE_ICONS[a.type] || MessageSquare
+                    const contact    = a.contactId  ? contactMap[a.contactId]  : null
+                    const deal       = a.propertyId ? dealMap[a.propertyId]    : null
+                    const company    = a.companyId  ? companyMap[a.companyId]
+                                     : contact?.companyId ? companyMap[contact.companyId]
+                                     : null
+                    const verb       = ACTIVITY_VERBS[a.type] || 'logged'
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)] bg-surface-50 dark:bg-surface-100">
-              <p className="text-[11px] text-slate-400 font-mono">
-                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
-              </p>
-              <div className="flex items-center gap-1">
-                <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-                  className="px-2 py-1 text-xs text-slate-500 disabled:opacity-30 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
-                  ‹
-                </button>
-                <span className="text-[11px] text-slate-400 font-mono">{page + 1}/{totalPages}</span>
-                <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
-                  className="px-2 py-1 text-xs text-slate-500 disabled:opacity-30 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
-                  ›
-                </button>
+                    return (
+                      <div key={a.id} className="v-card overflow-hidden group">
+                        {editingId === a.id ? (
+                          <form onSubmit={saveEdit} className="p-3 space-y-2">
+                            <div className="flex gap-2 flex-wrap">
+                              <select
+                                value={editForm.type}
+                                onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}
+                                className="v-select text-xs py-1.5 flex-1 min-w-[100px]"
+                              >
+                                {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{capitalize(t)}</option>)}
+                              </select>
+                              <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} className="v-input text-xs py-1.5 w-32" />
+                              <input type="time" value={editForm.time} onChange={e => setEditForm(f => ({ ...f, time: e.target.value }))} className="v-input text-xs py-1.5 w-24" />
+                            </div>
+                            <textarea
+                              value={editForm.description}
+                              onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                              placeholder="Notes (optional)"
+                              className="v-input text-xs resize-y w-full"
+                              rows={2}
+                            />
+                            <div className="flex gap-2">
+                              <button type="submit" className="v-btn-primary text-xs py-1.5">Save</button>
+                              <button type="button" onClick={() => setEditingId(null)} className="v-btn-secondary text-xs py-1.5">Cancel</button>
+                            </div>
+                          </form>
+                        ) : (
+                          <div className="p-3 flex gap-3">
+                            {/* Avatar */}
+                            <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <span className="text-[11px] font-bold font-mono text-brand-700 dark:text-brand-300 select-none">{avatarLetter}</span>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              {/* Type · Date */}
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <Icon size={10} className={clsx(TYPE_COLORS[a.type] || 'text-slate-400')} />
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono capitalize">
+                                  {a.type} · {formatActivityTime(a.date || a.createdAt)}
+                                </span>
+                              </div>
+
+                              {/* [Actor] [verb] [Contact] */}
+                              <p className="text-xs text-slate-800 dark:text-slate-200 leading-snug">
+                                <span className="font-semibold">{actorName}</span>{' '}
+                                <span className="text-slate-500 dark:text-slate-400">{verb}</span>{' '}
+                                {contact
+                                  ? <Link to={`/contacts/${contact.id}`} className="font-semibold text-brand-600 dark:text-brand-400 hover:underline">{fullName(contact)}</Link>
+                                  : <span className="text-slate-400 dark:text-slate-500">—</span>
+                                }
+                              </p>
+
+                              {/* Company / Deal pills */}
+                              {(company || deal) && (
+                                <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                                  {company && (
+                                    <Link to={`/companies/${company.id}`}
+                                      className="text-[10px] text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400 flex items-center gap-0.5 transition-colors">
+                                      <Building2 size={9} /> {company.name}
+                                    </Link>
+                                  )}
+                                  {deal && (
+                                    <Link to={`/deals/${deal.id}`}
+                                      className="text-[10px] text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400 flex items-center gap-0.5 transition-colors">
+                                      <Briefcase size={9} /> {deal.name || deal.address || 'Unnamed deal'}
+                                    </Link>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Notes */}
+                              {a.description && (
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 italic line-clamp-2 leading-relaxed">
+                                  {a.description}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Edit / Delete — hover reveal */}
+                            <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                              <button onClick={() => startEdit(a)} className="p-1 text-slate-300 hover:text-brand-500 dark:text-slate-600 dark:hover:text-brand-400 transition-colors">
+                                <Edit3 size={11} />
+                              </button>
+                              <button onClick={() => deleteActivity(a.id)} className="p-1 text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 transition-colors">
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            ))}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between py-3 mt-2">
+                <p className="text-[11px] text-slate-400 font-mono">
+                  {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
+                </p>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+                    className="px-2 py-1 text-xs text-slate-500 disabled:opacity-30 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+                    ‹
+                  </button>
+                  <span className="text-[11px] text-slate-400 font-mono">{page + 1}/{totalPages}</span>
+                  <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
+                    className="px-2 py-1 text-xs text-slate-500 disabled:opacity-30 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+                    ›
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

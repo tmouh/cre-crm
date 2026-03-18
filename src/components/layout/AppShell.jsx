@@ -9,7 +9,7 @@ import { useMicrosoft } from '../../context/MicrosoftContext'
 
 const PAGE_TITLES = {
   '/':                 { title: 'Dashboard',        subtitle: 'Overview & priorities' },
-  '/inbox':            { title: 'Inbox',            subtitle: 'Activity & communications' },
+  '/inbox':            { title: 'Inbox',            subtitle: 'Emails & calendar' },
   '/reminders':        { title: 'Tasks',            subtitle: 'Reminders & follow-ups' },
   '/contacts':         { title: 'Contacts',         subtitle: 'Relationship management' },
   '/companies':        { title: 'Companies',        subtitle: 'Organizations & accounts' },
