@@ -348,6 +348,10 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
               <div>
                 <label className="v-label">Notes</label>
                 <textarea value={form.sharedNotes} onChange={f('sharedNotes')} rows={4} className="v-input resize-y w-full" placeholder="Team-facing notes..." />
+                <button type="button" onClick={() => setForm(p => ({ ...p, sharedNotes: p.notes, notes: p.sharedNotes }))}
+                  className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">
+                  Swap
+                </button>
               </div>
 
               <div>
@@ -357,6 +361,11 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                   onChange={(v) => setForm(p => ({ ...p, sharedCellPhones: v }))}
                   placeholder="212-555-0100"
                   addLabel="Add phone"
+                  onSwapItem={(i) => setForm(p => ({
+                    ...p,
+                    sharedCellPhones: p.sharedCellPhones.filter((_, j) => j !== i),
+                    personalPhones: [...p.personalPhones, p.sharedCellPhones[i]],
+                  }))}
                 />
               </div>
 
@@ -368,6 +377,11 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                   type="email"
                   placeholder="name@company.com"
                   addLabel="Add email"
+                  onSwapItem={(i) => setForm(p => ({
+                    ...p,
+                    sharedEmails: p.sharedEmails.filter((_, j) => j !== i),
+                    personalEmails: [...p.personalEmails, p.sharedEmails[i]],
+                  }))}
                 />
               </div>
             </>
