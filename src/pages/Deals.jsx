@@ -36,25 +36,37 @@ const BLANK = {
   contactIds: [], tags: [], notes: '', ownerIds: [],
 }
 
-function InlineSelect({ value, onChange, options, formatOption, placeholder = 'Select or type…', disableCreate = false }) {
+function InlineSelect({ value, onChange, options, formatOption, placeholder = 'Select or type…', storageKey }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [customOptions, setCustomOptions] = useState(() => {
+    if (!storageKey) return []
+    try { return JSON.parse(localStorage.getItem(storageKey) || '[]') } catch { return [] }
+  })
   const ref = useRef(null)
   useEffect(() => {
     function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [])
+  const allOptions = [...options, ...customOptions.filter(c => !options.includes(c))]
   const q = query.toLowerCase().trim()
-  const filtered = q ? options.filter(o => o.toLowerCase().includes(q)) : options
+  const filtered = q ? allOptions.filter(o => o.toLowerCase().includes(q)) : allOptions
   const sorted = [...filtered].sort((a, b) => {
     const la = formatOption ? formatOption(a) : a
     const lb = formatOption ? formatOption(b) : b
     return la.localeCompare(lb)
   })
-  const hasExact = options.some(o => o.toLowerCase() === q)
-  const canCreate = !disableCreate && q.length > 1 && !hasExact
-  function select(v) { onChange(v); setQuery(''); setOpen(false) }
+  const hasExact = allOptions.some(o => o.toLowerCase() === q)
+  const canCreate = q.length > 1 && !hasExact
+  function select(v) {
+    if (storageKey && v && !options.includes(v) && !customOptions.includes(v)) {
+      const updated = [...customOptions, v]
+      setCustomOptions(updated)
+      try { localStorage.setItem(storageKey, JSON.stringify(updated)) } catch {}
+    }
+    onChange(v); setQuery(''); setOpen(false)
+  }
   const displayValue = value ? (formatOption ? formatOption(value) : value) : ''
   return (
     <div ref={ref} className="relative">
@@ -163,7 +175,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             options={DEAL_CATEGORIES}
             formatOption={formatDealCategory}
             placeholder="Acquisition, Development…"
-            disableCreate
+            storageKey="custom_deal_categories"
           />
         </div>
         <div>
@@ -183,7 +195,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             options={DEAL_TYPES}
             formatOption={formatDealType}
             placeholder="Full, Equity, Debt/Equity…"
-            disableCreate
+            storageKey="custom_deal_types"
           />
         </div>
         <div>
@@ -193,8 +205,8 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
             onChange={v => setForm(p => ({ ...p, propertyType: v }))}
             options={PROPERTY_TYPES}
             formatOption={formatAssetType}
-            placeholder="Select type…"
-            disableCreate
+            placeholder="Select or add type…"
+            storageKey="custom_property_types"
           />
         </div>
       </div>
