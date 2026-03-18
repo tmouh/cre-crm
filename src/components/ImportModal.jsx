@@ -224,10 +224,22 @@ function normalizeDealCategory(raw) {
 
 function normalizeDealType(raw) {
   if (!raw || raw === '-') return ''
-  return raw.trim().toLowerCase()
+  const s = raw.trim().toLowerCase()
     .replace(/\s*\/\s*/g, '-')   // debt/equity → debt-equity
     .replace(/\s+/g, '-')        // spaces → hyphens
     .replace(/-{2,}/g, '-')      // collapse double hyphens
+  // Map old/legacy slugs → new slugs
+  const aliases = {
+    'bridge-financing':       'bridge',
+    'construction-financing': 'construction-loan',
+    'construction-loan':      'construction-loan',
+    'senior-debt':            'debt',
+    'equity-raise':           'equity',
+    'debt-equity':            'debt-equity',
+    'preferred-equity':       'preferred-equity',
+    'co-gp':                  'co-gp',
+  }
+  return aliases[s] ?? s
 }
 
 function rowToDeal(row, map, companies, contacts) {

@@ -47,6 +47,11 @@ function InlineSelect({ value, onChange, options, formatOption, placeholder = 'S
   }, [])
   const q = query.toLowerCase().trim()
   const filtered = q ? options.filter(o => o.toLowerCase().includes(q)) : options
+  const sorted = [...filtered].sort((a, b) => {
+    const la = formatOption ? formatOption(a) : a
+    const lb = formatOption ? formatOption(b) : b
+    return la.localeCompare(lb)
+  })
   const hasExact = options.some(o => o.toLowerCase() === q)
   const canCreate = q.length > 1 && !hasExact
   function select(v) { onChange(v); setQuery(''); setOpen(false) }
@@ -68,7 +73,7 @@ function InlineSelect({ value, onChange, options, formatOption, placeholder = 'S
       </div>
       {open && (
         <div className="absolute z-50 top-full left-0 right-0 mt-0.5 border border-[var(--border)] bg-white dark:bg-surface-100 shadow-lg max-h-44 overflow-auto">
-          {filtered.map(o => (
+          {sorted.map(o => (
             <button key={o} type="button" onClick={() => select(o)}
               className={clsx('w-full text-left px-3 py-1.5 text-xs transition-colors',
                 value === o
@@ -84,7 +89,7 @@ function InlineSelect({ value, onChange, options, formatOption, placeholder = 'S
               + Add "{query.trim()}"
             </button>
           )}
-          {filtered.length === 0 && !canCreate && (
+          {sorted.length === 0 && !canCreate && (
             <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500">No matches</p>
           )}
         </div>
