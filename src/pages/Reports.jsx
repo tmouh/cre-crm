@@ -75,16 +75,22 @@ function PipelineReport({ properties, getCompany }) {
 
       {byType.length > 0 && (
         <div className="card overflow-hidden">
-          <div className="px-4 py-3 border-b border-[var(--border)]">
-            <h4 className="font-mono uppercase text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-wider">By Deal Type</h4>
-          </div>
           <table className="w-full text-[12px]">
+            <thead>
+              <tr className="border-b border-[var(--border)] bg-surface-50 dark:bg-surface-100">
+                <th className="text-left px-4 py-3 font-mono uppercase text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-wider">Deal Type</th>
+                <th className="text-right px-4 py-3 font-mono uppercase text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-wider">Deals</th>
+                <th className="text-right px-4 py-3 font-mono uppercase text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-wider">Total Value</th>
+                <th className="text-right px-4 py-3 font-mono uppercase text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-wider">Avg Value</th>
+              </tr>
+            </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {byType.map(t => (
                 <tr key={t.type}>
                   <td className="px-4 py-2.5"><span className={clsx('v-badge text-[11px]', DEAL_TYPE_COLORS[t.type])}>{formatDealType(t.type)}</span></td>
-                  <td className="px-4 py-2.5 text-right text-[12px] text-slate-600 dark:text-slate-400">{t.count} deal{t.count !== 1 ? 's' : ''}</td>
+                  <td className="px-4 py-2.5 text-right font-mono tabular-nums font-medium text-slate-900 dark:text-slate-100">{t.count}</td>
                   <td className="px-4 py-2.5 text-right font-mono tabular-nums font-medium text-slate-900 dark:text-slate-100">{formatCurrency(t.value)}</td>
+                  <td className="px-4 py-2.5 text-right font-mono tabular-nums text-slate-500 dark:text-slate-400">{t.count > 0 ? formatCurrency(t.value / t.count) : '—'}</td>
                 </tr>
               ))}
             </tbody>
