@@ -73,6 +73,12 @@ function InlineSelect({ value, onChange, options, formatOption, placeholder = 'S
       </div>
       {open && (
         <div className="absolute z-50 top-full left-0 right-0 mt-0.5 border border-[var(--border)] bg-white dark:bg-surface-100 shadow-lg max-h-44 overflow-auto">
+          {!q && (
+            <button type="button" onClick={() => select('')}
+              className="w-full text-left px-3 py-1.5 text-xs text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-surface-200 border-b border-[var(--border)]">
+              —
+            </button>
+          )}
           {sorted.map(o => (
             <button key={o} type="button" onClick={() => select(o)}
               className={clsx('w-full text-left px-3 py-1.5 text-xs transition-colors',
@@ -161,6 +167,7 @@ function DealForm({ initial = BLANK, onSubmit, onCancel }) {
         <div>
           <label className="v-label">Status</label>
           <select value={form.status} onChange={f('status')} className="v-select">
+            <option value="">—</option>
             {DEAL_STATUSES.map(s => <option key={s} value={s}>{formatDealStatus(s)}</option>)}
           </select>
         </div>
