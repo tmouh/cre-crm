@@ -259,7 +259,6 @@ export default function ImportModal({ entity, onClose }) {
   const [hasHeaders, setHasHeaders] = useState(true)
   // contact-review state
   const [unmatchedContacts, setUnmatchedContacts] = useState([]) // [{ name, rows: [rowIdx] }]
-  const [contactAction, setContactAction] = useState('select')   // 'all' | 'none' | 'select'
   const [selectedContacts, setSelectedContacts] = useState({})   // name -> bool
 
   function handleFile(e) {
@@ -319,7 +318,6 @@ export default function ImportModal({ entity, onClose }) {
     const sel = {}
     unmatched.forEach(u => { sel[u.name] = true })
     setSelectedContacts(sel)
-    setContactAction('select')
     setPhase('contact-review')
   }
 
@@ -367,14 +365,7 @@ export default function ImportModal({ entity, onClose }) {
   }
 
   async function handleContactReviewContinue() {
-    // Determine which names to create
-    let namesToCreate = []
-    if (contactAction === 'all') {
-      namesToCreate = unmatchedContacts.map(u => u.name)
-    } else if (contactAction === 'select') {
-      namesToCreate = unmatchedContacts.filter(u => selectedContacts[u.name]).map(u => u.name)
-    }
-    // else 'none' → namesToCreate stays [], no contacts created
+    const namesToCreate = unmatchedContacts.filter(u => selectedContacts[u.name]).map(u => u.name)
     // Create minimal contact records and collect them
     const newContactsByName = {}
     for (const name of namesToCreate) {
@@ -520,61 +511,32 @@ export default function ImportModal({ entity, onClose }) {
               <div className="flex items-start gap-2">
                 <UserPlus size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-slate-700 dark:text-slate-200">
-                  <span className="font-medium">{unmatchedContacts.length} contact name{unmatchedContacts.length !== 1 ? 's' : ''}</span> in the CSV don't match anyone in your database. Would you like to create new contact records for them?
+                  <span className="font-medium">{unmatchedContacts.length} contact name{unmatchedContacts.length !== 1 ? 's' : ''}</span> in the CSV don't match anyone in your database. Check the ones you'd like to create as new contacts.
                 </p>
               </div>
 
-              {/* Action selector */}
-              <div className="flex gap-2">
-                {[
-                  { val: 'all',    label: 'Add all' },
-                  { val: 'select', label: 'Select which' },
-                  { val: 'none',   label: 'Skip all' },
-                ].map(opt => (
-                  <button
-                    key={opt.val}
-                    onClick={() => setContactAction(opt.val)}
-                    className={`px-3 py-1.5 text-xs border rounded transition-colors ${
-                      contactAction === opt.val
-                        ? 'bg-brand-600 text-white border-brand-600'
-                        : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-[var(--border)] hover:border-brand-400'
-                    }`}
-                  >{opt.label}</button>
-                ))}
-              </div>
-
-              {/* Selectable list (only shown in 'select' mode) */}
-              {contactAction === 'select' && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-0.5">
-                    <span>{Object.values(selectedContacts).filter(Boolean).length} of {unmatchedContacts.length} selected to create</span>
-                    <div className="flex gap-3">
-                      <button type="button" className="underline hover:text-brand-600" onClick={() => setSelectedContacts(Object.fromEntries(unmatchedContacts.map(u => [u.name, true])))}>All</button>
-                      <button type="button" className="underline hover:text-brand-600" onClick={() => setSelectedContacts(Object.fromEntries(unmatchedContacts.map(u => [u.name, false])))}>None</button>
-                    </div>
-                  </div>
-                  <div className="border border-[var(--border)] divide-y divide-slate-100 dark:divide-slate-700 max-h-52 overflow-y-auto">
-                    {unmatchedContacts.map(u => (
-                      <label key={u.name} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={!!selectedContacts[u.name]}
-                          onChange={e => setSelectedContacts(p => ({ ...p, [u.name]: e.target.checked }))}
-                        />
-                        <span className="text-sm text-slate-700 dark:text-slate-200">{u.name}</span>
-                        <span className="ml-auto text-[10px] text-slate-400">{u.rows.length} row{u.rows.length !== 1 ? 's' : ''}</span>
-                      </label>
-                    ))}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-0.5">
+                  <span>{Object.values(selectedContacts).filter(Boolean).length} of {unmatchedContacts.length} selected to create</span>
+                  <div className="flex gap-3">
+                    <button type="button" className="underline hover:text-brand-600" onClick={() => setSelectedContacts(Object.fromEntries(unmatchedContacts.map(u => [u.name, true])))}>Add all</button>
+                    <button type="button" className="underline hover:text-brand-600" onClick={() => setSelectedContacts(Object.fromEntries(unmatchedContacts.map(u => [u.name, false])))}>Skip all</button>
                   </div>
                 </div>
-              )}
-
-              {contactAction === 'all' && (
-                <p className="text-xs text-slate-500 dark:text-slate-400">All {unmatchedContacts.length} names will be created as new contacts before importing deals.</p>
-              )}
-              {contactAction === 'none' && (
-                <p className="text-xs text-slate-500 dark:text-slate-400">No new contacts will be created. Those deals will be imported without a linked contact.</p>
-              )}
+                <div className="border border-[var(--border)] divide-y divide-slate-100 dark:divide-slate-700 max-h-52 overflow-y-auto">
+                  {unmatchedContacts.map(u => (
+                    <label key={u.name} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!!selectedContacts[u.name]}
+                        onChange={e => setSelectedContacts(p => ({ ...p, [u.name]: e.target.checked }))}
+                      />
+                      <span className="text-sm text-slate-700 dark:text-slate-200">{u.name}</span>
+                      <span className="ml-auto text-[10px] text-slate-400">{u.rows.length} row{u.rows.length !== 1 ? 's' : ''}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
