@@ -37,7 +37,7 @@ class LinkedInErrorBoundary extends Component {
 const BLANK = { firstName: '', lastName: '', title: '', contactFunction: '', companyId: '', linkedIn: '', notes: '', tags: [], ownerIds: [], visibility: 'shared', sharedWith: [], sharedNotes: '', sharedCellPhones: [], sharedEmails: [], personalPhones: [], personalEmails: [], email: '', phone: '', mobile: '' }
 
 // Multi-value input: individual boxes with X to remove and + to add
-function MultiValueInput({ values, onChange, type = 'text', placeholder, addLabel }) {
+function MultiValueInput({ values, onChange, type = 'text', placeholder, addLabel, onSwapItem }) {
   return (
     <div className="space-y-1">
       {values.map((v, i) => (
@@ -52,6 +52,11 @@ function MultiValueInput({ values, onChange, type = 'text', placeholder, addLabe
           <button type="button" onClick={() => onChange(values.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 px-1 flex-shrink-0 transition-colors">
             <X size={11} />
           </button>
+          {onSwapItem && (
+            <button type="button" onClick={() => onSwapItem(i)} className="text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 px-1 flex-shrink-0 transition-colors underline">
+              Swap
+            </button>
+          )}
         </div>
       ))}
       <button type="button" onClick={() => onChange([...values, ''])} className="flex items-center gap-1 text-[10px] text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">
@@ -307,13 +312,12 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
               onChange={(v) => setForm(p => ({ ...p, personalPhones: v }))}
               placeholder="212-555-0100"
               addLabel="Add phone"
+              onSwapItem={form.visibility === 'shared' ? (i) => setForm(p => ({
+                ...p,
+                personalPhones: p.personalPhones.filter((_, j) => j !== i),
+                sharedCellPhones: [...p.sharedCellPhones, p.personalPhones[i]],
+              })) : undefined}
             />
-            {form.visibility === 'shared' && (
-              <button type="button" onClick={() => setForm(p => ({ ...p, personalPhones: p.sharedCellPhones, sharedCellPhones: p.personalPhones }))}
-                className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">
-                Swap
-              </button>
-            )}
           </div>
 
           <div>
@@ -324,13 +328,12 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
               type="email"
               placeholder="name@company.com"
               addLabel="Add email"
+              onSwapItem={form.visibility === 'shared' ? (i) => setForm(p => ({
+                ...p,
+                personalEmails: p.personalEmails.filter((_, j) => j !== i),
+                sharedEmails: [...p.sharedEmails, p.personalEmails[i]],
+              })) : undefined}
             />
-            {form.visibility === 'shared' && (
-              <button type="button" onClick={() => setForm(p => ({ ...p, personalEmails: p.sharedEmails, sharedEmails: p.personalEmails }))}
-                className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">
-                Swap
-              </button>
-            )}
           </div>
         </div>
 
