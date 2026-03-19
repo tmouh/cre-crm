@@ -179,10 +179,13 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
       {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800">{saveError}</p>}
 
       {/* ══════ Section 1: Sharing bar ══════ */}
-      <div className="border border-[var(--border)] px-3 py-2 space-y-2">
+      <div className={clsx(
+        'border border-[var(--border)] px-3',
+        isOwner ? 'py-2 space-y-2' : 'flex items-center justify-center'
+      )} style={isOwner ? {} : { minHeight: 68 }}>
         {/* Row 1: Visibility (left) + Owners (center) */}
-        <div className="relative flex items-center">
-          {isOwner && (
+        {isOwner ? (
+          <div className="relative flex items-center">
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Visibility</span>
               <button type="button" onClick={() => setForm(p => ({ ...p, visibility: 'private' }))}
@@ -202,40 +205,58 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                 <Users size={10} /> Shared
               </button>
             </div>
-          )}
 
-          {teamMembers.length > 0 && (
-            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
-              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Owners</span>
-              {ownersEditable ? (
-                <div className="flex flex-wrap gap-1">
-                  {teamMembers.map(m => (
-                    <button key={m.id} type="button" onClick={() => toggleOwner(m.id)}
-                      className={clsx('text-[10px] px-2 py-0.5 border transition-colors',
-                        form.ownerIds.includes(m.id)
-                          ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
-                          : 'border-[var(--border)] text-slate-400 hover:border-slate-400 dark:text-slate-500'
-                      )}>
-                      {m.displayName || m.email}{m.id === user?.id ? ' (you)' : ''}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-1">
-                  {(form.ownerIds || []).map(id => {
-                    const m = teamMembers.find(t => t.id === id)
-                    return m ? (
-                      <span key={id} className="text-[10px] text-slate-600 dark:text-slate-300 bg-surface-100 dark:bg-surface-200 px-2 py-0.5 border border-[var(--border)]">
+            {teamMembers.length > 0 && (
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+                <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Owners</span>
+                {ownersEditable ? (
+                  <div className="flex flex-wrap gap-1">
+                    {teamMembers.map(m => (
+                      <button key={m.id} type="button" onClick={() => toggleOwner(m.id)}
+                        className={clsx('text-[10px] px-2 py-0.5 border transition-colors',
+                          form.ownerIds.includes(m.id)
+                            ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
+                            : 'border-[var(--border)] text-slate-400 hover:border-slate-400 dark:text-slate-500'
+                        )}>
                         {m.displayName || m.email}{m.id === user?.id ? ' (you)' : ''}
-                      </span>
-                    ) : null
-                  })}
-                  {form.ownerIds.length === 0 && <span className="text-[10px] text-slate-400 dark:text-slate-500">None</span>}
-                </div>
-              )}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {(form.ownerIds || []).map(id => {
+                      const m = teamMembers.find(t => t.id === id)
+                      return m ? (
+                        <span key={id} className="text-[10px] text-slate-600 dark:text-slate-300 bg-surface-100 dark:bg-surface-200 px-2 py-0.5 border border-[var(--border)]">
+                          {m.displayName || m.email}{m.id === user?.id ? ' (you)' : ''}
+                        </span>
+                      ) : null
+                    })}
+                    {form.ownerIds.length === 0 && <span className="text-[10px] text-slate-400 dark:text-slate-500">None</span>}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Non-owner: owners centered horizontally and vertically in the box */
+          teamMembers.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Owners</span>
+              <div className="flex flex-wrap gap-1">
+                {(form.ownerIds || []).map(id => {
+                  const m = teamMembers.find(t => t.id === id)
+                  return m ? (
+                    <span key={id} className="text-[10px] text-slate-600 dark:text-slate-300 bg-surface-100 dark:bg-surface-200 px-2 py-0.5 border border-[var(--border)]">
+                      {m.displayName || m.email}{m.id === user?.id ? ' (you)' : ''}
+                    </span>
+                  ) : null
+                })}
+                {form.ownerIds.length === 0 && <span className="text-[10px] text-slate-400 dark:text-slate-500">None</span>}
+              </div>
             </div>
-          )}
-        </div>
+          )
+        )}
 
         {/* Row 2: Share with (centered) */}
         {isOwner && form.visibility === 'shared' && teamMembers.length > 0 && (
