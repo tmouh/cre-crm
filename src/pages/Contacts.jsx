@@ -442,12 +442,12 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                 <div key={key} className="flex items-center gap-1">
                   <div className="flex-1">
                     <label className="v-label">{fieldLabel}</label>
-                    <input value={form[key] || ''} onChange={f(key)} className="v-input" type="email" placeholder="name@company.com" />
+                    <input value={form[key] || ''} onChange={f(key)} className="v-input" type="email" />
                   </div>
                   {canSwap && (
                     <button type="button" onClick={() => flipField(key)}
                       className="mt-3.5 flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
-                      {section === 'personal' ? <><ArrowDown size={9} className="inline" /> Shared</> : <><ArrowUp size={9} className="inline" /> Personal</>}
+                      <><ArrowLeftRight size={9} className="inline" /> Swap</>
                     </button>
                   )}
                 </div>
@@ -477,7 +477,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                     {canSwap && (
                       <button type="button" onClick={() => flipField(pair.key)}
                         className="flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
-                        {section === 'personal' ? <><ArrowDown size={9} className="inline" /> Shared</> : <><ArrowUp size={9} className="inline" /> Personal</>}
+                        <><ArrowLeftRight size={9} className="inline" /> Swap</>
                       </button>
                     )}
                   </div>
@@ -493,7 +493,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
           </div>
         )
 
-        const renderSection = ({ section, title, icon, emails, pairs, notes, notesKey, borderClass, titleClass, emptyMsg }) => (
+        const renderSection = ({ section, title, icon, emails, pairs, notesKey, borderClass, titleClass }) => (
           <div className={clsx('border p-3 space-y-3', borderClass)}>
             <div className="flex items-center justify-between">
               <p className={clsx('text-[10px] font-semibold uppercase tracking-wide font-mono flex items-center gap-1', titleClass)}>
@@ -508,9 +508,6 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
             </div>
             {renderEmails(emails, section)}
             {renderPhones(pairs, section)}
-            {emails.length === 0 && pairs.length === 0 && canSwap && (
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">{emptyMsg}</p>
-            )}
             <div>
               <label className="v-label">Notes</label>
               <textarea value={form[notesKey] || ''} onChange={f(notesKey)} rows={3} className="v-input resize-y w-full"
@@ -536,7 +533,6 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
             notesKey: 'notes',
             borderClass: 'border-[var(--border)]',
             titleClass: 'text-slate-500 dark:text-slate-400',
-            emptyMsg: 'All fields moved to Shared',
           })}
 
           <div className={clsx('border p-3 space-y-3', canSwap ? 'border-brand-200 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-900/10' : 'border-[var(--border)]')}>
@@ -551,25 +547,18 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                 </button>
               )}
             </div>
-            {canSwap ? (
-              <>
-                {renderEmails(sharedEmails, 'shared')}
-                {renderPhones(sharedPairs, 'shared')}
-                {sharedEmails.length === 0 && sharedPairs.length === 0 && (
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">All fields are in Personal. Use swap buttons to move fields here.</p>
-                )}
-                <div>
-                  <label className="v-label">Notes</label>
-                  <textarea value={form.sharedNotes} onChange={f('sharedNotes')} rows={3} className="v-input resize-y w-full" placeholder="Team-facing notes..." />
-                  <button type="button" onClick={() => setForm(p => ({ ...p, sharedNotes: p.notes, notes: p.sharedNotes }))}
-                    className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline flex items-center gap-0.5">
-                    <ArrowLeftRight size={9} /> Swap
-                  </button>
-                </div>
-              </>
-            ) : (
-              <p className="text-[10px] text-slate-400 dark:text-slate-500">Set visibility to Shared to enable shared fields.</p>
-            )}
+            {renderEmails(sharedEmails, 'shared')}
+            {renderPhones(sharedPairs, 'shared')}
+            <div>
+              <label className="v-label">Notes</label>
+              <textarea value={form.sharedNotes} onChange={f('sharedNotes')} rows={3} className="v-input resize-y w-full" placeholder="Team-facing notes..." />
+              {canSwap && (
+                <button type="button" onClick={() => setForm(p => ({ ...p, sharedNotes: p.notes, notes: p.sharedNotes }))}
+                  className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline flex items-center gap-0.5">
+                  <ArrowLeftRight size={9} /> Swap
+                </button>
+              )}
+            </div>
           </div>
         </div>
         )
