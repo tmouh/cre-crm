@@ -163,7 +163,15 @@ function PersonalContactsList() {
         <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">{filtered.length} / {personalContacts.length} mine</span>
         <div className="flex gap-1">
           <button onClick={() => setShowImport(true)} className="v-btn-secondary text-[10px]"><Upload size={11} /> CSV</button>
-          <button onClick={() => setShowOutlookImport(true)} className="v-btn-secondary text-[10px]"><Mail size={11} /> Outlook</button>
+          <button onClick={() => setShowOutlookImport(true)} className="v-btn-secondary text-[10px]">
+            <svg viewBox="0 0 21 21" className="w-3 h-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+              <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+              <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+              <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+              <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+            </svg>
+            Outlook
+          </button>
           <button onClick={() => setShowAdd(true)} className="v-btn-primary text-[10px]"><Plus size={11} /> NEW</button>
         </div>
       </div>
