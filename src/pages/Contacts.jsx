@@ -34,7 +34,19 @@ class LinkedInErrorBoundary extends Component {
   }
 }
 
-const BLANK = { firstName: '', lastName: '', middleName: '', suffix: '', nickname: '', title: '', contactFunction: '', companyId: '', linkedIn: '', webPage: '', birthday: '', anniversary: '', notes: '', tags: [], ownerIds: [], visibility: 'shared', sharedWith: [], sharedNotes: '', sharedCellPhones: [], sharedEmails: [], personalPhones: [], personalEmails: [], email: '', phone: '', mobile: '', homePhone: '', homePhone2: '', businessPhone2: '', carPhone: '', otherPhone: '', primaryPhone: '', pager: '', businessFax: '', homeFax: '', otherFax: '', companyMainPhone: '', businessStreet: '', businessCity: '', businessState: '', businessPostalCode: '', businessCountry: '', homeStreet: '', homeCity: '', homeState: '', homePostalCode: '', homeCountry: '', otherStreet: '', otherCity: '', otherState: '', otherPostalCode: '', otherCountry: '' }
+const BLANK = { firstName: '', lastName: '', middleName: '', suffix: '', nickname: '', title: '', contactFunction: '', companyId: '', linkedIn: '', webPage: '', birthday: '', anniversary: '', notes: '', tags: [], ownerIds: [], visibility: 'shared', sharedWith: [], sharedNotes: '', sharedCellPhones: [], sharedEmails: [], personalPhones: [], personalEmails: [], email: '', phone: '', mobile: '', homePhone: '', homePhone2: '', businessPhone2: '', carPhone: '', otherPhone: '', primaryPhone: '', pager: '', businessFax: '', homeFax: '', otherFax: '', companyMainPhone: '', businessStreet: '', businessCity: '', businessState: '', businessPostalCode: '', businessCountry: '', homeStreet: '', homeCity: '', homeState: '', homePostalCode: '', homeCountry: '', otherStreet: '', otherCity: '', otherState: '', otherPostalCode: '', otherCountry: '', phoneAssignments: {} }
+
+const EXTENDED_PHONE_LABELS = {
+  homePhone: 'Home Phone', homePhone2: 'Home Phone 2', businessPhone2: 'Business Phone 2',
+  carPhone: 'Car Phone', otherPhone: 'Other Phone', primaryPhone: 'Primary Phone',
+  pager: 'Pager', companyMainPhone: 'Company Main',
+  businessFax: 'Business Fax', homeFax: 'Home Fax', otherFax: 'Other Fax',
+}
+const DEFAULT_PHONE_ASSIGNMENTS = {
+  homePhone: 'personal', homePhone2: 'personal', carPhone: 'personal',
+  pager: 'personal', otherPhone: 'personal', primaryPhone: 'personal', homeFax: 'personal',
+  businessPhone2: 'shared', companyMainPhone: 'shared', businessFax: 'shared', otherFax: 'shared',
+}
 
 // Multi-value input: individual boxes with X to remove and + to add
 function MultiValueInput({ values, onChange, type = 'text', placeholder, addLabel, onSwapItem }) {
@@ -93,6 +105,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
     sharedEmails: initial.sharedEmails || initial.sharedPersonalEmails || [],
     personalPhones: initPersonalPhones,
     personalEmails: initPersonalEmails,
+    phoneAssignments: { ...DEFAULT_PHONE_ASSIGNMENTS, ...(initial.phoneAssignments || {}) },
   })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
@@ -242,8 +255,8 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
       <div className="flex gap-0 border-b border-[var(--border)]">
         {[
           { id: 'general', label: 'General' },
-          { id: 'contact', label: 'Contact Info', dot: form.personalEmails.length > 0 || form.personalPhones.length > 0 || form.sharedEmails.length > 0 || form.sharedCellPhones.length > 0 },
-          { id: 'extended', label: 'Addresses & More', dot: hasExtendedPhones || hasAddresses },
+          { id: 'contact', label: 'Contact Info', dot: form.personalEmails.length > 0 || form.personalPhones.length > 0 || form.sharedEmails.length > 0 || form.sharedCellPhones.length > 0 || hasExtendedPhones },
+          { id: 'extended', label: 'Addresses', dot: hasAddresses },
         ].map(tab => (
           <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
             className={clsx('px-4 py-2 text-[11px] font-semibold tracking-wide font-mono transition-colors relative flex items-center gap-1.5',
@@ -348,16 +361,25 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
       )}
 
       {/* ══════ Tab: Contact Info ══════ */}
-      {activeTab === 'contact' && (
+      {activeTab === 'contact' && (() => {
+        const canSwap = form.visibility === 'shared'
+        const phoneAssign = (field) => canSwap ? (form.phoneAssignments[field] || DEFAULT_PHONE_ASSIGNMENTS[field] || 'personal') : 'personal'
+        const personalPhoneFields = Object.keys(EXTENDED_PHONE_LABELS).filter(k => phoneAssign(k) === 'personal')
+        const sharedPhoneFields = Object.keys(EXTENDED_PHONE_LABELS).filter(k => phoneAssign(k) === 'shared')
+        const flipPhone = (field) => setForm(p => ({
+          ...p,
+          phoneAssignments: { ...p.phoneAssignments, [field]: phoneAssign(field) === 'personal' ? 'shared' : 'personal' },
+        }))
+        return (
         <div className="space-y-3">
           {/* Personal */}
           {isOwner && (
-          <div className="border border-[var(--border)] p-3 space-y-2">
+          <div className="border border-[var(--border)] p-3 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono flex items-center gap-1">
                 <Lock size={9} /> Personal <span className="font-normal normal-case text-[9px] text-slate-400 dark:text-slate-500">(private to you)</span>
               </p>
-              {form.visibility === 'shared' && (
+              {canSwap && (
                 <button type="button"
                   onClick={() => setForm(p => ({
                     ...p,
@@ -380,7 +402,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                   type="email"
                   placeholder="name@company.com"
                   addLabel="Add email"
-                  onSwapItem={form.visibility === 'shared' ? (i) => setForm(p => ({
+                  onSwapItem={canSwap ? (i) => setForm(p => ({
                     ...p,
                     personalEmails: p.personalEmails.filter((_, j) => j !== i),
                     sharedEmails: [...p.sharedEmails, p.personalEmails[i]],
@@ -394,7 +416,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                   onChange={(v) => setForm(p => ({ ...p, personalPhones: v }))}
                   placeholder="212-555-0100"
                   addLabel="Add phone"
-                  onSwapItem={form.visibility === 'shared' ? (i) => setForm(p => ({
+                  onSwapItem={canSwap ? (i) => setForm(p => ({
                     ...p,
                     personalPhones: p.personalPhones.filter((_, j) => j !== i),
                     sharedCellPhones: [...p.sharedCellPhones, p.personalPhones[i]],
@@ -403,10 +425,32 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
               </div>
             </div>
 
+            {personalPhoneFields.length > 0 && (
+              <div>
+                <p className="v-label mb-1">Named Phones & Fax</p>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                  {personalPhoneFields.map(field => (
+                    <div key={field} className="flex items-center gap-1">
+                      <div className="flex-1">
+                        <label className="v-label">{EXTENDED_PHONE_LABELS[field]}</label>
+                        <input value={form[field]} onChange={f(field)} className="v-input" />
+                      </div>
+                      {canSwap && (
+                        <button type="button" onClick={() => flipPhone(field)}
+                          className="mt-3.5 flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
+                          → Shared
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="v-label">Notes</label>
               <textarea value={form.notes} onChange={f('notes')} rows={3} className="v-input resize-y w-full" placeholder="Background, preferences, how you met..." />
-              {form.visibility === 'shared' && (
+              {canSwap && (
                 <button type="button" onClick={() => setForm(p => ({ ...p, notes: p.sharedNotes, sharedNotes: p.notes }))}
                   className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">Swap</button>
               )}
@@ -415,12 +459,12 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
           )}
 
           {/* Shared */}
-          <div className={clsx('border p-3 space-y-2', form.visibility === 'shared' ? 'border-brand-200 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-900/10' : 'border-[var(--border)]')}>
-            <p className={clsx('text-[10px] font-semibold uppercase tracking-wide font-mono flex items-center gap-1', form.visibility === 'shared' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500')}>
+          <div className={clsx('border p-3 space-y-3', canSwap ? 'border-brand-200 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-900/10' : 'border-[var(--border)]')}>
+            <p className={clsx('text-[10px] font-semibold uppercase tracking-wide font-mono flex items-center gap-1', canSwap ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500')}>
               <Users size={9} /> Shared <span className="font-normal normal-case text-[9px] ml-1">(visible to team)</span>
             </p>
 
-            {form.visibility === 'shared' ? (
+            {canSwap ? (
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -454,6 +498,26 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                   </div>
                 </div>
 
+                {sharedPhoneFields.length > 0 && (
+                  <div>
+                    <p className="v-label mb-1">Named Phones & Fax</p>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                      {sharedPhoneFields.map(field => (
+                        <div key={field} className="flex items-center gap-1">
+                          <div className="flex-1">
+                            <label className="v-label">{EXTENDED_PHONE_LABELS[field]}</label>
+                            <input value={form[field]} onChange={f(field)} className="v-input" />
+                          </div>
+                          <button type="button" onClick={() => flipPhone(field)}
+                            className="mt-3.5 flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
+                            → Personal
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="v-label">Notes</label>
                   <textarea value={form.sharedNotes} onChange={f('sharedNotes')} rows={3} className="v-input resize-y w-full" placeholder="Team-facing notes..." />
@@ -466,30 +530,13 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
             )}
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* ══════ Tab: Addresses & More ══════ */}
       {activeTab === 'extended' && (
-        <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr' }}>
-          {/* Phones & Fax */}
-          <div className="border border-[var(--border)] p-3 space-y-2">
-            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Phones & Fax</p>
-            <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
-              <div><label className="v-label">Home Phone</label><input value={form.homePhone} onChange={f('homePhone')} className="v-input" /></div>
-              <div><label className="v-label">Home Phone 2</label><input value={form.homePhone2} onChange={f('homePhone2')} className="v-input" /></div>
-              <div><label className="v-label">Business Phone 2</label><input value={form.businessPhone2} onChange={f('businessPhone2')} className="v-input" /></div>
-              <div><label className="v-label">Car Phone</label><input value={form.carPhone} onChange={f('carPhone')} className="v-input" /></div>
-              <div><label className="v-label">Other Phone</label><input value={form.otherPhone} onChange={f('otherPhone')} className="v-input" /></div>
-              <div><label className="v-label">Primary Phone</label><input value={form.primaryPhone} onChange={f('primaryPhone')} className="v-input" /></div>
-              <div><label className="v-label">Pager</label><input value={form.pager} onChange={f('pager')} className="v-input" /></div>
-              <div><label className="v-label">Company Main</label><input value={form.companyMainPhone} onChange={f('companyMainPhone')} className="v-input" /></div>
-              <div><label className="v-label">Business Fax</label><input value={form.businessFax} onChange={f('businessFax')} className="v-input" /></div>
-              <div><label className="v-label">Home Fax</label><input value={form.homeFax} onChange={f('homeFax')} className="v-input" /></div>
-              <div><label className="v-label">Other Fax</label><input value={form.otherFax} onChange={f('otherFax')} className="v-input" /></div>
-            </div>
-          </div>
-          {/* Addresses */}
-          <div className="border border-[var(--border)] p-3 space-y-2">
+        <div className="border border-[var(--border)] p-3 space-y-2">
+          {/* Addresses only — phones moved to Contact Info tab */}
             <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Addresses</p>
             {[
               { label: 'Business', prefix: 'business' },
@@ -507,7 +554,6 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                 <input value={form[`${prefix}Country`]} onChange={f(`${prefix}Country`)} className="v-input" placeholder="Country" />
               </div>
             ))}
-          </div>
         </div>
       )}
 
