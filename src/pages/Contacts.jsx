@@ -116,9 +116,19 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
       // Write back first array entries to legacy single fields for backward compat
       const payload = {
         ...form,
-        phone: form.personalPhones[0] || '',
-        mobile: form.personalPhones[1] || '',
-        email: form.personalEmails[0] || '',
+        // Non-owners must not overwrite owner's private fields
+        ...(isOwner ? {
+          phone: form.personalPhones[0] || '',
+          mobile: form.personalPhones[1] || '',
+          email: form.personalEmails[0] || '',
+        } : {
+          personalPhones: undefined,
+          personalEmails: undefined,
+          notes: undefined,
+          phone: undefined,
+          mobile: undefined,
+          email: undefined,
+        }),
       }
       await onSubmit(payload)
     } catch (err) {
@@ -273,7 +283,8 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
           </div>
         </div>
 
-        {/* ── Column 2: Personal (private) ── */}
+        {/* ── Column 2: Personal (private) — only visible to owner ── */}
+        {isOwner && (
         <div className="border border-[var(--border)] p-3 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono flex items-center gap-1">
@@ -337,6 +348,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
             />
           </div>
         </div>
+        )}
 
         {/* ── Column 3: Shared ── */}
         <div className={clsx('border p-3 flex flex-col gap-2', form.visibility === 'shared' ? 'border-brand-200 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-900/10' : 'border-[var(--border)]')}>
@@ -435,6 +447,7 @@ export function ContactDetail({ backTo }) {
   if (!contact) return <div className="p-4 text-slate-400 dark:text-slate-500 font-mono text-[11px]">CONTACT NOT FOUND</div>
 
   const company = getCompany(contact.companyId)
+  const isOwner = (contact.ownerIds || []).length === 0 || (contact.ownerIds || []).includes(user?.id)
   const relatedProps = properties.filter(p => p.contactIds?.includes(id))
   const contactLinkedDeals = relatedProps.filter(p => !p.deletedAt)
 
@@ -520,8 +533,15 @@ export function ContactDetail({ backTo }) {
               </span>
             )}
             {(() => {
-              const allEmails = [...new Set([contact.email, ...(contact.personalEmails || []), ...(contact.sharedEmails || [])].filter(Boolean))]
-              const allPhones = [...new Set([contact.phone, contact.mobile, ...(contact.personalPhones || []), ...(contact.sharedCellPhones || [])].filter(Boolean))]
+              const canSeePrivate = isOwner || contact.visibility !== 'shared'
+              const allEmails = [...new Set([
+                ...(canSeePrivate ? [contact.email, ...(contact.personalEmails || [])] : []),
+                ...(contact.sharedEmails || [])
+              ].filter(Boolean))]
+              const allPhones = [...new Set([
+                ...(canSeePrivate ? [contact.phone, contact.mobile, ...(contact.personalPhones || [])] : []),
+                ...(contact.sharedCellPhones || [])
+              ].filter(Boolean))]
               return (<>
                 {allEmails.map((em, i) => (
                   <a key={em} href={`mailto:${em}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
@@ -638,8 +658,8 @@ export function ContactDetail({ backTo }) {
             </div>
           )}
 
-          {/* Notes (private to you for shared contacts, just notes for private contacts) */}
-          {contact.notes && (
+          {/* Notes (private to owner for shared contacts, just notes for private contacts) */}
+          {contact.notes && (isOwner || contact.visibility !== 'shared') && (
             <div className="px-3 py-2 border-b border-[var(--border-subtle)] dark:border-[var(--border)]">
               <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1 font-mono uppercase">
                 Notes {contact.visibility === 'shared' && <span className="text-[9px] font-normal text-slate-400 ml-1">(private)</span>}
@@ -775,8 +795,8 @@ export function ContactDetail({ backTo }) {
             <CommunicationHeatmap contactId={id} />
             <ReminderList contactId={id} />
             <ActivityFeed contactId={id} contactDeals={contactLinkedDeals} onLinkDeal={linkContactToDeal} />
-            <OutlookMessages email={contact.email || contact.personalEmails?.[0] || contact.sharedEmails?.[0]} contactId={id} />
-            <OutlookAttachments email={contact.email || contact.personalEmails?.[0] || contact.sharedEmails?.[0]} />
+            <OutlookMessages email={(isOwner ? (contact.email || contact.personalEmails?.[0]) : null) || contact.sharedEmails?.[0]} contactId={id} />
+            <OutlookAttachments email={(isOwner ? (contact.email || contact.personalEmails?.[0]) : null) || contact.sharedEmails?.[0]} />
           </div>
         </div>
       </div>
@@ -796,7 +816,7 @@ export default function Contacts() {
   if (id) return <ContactDetail />
 
   const { sharedContacts: contacts, companies, addContact, updateContact, deleteContact, getCompany, teamMembers, shareContacts, makeContactsPrivate } = useCRM()
-  const { isAdmin } = useAuth()
+  const { isAdmin, user } = useAuth()
   const { contactHealth } = useIntelligence()
   const { contactDuplicates } = useDuplicates()
   const [search, setSearch] = useState('')
@@ -837,7 +857,8 @@ export default function Contacts() {
 
   const filtered = contacts.filter(c => {
     const q = search.toLowerCase()
-    const allEmails = [c.email, ...(c.personalEmails || []), ...(c.sharedEmails || [])].filter(Boolean)
+    const cIsOwner = (c.ownerIds || []).length === 0 || (c.ownerIds || []).includes(user?.id)
+    const allEmails = [...(cIsOwner ? [c.email, ...(c.personalEmails || [])] : []), ...(c.sharedEmails || [])].filter(Boolean)
     const matches = !q || fullName(c).toLowerCase().includes(q) || allEmails.some(e => e.toLowerCase().includes(q)) || c.title?.toLowerCase().includes(q) || (c.tags || []).some(t => t.toLowerCase().includes(q))
     const comp = !filterCompany || c.companyId === filterCompany
     const owner = !filterOwner || (c.ownerIds || []).length === 0 || (c.ownerIds || []).includes(filterOwner)
@@ -1063,6 +1084,7 @@ export default function Contacts() {
                   .map(oid => teamMembers.find(m => m.id === oid))
                   .filter(Boolean)
                 const isSelected = selected.has(c.id)
+                const cOwner = (c.ownerIds || []).length === 0 || (c.ownerIds || []).includes(user?.id)
                 return (
                   <tr key={c.id} className={clsx(isSelected && '!bg-brand-50/50 dark:!bg-brand-900/10')}>
                     <td>
@@ -1094,8 +1116,8 @@ export default function Contacts() {
                     </td>
                     <td>
                       <div className="flex gap-1.5">
-                        {(c.email || c.personalEmails?.length > 0 || c.sharedEmails?.length > 0) && <a href={`mailto:${c.email || c.personalEmails?.[0] || c.sharedEmails?.[0]}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Mail size={12} /></a>}
-                        {(c.phone || c.mobile || c.personalPhones?.length > 0 || c.sharedCellPhones?.length > 0) && <a href={`tel:${c.phone || c.mobile || c.personalPhones?.[0] || c.sharedCellPhones?.[0]}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Phone size={12} /></a>}
+                        {((cOwner && (c.email || c.personalEmails?.length > 0)) || c.sharedEmails?.length > 0) && <a href={`mailto:${(cOwner ? (c.email || c.personalEmails?.[0]) : null) || c.sharedEmails?.[0]}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Mail size={12} /></a>}
+                        {((cOwner && (c.phone || c.mobile || c.personalPhones?.length > 0)) || c.sharedCellPhones?.length > 0) && <a href={`tel:${(cOwner ? (c.phone || c.mobile || c.personalPhones?.[0]) : null) || c.sharedCellPhones?.[0]}`} className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Phone size={12} /></a>}
                         {c.linkedIn && <a href={`https://${c.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-brand-600 dark:text-slate-500 dark:hover:text-brand-400"><Linkedin size={12} /></a>}
                       </div>
                     </td>
