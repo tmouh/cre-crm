@@ -637,6 +637,33 @@ export function ContactDetail({ backTo }) {
   const [savingPrivate, setSavingPrivate] = useState(false)
   const [selectedEmailIdx, setSelectedEmailIdx] = useState(0)
   const [inlineEdit, setInlineEdit] = useState(null) // { field: string, value: string }
+  const [leftPaneWidth, setLeftPaneWidth] = useState(320)
+  const isResizing = useRef(false)
+  const resizeStartX = useRef(0)
+  const resizeStartWidth = useRef(0)
+  const twoZoneRef = useRef(null)
+
+  const handleResizeMouseDown = (e) => {
+    e.preventDefault()
+    isResizing.current = true
+    resizeStartX.current = e.clientX
+    resizeStartWidth.current = leftPaneWidth
+    const onMove = (moveEvent) => {
+      if (!isResizing.current) return
+      const container = twoZoneRef.current
+      const maxWidth = container ? container.offsetWidth / 4 : 500
+      const delta = moveEvent.clientX - resizeStartX.current
+      const newWidth = Math.min(Math.max(resizeStartWidth.current + delta, 280), maxWidth)
+      setLeftPaneWidth(newWidth)
+    }
+    const onUp = () => {
+      isResizing.current = false
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
 
   // Determine back link: use explicit backTo prop, else detect from current path
   const resolvedBackTo = backTo || (location.pathname.startsWith('/personal/') ? '/personal/contacts' : '/contacts')
@@ -739,9 +766,9 @@ export function ContactDetail({ backTo }) {
       </div>
 
       {/* ─ Two-zone workspace ─ */}
-      <div className="flex-1 flex overflow-hidden">
+      <div ref={twoZoneRef} className="flex-1 flex overflow-hidden">
         {/* Left: profile + intel */}
-        <div className="w-[320px] flex-shrink-0 border-r border-[var(--border)] overflow-auto bg-surface-0">
+        <div className="flex-shrink-0 overflow-auto bg-surface-0" style={{ width: leftPaneWidth }}>
           {/* Contact info */}
           <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)] space-y-1.5">
             {contact.contactFunction && (
@@ -1191,6 +1218,13 @@ export function ContactDetail({ backTo }) {
             <LinkedInProfile contact={contact} />
           </LinkedInErrorBoundary>
         </div>
+
+        {/* Resize handle */}
+        <div
+          onMouseDown={handleResizeMouseDown}
+          className="w-1 flex-shrink-0 cursor-col-resize border-r border-[var(--border)] hover:bg-blue-400 dark:hover:bg-blue-500 transition-colors"
+          style={{ userSelect: 'none' }}
+        />
 
         {/* Right: activity + comms workspace */}
         <div className="flex-1 overflow-auto bg-surface-50">
