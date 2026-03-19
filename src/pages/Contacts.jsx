@@ -15,6 +15,7 @@ import OutlookMessages from '../components/OutlookMessages'
 import OutlookAttachments from '../components/OutlookAttachments'
 import PageHeader from '../components/PageHeader'
 import CompanyCombobox from '../components/CompanyCombobox'
+import FunctionCombobox from '../components/FunctionCombobox'
 import ImportModal from '../components/ImportModal'
 import OutlookImport from '../components/OutlookImport'
 import DuplicateCheckModal from '../components/DuplicateCheckModal'
@@ -366,10 +367,10 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
               </div>
               <div>
                 <label className="v-label">Function</label>
-                <select value={form.contactFunction || ''} onChange={f('contactFunction')} className="v-select">
-                  <option value="">— Select —</option>
-                  {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
-                </select>
+                <FunctionCombobox
+                  value={form.contactFunction || ''}
+                  onChange={(val) => setForm(p => ({ ...p, contactFunction: val }))}
+                />
               </div>
               <div>
                 <label className="v-label">Nickname</label>
