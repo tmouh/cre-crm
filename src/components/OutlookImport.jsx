@@ -183,7 +183,8 @@ export default function OutlookImport({ onClose }) {
           companyId = companyMap[key]
         } else {
           try {
-            const newCo = await addCompany({ name: oc.companyName.trim(), type: 'other' })
+            const website = (oc.businessHomePage || '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/+$/, '')
+            const newCo = await addCompany({ name: oc.companyName.trim(), type: 'other', ...(website && { website }) })
             companyMap[key] = newCo.id
             companyId = newCo.id
             companiesCreated++
@@ -191,13 +192,9 @@ export default function OutlookImport({ onClose }) {
         }
       }
 
-      // Look up LinkedIn URL — from businessHomePage, imAddresses, then People API
-      const directLinkedIn = [
-        oc.businessHomePage || '',
-        ...(oc.imAddresses || []),
-      ].find(url => url && url.toLowerCase().includes('linkedin.com')) || ''
+      // Look up LinkedIn URL from People API
       const peopleLinkedIn = email ? (linkedInMap.get(email.toLowerCase()) || '') : ''
-      const linkedIn = (directLinkedIn || peopleLinkedIn).replace(/^https?:\/\/(www\.)?/, '')
+      const linkedIn = peopleLinkedIn.replace(/^https?:\/\/(www\.)?/, '')
 
       // Create the contact
       let newContact = null
