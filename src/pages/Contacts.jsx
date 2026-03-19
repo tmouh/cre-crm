@@ -430,79 +430,97 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
           return { ...p, phoneAssignments: newAssignments, notes: p.sharedNotes, sharedNotes: p.notes }
         })
 
-        const personalEmails = ALL_EMAIL_FIELDS.filter(fld => fieldAssign(fld.key) === 'personal')
-        const sharedEmails = ALL_EMAIL_FIELDS.filter(fld => fieldAssign(fld.key) === 'shared')
-        const personalPairs = PHONE_PAIRS.filter(pair => fieldAssign(pair.key) === 'personal')
-        const sharedPairs = PHONE_PAIRS.filter(pair => fieldAssign(pair.key) === 'shared')
-
-        const renderEmails = (emails, section) => (
+        // Both sections always render ALL fields; active = assigned to this section
+        const renderEmails = (section) => (
           <div>
             <p className="v-label mb-1 font-bold">Emails</p>
             <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-              {emails.map(({ key, label: fieldLabel }) => (
-                <div key={key} className="flex items-center gap-1">
-                  <div className="flex-1">
-                    <label className="v-label">{fieldLabel}</label>
-                    <input value={form[key] || ''} onChange={f(key)} className="v-input" type="email" />
-                  </div>
-                  {canSwap && (
-                    <button type="button" onClick={() => flipField(key)}
-                      className="mt-3.5 flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
-                      <><ArrowLeftRight size={9} className="inline" /> Swap</>
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-
-        const renderPhones = (pairs, section) => (
-          <div className="mt-4">
-            <p className="v-label mb-1 font-bold">Phones</p>
-            <div className="grid grid-cols-3 gap-x-3 gap-y-3">
-              {pairs.map(pair => (
-                <div key={pair.key} className="space-y-1.5">
-                  <label className="v-label flex items-center gap-1.5">
-                    {pair.label}
-                    {pair.secondaryKey && !expandedPhones.has(pair.key) && (
-                      <button type="button"
-                        onClick={() => setExpandedPhones(s => { const n = new Set(s); n.add(pair.key); return n })}
-                        className="text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
-                        + add
-                      </button>
-                    )}
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <input value={form[pair.key] || ''} onChange={f(pair.key)} className="v-input flex-1" />
+              {ALL_EMAIL_FIELDS.map(({ key, label: fieldLabel }) => {
+                const active = fieldAssign(key) === section
+                return (
+                  <div key={key} className={clsx('flex items-center gap-1', !active && 'opacity-40')}>
+                    <div className="flex-1">
+                      <label className="v-label">{fieldLabel}</label>
+                      <input
+                        value={active ? (form[key] || '') : ''}
+                        onChange={active ? f(key) : undefined}
+                        readOnly={!active}
+                        className={clsx('v-input', !active && 'cursor-default')}
+                        type="email"
+                      />
+                    </div>
                     {canSwap && (
-                      <button type="button" onClick={() => flipField(pair.key)}
-                        className="flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
+                      <button type="button" onClick={() => flipField(key)}
+                        className="mt-3.5 flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
                         <ArrowLeftRight size={9} className="inline" /> Swap
                       </button>
                     )}
                   </div>
-                  {pair.secondaryKey && expandedPhones.has(pair.key) && (
-                    <div className="space-y-1">
-                      <label className="v-label">{pair.secondaryLabel}</label>
-                      <div className="flex items-center gap-1">
-                        <input value={form[pair.secondaryKey] || ''} onChange={f(pair.secondaryKey)} className="v-input flex-1" />
-                        {canSwap && (
-                          <button type="button" onClick={() => flipField(pair.secondaryKey)}
-                            className="flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
-                            <ArrowLeftRight size={9} className="inline" /> Swap
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )
 
-        const renderSection = ({ section, title, icon, emails, pairs, notesKey, borderClass, titleClass }) => (
+        const renderPhones = (section) => (
+          <div className="mt-4">
+            <p className="v-label mb-1 font-bold">Phones</p>
+            <div className="grid grid-cols-3 gap-x-3 gap-y-3">
+              {PHONE_PAIRS.map(pair => {
+                const active = fieldAssign(pair.key) === section
+                return (
+                  <div key={pair.key} className={clsx('space-y-1.5', !active && 'opacity-40')}>
+                    <label className="v-label flex items-center gap-1.5">
+                      {pair.label}
+                      {active && pair.secondaryKey && !expandedPhones.has(pair.key) && (
+                        <button type="button"
+                          onClick={() => setExpandedPhones(s => { const n = new Set(s); n.add(pair.key); return n })}
+                          className="text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+                          + add
+                        </button>
+                      )}
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        value={active ? (form[pair.key] || '') : ''}
+                        onChange={active ? f(pair.key) : undefined}
+                        readOnly={!active}
+                        className={clsx('v-input flex-1', !active && 'cursor-default')}
+                      />
+                      {canSwap && (
+                        <button type="button" onClick={() => flipField(pair.key)}
+                          className="flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
+                          <ArrowLeftRight size={9} className="inline" /> Swap
+                        </button>
+                      )}
+                    </div>
+                    {pair.secondaryKey && expandedPhones.has(pair.key) && (
+                      <div className="space-y-1">
+                        <label className="v-label">{pair.secondaryLabel}</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            value={active ? (form[pair.secondaryKey] || '') : ''}
+                            onChange={active ? f(pair.secondaryKey) : undefined}
+                            readOnly={!active}
+                            className={clsx('v-input flex-1', !active && 'cursor-default')}
+                          />
+                          {canSwap && (
+                            <button type="button" onClick={() => flipField(pair.secondaryKey)}
+                              className="flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
+                              <ArrowLeftRight size={9} className="inline" /> Swap
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+
+        const renderSection = ({ section, title, icon, notesKey, borderClass, titleClass }) => (
           <div className={clsx('border p-3 space-y-3', borderClass)}>
             <div className="flex items-center justify-between">
               <p className={clsx('text-[10px] font-semibold uppercase tracking-wide font-mono flex items-center gap-1', titleClass)}>
@@ -515,8 +533,8 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                 </button>
               )}
             </div>
-            {renderEmails(emails, section)}
-            {renderPhones(pairs, section)}
+            {renderEmails(section)}
+            {renderPhones(section)}
             <div>
               <label className="v-label">Notes</label>
               <textarea value={form[notesKey] || ''} onChange={f(notesKey)} rows={3} className="v-input resize-y w-full"
@@ -537,38 +555,19 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
             section: 'personal',
             title: 'Personal',
             icon: <Lock size={9} />,
-            emails: personalEmails,
-            pairs: personalPairs,
             notesKey: 'notes',
             borderClass: 'border-[var(--border)]',
             titleClass: 'text-slate-500 dark:text-slate-400',
           })}
 
-          <div className={clsx('border p-3 space-y-3', canSwap ? 'border-brand-200 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-900/10' : 'border-[var(--border)]')}>
-            <div className="flex items-center justify-between">
-              <p className={clsx('text-[10px] font-semibold uppercase tracking-wide font-mono flex items-center gap-1', canSwap ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500')}>
-                <Users size={9} /> Shared <span className="font-normal normal-case text-[9px] ml-1">(visible to team)</span>
-              </p>
-              {canSwap && (
-                <button type="button" onClick={swapAll}
-                  className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
-                  <ArrowLeftRight size={11} /> Swap All
-                </button>
-              )}
-            </div>
-            {renderEmails(sharedEmails, 'shared')}
-            {renderPhones(sharedPairs, 'shared')}
-            <div>
-              <label className="v-label">Notes</label>
-              <textarea value={form.sharedNotes} onChange={f('sharedNotes')} rows={3} className="v-input resize-y w-full" placeholder="Team-facing notes..." />
-              {canSwap && (
-                <button type="button" onClick={() => setForm(p => ({ ...p, sharedNotes: p.notes, notes: p.sharedNotes }))}
-                  className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline flex items-center gap-0.5">
-                  <ArrowLeftRight size={9} /> Swap
-                </button>
-              )}
-            </div>
-          </div>
+          {renderSection({
+            section: 'shared',
+            title: 'Shared',
+            icon: <Users size={9} />,
+            notesKey: 'sharedNotes',
+            borderClass: canSwap ? 'border-brand-200 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-900/10' : 'border-[var(--border)]',
+            titleClass: canSwap ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500',
+          })}
         </div>
         )
       })()}
