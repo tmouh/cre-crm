@@ -419,7 +419,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
         const renderFieldGroup = (fields, label, _addLabel, _minVisible, section, _slotKey) => {
           return (
             <div>
-              <p className="v-label mb-1">{label}</p>
+              <p className="v-label mb-1 font-bold">{label}</p>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 {fields.map(({ key, label: fieldLabel }) => (
                   <div key={key} className="flex items-center gap-1">
@@ -473,7 +473,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
 
             {personalEmails.length > 0 && renderFieldGroup(personalEmails, 'Emails', 'Add email', 1, 'personal', 'pEmails')}
 
-            {personalPhones.length > 0 && renderFieldGroup(personalPhones, 'Phones', 'Add phone', 2, 'personal', 'pPhones')}
+            {personalPhones.length > 0 && <div className="mt-4">{renderFieldGroup(personalPhones, 'Phones', 'Add phone', 2, 'personal', 'pPhones')}</div>}
             {!showExtraPhones && (
               <button type="button" onClick={() => setShowExtraPhones(true)}
                 className="text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline -mt-1">
@@ -514,7 +514,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
               <>
                 {sharedEmails.length > 0 && renderFieldGroup(sharedEmails, 'Emails', 'Add email', 1, 'shared', 'sEmails')}
 
-                {sharedPhones.length > 0 && renderFieldGroup(sharedPhones, 'Phones', 'Add phone', 1, 'shared', 'sPhones')}
+                {sharedPhones.length > 0 && <div className="mt-4">{renderFieldGroup(sharedPhones, 'Phones', 'Add phone', 1, 'shared', 'sPhones')}</div>}
                 {!showExtraPhones && (
                   <button type="button" onClick={() => setShowExtraPhones(true)}
                     className="text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline -mt-1">
