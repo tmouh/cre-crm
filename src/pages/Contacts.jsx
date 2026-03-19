@@ -637,7 +637,10 @@ export function ContactDetail({ backTo }) {
   const [savingPrivate, setSavingPrivate] = useState(false)
   const [selectedEmailIdx, setSelectedEmailIdx] = useState(0)
   const [inlineEdit, setInlineEdit] = useState(null) // { field: string, value: string }
-  const [leftPaneWidth, setLeftPaneWidth] = useState(320)
+  const [leftPaneWidth, setLeftPaneWidth] = useState(() => {
+    const saved = localStorage.getItem('contactDetailLeftPaneWidth')
+    return saved ? parseFloat(saved) : 320
+  })
   const isResizing = useRef(false)
   const resizeStartX = useRef(0)
   const resizeStartWidth = useRef(0)
@@ -655,6 +658,7 @@ export function ContactDetail({ backTo }) {
       const delta = moveEvent.clientX - resizeStartX.current
       const newWidth = Math.min(Math.max(resizeStartWidth.current + delta, 280), maxWidth)
       setLeftPaneWidth(newWidth)
+      localStorage.setItem('contactDetailLeftPaneWidth', newWidth)
     }
     const onUp = () => {
       isResizing.current = false
