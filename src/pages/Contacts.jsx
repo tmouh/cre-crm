@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, Component } from 'react'
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle, Lock, Users, Save, X, CheckSquare, Share2, ArrowLeftRight, Globe, Cake, Calendar } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle, Lock, Users, Save, X, CheckSquare, Share2, ArrowLeftRight, ArrowUp, ArrowDown, Globe, Cake, Calendar } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
@@ -34,48 +34,37 @@ class LinkedInErrorBoundary extends Component {
   }
 }
 
-const BLANK = { firstName: '', lastName: '', middleName: '', suffix: '', nickname: '', title: '', contactFunction: '', companyId: '', linkedIn: '', webPage: '', birthday: '', anniversary: '', notes: '', tags: [], ownerIds: [], visibility: 'shared', sharedWith: [], sharedNotes: '', sharedCellPhones: [], sharedEmails: [], personalPhones: [], personalEmails: [], email: '', phone: '', mobile: '', homePhone: '', homePhone2: '', businessPhone2: '', carPhone: '', otherPhone: '', primaryPhone: '', pager: '', businessFax: '', homeFax: '', otherFax: '', companyMainPhone: '', businessStreet: '', businessCity: '', businessState: '', businessPostalCode: '', businessCountry: '', homeStreet: '', homeCity: '', homeState: '', homePostalCode: '', homeCountry: '', otherStreet: '', otherCity: '', otherState: '', otherPostalCode: '', otherCountry: '', phoneAssignments: {} }
+const BLANK = { firstName: '', lastName: '', middleName: '', suffix: '', nickname: '', title: '', contactFunction: '', companyId: '', linkedIn: '', webPage: '', birthday: '', anniversary: '', notes: '', tags: [], ownerIds: [], visibility: 'shared', sharedWith: [], sharedNotes: '', sharedCellPhones: [], sharedEmails: [], personalPhones: [], personalEmails: [], email: '', email2: '', email3: '', phone: '', mobile: '', homePhone: '', homePhone2: '', businessPhone2: '', carPhone: '', otherPhone: '', primaryPhone: '', pager: '', businessFax: '', homeFax: '', otherFax: '', companyMainPhone: '', businessStreet: '', businessCity: '', businessState: '', businessPostalCode: '', businessCountry: '', homeStreet: '', homeCity: '', homeState: '', homePostalCode: '', homeCountry: '', otherStreet: '', otherCity: '', otherState: '', otherPostalCode: '', otherCountry: '', phoneAssignments: {} }
 
-const EXTENDED_PHONE_LABELS = {
-  homePhone: 'Home Phone', homePhone2: 'Home Phone 2', businessPhone2: 'Business Phone 2',
-  carPhone: 'Car Phone', otherPhone: 'Other Phone', primaryPhone: 'Primary Phone',
-  pager: 'Pager', companyMainPhone: 'Company Main',
-  businessFax: 'Business Fax', homeFax: 'Home Fax', otherFax: 'Other Fax',
-}
-const DEFAULT_PHONE_ASSIGNMENTS = {
+// All named field labels — emails, phones, fax
+const ALL_EMAIL_FIELDS = [
+  { key: 'email',  label: 'Email' },
+  { key: 'email2', label: 'Email 2' },
+  { key: 'email3', label: 'Email 3' },
+]
+const ALL_PHONE_FIELDS = [
+  { key: 'phone',            label: 'Business Phone' },
+  { key: 'mobile',           label: 'Mobile Phone' },
+  { key: 'homePhone',        label: 'Home Phone' },
+  { key: 'homePhone2',       label: 'Home Phone 2' },
+  { key: 'businessPhone2',   label: 'Business Phone 2' },
+  { key: 'carPhone',         label: 'Car Phone' },
+  { key: 'otherPhone',       label: 'Other Phone' },
+  { key: 'primaryPhone',     label: 'Primary Phone' },
+  { key: 'pager',            label: 'Pager' },
+  { key: 'companyMainPhone', label: 'Company Main' },
+]
+const ALL_FAX_FIELDS = [
+  { key: 'businessFax', label: 'Business Fax' },
+  { key: 'homeFax',     label: 'Home Fax' },
+  { key: 'otherFax',    label: 'Other Fax' },
+]
+const DEFAULT_FIELD_ASSIGNMENTS = {
+  email: 'personal', email2: 'personal', email3: 'personal',
+  phone: 'personal', mobile: 'personal',
   homePhone: 'personal', homePhone2: 'personal', carPhone: 'personal',
   pager: 'personal', otherPhone: 'personal', primaryPhone: 'personal', homeFax: 'personal',
   businessPhone2: 'shared', companyMainPhone: 'shared', businessFax: 'shared', otherFax: 'shared',
-}
-
-// Multi-value input: individual boxes with X to remove and + to add
-function MultiValueInput({ values, onChange, type = 'text', placeholder, addLabel, onSwapItem }) {
-  return (
-    <div className="space-y-1">
-      {values.map((v, i) => (
-        <div key={i} className="flex gap-1">
-          <input
-            type={type}
-            value={v}
-            onChange={e => { const next = [...values]; next[i] = e.target.value; onChange(next) }}
-            className="v-input flex-1"
-            placeholder={placeholder}
-          />
-          <button type="button" onClick={() => onChange(values.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 px-1 flex-shrink-0 transition-colors">
-            <X size={11} />
-          </button>
-          {onSwapItem && (
-            <button type="button" onClick={() => onSwapItem(i)} className="text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 px-1 flex-shrink-0 transition-colors underline">
-              Swap
-            </button>
-          )}
-        </div>
-      ))}
-      <button type="button" onClick={() => onChange([...values, ''])} className="flex items-center gap-1 text-[10px] text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">
-        <Plus size={10} /> {addLabel}
-      </button>
-    </div>
-  )
 }
 
 export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibility = 'shared' }) {
@@ -86,30 +75,37 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
   const isOwner = isNewContact || (initial.ownerIds || []).includes(user?.id)
   const ownersEditable = isNewContact || isAdmin
 
-  // Derive personalPhones/personalEmails from legacy fields for existing contacts
-  const initPersonalPhones = initial.personalPhones?.length
-    ? initial.personalPhones
-    : [initial.phone, initial.mobile].filter(Boolean)
-  const initPersonalEmails = initial.personalEmails?.length
-    ? initial.personalEmails
-    : [initial.email].filter(Boolean)
+  // Migrate legacy unnamed arrays into named fields for existing contacts
+  const initEmail = initial.email || (initial.personalEmails || [])[0] || (initial.sharedEmails || [])[0] || ''
+  const initEmail2 = initial.email2 || (initial.personalEmails || [])[1] || (initial.sharedEmails || [])[1] || ''
+  const initEmail3 = initial.email3 || (initial.personalEmails || [])[2] || (initial.sharedEmails || [])[2] || ''
+  const initPhone = initial.phone || (initial.personalPhones || [])[0] || (initial.sharedCellPhones || [])[0] || ''
+  const initMobile = initial.mobile || (initial.personalPhones || [])[1] || (initial.sharedCellPhones || [])[1] || ''
 
   const defaultOwnerIds = isNewContact ? (user ? [user.id] : []) : (initial.ownerIds || [])
   const [form, setForm] = useState({
     ...BLANK,
     ...initial,
+    email: initEmail,
+    email2: initEmail2,
+    email3: initEmail3,
+    phone: initPhone,
+    mobile: initMobile,
     ownerIds: defaultOwnerIds,
     visibility: initial.visibility || defaultVisibility,
     sharedWith: initial.sharedWith || [],
     sharedCellPhones: initial.sharedCellPhones || [],
     sharedEmails: initial.sharedEmails || initial.sharedPersonalEmails || [],
-    personalPhones: initPersonalPhones,
-    personalEmails: initPersonalEmails,
-    phoneAssignments: { ...DEFAULT_PHONE_ASSIGNMENTS, ...(initial.phoneAssignments || {}) },
+    personalPhones: initial.personalPhones || [],
+    personalEmails: initial.personalEmails || [],
+    phoneAssignments: { ...DEFAULT_FIELD_ASSIGNMENTS, ...(initial.phoneAssignments || {}) },
   })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [activeTab, setActiveTab] = useState('general')
+  // Progressive disclosure: extra revealed slots per field group
+  const [extraSlots, setExtraSlots] = useState({ pEmails: 0, pPhones: 0, pFax: 0, sEmails: 0, sPhones: 0, sFax: 0 })
+  const addSlot = (key) => setExtraSlots(s => ({ ...s, [key]: s[key] + 1 }))
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   function toggleOwner(id) {
@@ -128,22 +124,32 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
     setSaveError(null)
     setSaving(true)
     try {
-      // Write back first array entries to legacy single fields for backward compat
+      // Derive backward-compat arrays from named fields based on assignments
+      const fa = { ...DEFAULT_FIELD_ASSIGNMENTS, ...form.phoneAssignments }
+      const isShared = form.visibility === 'shared'
+      const emailKeys = ['email', 'email2', 'email3']
+      const phoneKeys = ['phone', 'mobile']
+      const personalEmailArr = emailKeys.filter(k => form[k] && (!isShared || fa[k] === 'personal')).map(k => form[k])
+      const sharedEmailArr = isShared ? emailKeys.filter(k => form[k] && fa[k] === 'shared').map(k => form[k]) : []
+      const personalPhoneArr = phoneKeys.filter(k => form[k] && (!isShared || fa[k] === 'personal')).map(k => form[k])
+      const sharedPhoneArr = isShared ? phoneKeys.filter(k => form[k] && fa[k] === 'shared').map(k => form[k]) : []
       const payload = {
         ...form,
+        personalEmails: personalEmailArr,
+        sharedEmails: sharedEmailArr,
+        personalPhones: personalPhoneArr,
+        sharedCellPhones: sharedPhoneArr,
         // Non-owners must not overwrite owner's private fields
-        ...(isOwner ? {
-          phone: form.personalPhones[0] || '',
-          mobile: form.personalPhones[1] || '',
-          email: form.personalEmails[0] || '',
-        } : {
+        ...(!isOwner ? {
           personalPhones: undefined,
           personalEmails: undefined,
           notes: undefined,
           phone: undefined,
           mobile: undefined,
           email: undefined,
-        }),
+          email2: undefined,
+          email3: undefined,
+        } : {}),
       }
       await onSubmit(payload)
     } catch (err) {
@@ -153,7 +159,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
     }
   }
 
-  const hasExtendedPhones = !!(form.homePhone || form.homePhone2 || form.businessPhone2 || form.carPhone || form.otherPhone || form.primaryPhone || form.pager || form.businessFax || form.homeFax || form.otherFax || form.companyMainPhone)
+  const hasAnyContactInfo = !!(form.email || form.email2 || form.email3 || form.phone || form.mobile || form.homePhone || form.homePhone2 || form.businessPhone2 || form.carPhone || form.otherPhone || form.primaryPhone || form.pager || form.businessFax || form.homeFax || form.otherFax || form.companyMainPhone || form.notes || form.sharedNotes)
   const hasAddresses = !!(form.businessStreet || form.homeStreet || form.otherStreet)
 
   return (
@@ -255,7 +261,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
       <div className="flex gap-0 border-b border-[var(--border)]">
         {[
           { id: 'general', label: 'General' },
-          { id: 'contact', label: 'Contact Info', dot: form.personalEmails.length > 0 || form.personalPhones.length > 0 || form.sharedEmails.length > 0 || form.sharedCellPhones.length > 0 || hasExtendedPhones },
+          { id: 'contact', label: 'Contact Info', dot: hasAnyContactInfo },
           { id: 'extended', label: 'Addresses', dot: hasAddresses },
         ].map(tab => (
           <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
@@ -363,13 +369,58 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
       {/* ══════ Tab: Contact Info ══════ */}
       {activeTab === 'contact' && (() => {
         const canSwap = form.visibility === 'shared'
-        const phoneAssign = (field) => canSwap ? (form.phoneAssignments[field] || DEFAULT_PHONE_ASSIGNMENTS[field] || 'personal') : 'personal'
-        const personalPhoneFields = Object.keys(EXTENDED_PHONE_LABELS).filter(k => phoneAssign(k) === 'personal')
-        const sharedPhoneFields = Object.keys(EXTENDED_PHONE_LABELS).filter(k => phoneAssign(k) === 'shared')
-        const flipPhone = (field) => setForm(p => ({
+        const fieldAssign = (field) => canSwap ? (form.phoneAssignments[field] || DEFAULT_FIELD_ASSIGNMENTS[field] || 'personal') : 'personal'
+        const flipField = (field) => setForm(p => ({
           ...p,
-          phoneAssignments: { ...p.phoneAssignments, [field]: phoneAssign(field) === 'personal' ? 'shared' : 'personal' },
+          phoneAssignments: { ...p.phoneAssignments, [field]: fieldAssign(field) === 'personal' ? 'shared' : 'personal' },
         }))
+
+        // Determine which fields go in each section
+        const personalEmails = ALL_EMAIL_FIELDS.filter(f => fieldAssign(f.key) === 'personal')
+        const sharedEmails = ALL_EMAIL_FIELDS.filter(f => fieldAssign(f.key) === 'shared')
+        const personalPhones = ALL_PHONE_FIELDS.filter(f => fieldAssign(f.key) === 'personal')
+        const sharedPhones = ALL_PHONE_FIELDS.filter(f => fieldAssign(f.key) === 'shared')
+        const personalFax = ALL_FAX_FIELDS.filter(f => fieldAssign(f.key) === 'personal')
+        const sharedFax = ALL_FAX_FIELDS.filter(f => fieldAssign(f.key) === 'shared')
+
+        // Render a group of named fields with progressive disclosure
+        const renderFieldGroup = (fields, label, addLabel, minVisible, section, slotKey) => {
+          const populated = fields.filter(f => form[f.key]).length
+          const visible = Math.max(minVisible, populated, Math.min(minVisible + extraSlots[slotKey], fields.length))
+          const canAdd = visible < fields.length
+
+          return (
+            <div>
+              <p className="v-label mb-1">{label}</p>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                {fields.slice(0, visible).map(({ key, label: fieldLabel }) => (
+                  <div key={key} className="flex items-center gap-1">
+                    <div className="flex-1">
+                      <label className="v-label">{fieldLabel}</label>
+                      <input value={form[key] || ''} onChange={f(key)} className="v-input"
+                        type={label === 'Emails' ? 'email' : 'text'}
+                        placeholder={label === 'Emails' ? 'name@company.com' : ''}
+                      />
+                    </div>
+                    {canSwap && (
+                      <button type="button" onClick={() => flipField(key)}
+                        className="mt-3.5 flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
+                        {section === 'personal' ? <><ArrowDown size={9} className="inline" /> Shared</> : <><ArrowUp size={9} className="inline" /> Personal</>}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {canAdd && (
+                <button type="button" onClick={() => addSlot(slotKey)}
+                  className="flex items-center gap-1 text-[10px] text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors mt-1.5">
+                  <Plus size={10} /> {addLabel}
+                </button>
+              )}
+            </div>
+          )
+        }
+
         return (
         <div className="space-y-3">
           {/* Personal */}
@@ -381,70 +432,35 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
               </p>
               {canSwap && (
                 <button type="button"
-                  onClick={() => setForm(p => ({
-                    ...p,
-                    notes: p.sharedNotes, sharedNotes: p.notes,
-                    personalPhones: p.sharedCellPhones, sharedCellPhones: p.personalPhones,
-                    personalEmails: p.sharedEmails, sharedEmails: p.personalEmails,
-                  }))}
+                  onClick={() => {
+                    // Swap all field assignments between personal and shared
+                    setForm(p => {
+                      const newAssignments = { ...p.phoneAssignments }
+                      for (const f of [...ALL_EMAIL_FIELDS, ...ALL_PHONE_FIELDS, ...ALL_FAX_FIELDS]) {
+                        const cur = newAssignments[f.key] || DEFAULT_FIELD_ASSIGNMENTS[f.key] || 'personal'
+                        newAssignments[f.key] = cur === 'personal' ? 'shared' : 'personal'
+                      }
+                      return { ...p, phoneAssignments: newAssignments, notes: p.sharedNotes, sharedNotes: p.notes }
+                    })
+                  }}
                   className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
                   <ArrowLeftRight size={11} /> Swap All
                 </button>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="v-label">Emails</label>
-                <MultiValueInput
-                  values={form.personalEmails}
-                  onChange={(v) => setForm(p => ({ ...p, personalEmails: v }))}
-                  type="email"
-                  placeholder="name@company.com"
-                  addLabel="Add email"
-                  onSwapItem={canSwap ? (i) => setForm(p => ({
-                    ...p,
-                    personalEmails: p.personalEmails.filter((_, j) => j !== i),
-                    sharedEmails: [...p.sharedEmails, p.personalEmails[i]],
-                  })) : undefined}
-                />
-              </div>
-              <div>
-                <label className="v-label">Phones</label>
-                <MultiValueInput
-                  values={form.personalPhones}
-                  onChange={(v) => setForm(p => ({ ...p, personalPhones: v }))}
-                  placeholder="212-555-0100"
-                  addLabel="Add phone"
-                  onSwapItem={canSwap ? (i) => setForm(p => ({
-                    ...p,
-                    personalPhones: p.personalPhones.filter((_, j) => j !== i),
-                    sharedCellPhones: [...p.sharedCellPhones, p.personalPhones[i]],
-                  })) : undefined}
-                />
-              </div>
-            </div>
+            {personalEmails.length > 0 && renderFieldGroup(personalEmails, 'Emails', 'Add email', 1, 'personal', 'pEmails')}
 
-            {personalPhoneFields.length > 0 && (
-              <div>
-                <p className="v-label mb-1">Named Phones & Fax</p>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                  {personalPhoneFields.map(field => (
-                    <div key={field} className="flex items-center gap-1">
-                      <div className="flex-1">
-                        <label className="v-label">{EXTENDED_PHONE_LABELS[field]}</label>
-                        <input value={form[field]} onChange={f(field)} className="v-input" />
-                      </div>
-                      {canSwap && (
-                        <button type="button" onClick={() => flipPhone(field)}
-                          className="mt-3.5 flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
-                          → Shared
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {personalPhones.length > 0 && renderFieldGroup(personalPhones, 'Phones', 'Add phone', 2, 'personal', 'pPhones')}
+
+            {personalFax.length > 0 && renderFieldGroup(personalFax, 'Fax', 'Add fax', 0, 'personal', 'pFax')}
+
+            {/* Show add buttons when all fields of a type have been moved to shared */}
+            {personalEmails.length === 0 && canSwap && (
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">All emails moved to Shared</p>
+            )}
+            {personalPhones.length === 0 && personalFax.length === 0 && canSwap && (
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">All phones moved to Shared</p>
             )}
 
             <div>
@@ -452,7 +468,9 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
               <textarea value={form.notes} onChange={f('notes')} rows={3} className="v-input resize-y w-full" placeholder="Background, preferences, how you met..." />
               {canSwap && (
                 <button type="button" onClick={() => setForm(p => ({ ...p, notes: p.sharedNotes, sharedNotes: p.notes }))}
-                  className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">Swap</button>
+                  className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline flex items-center gap-0.5">
+                  <ArrowLeftRight size={9} /> Swap
+                </button>
               )}
             </div>
           </div>
@@ -466,63 +484,23 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
 
             {canSwap ? (
               <>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="v-label">Emails</label>
-                    <MultiValueInput
-                      values={form.sharedEmails}
-                      onChange={(v) => setForm(p => ({ ...p, sharedEmails: v }))}
-                      type="email"
-                      placeholder="name@company.com"
-                      addLabel="Add email"
-                      onSwapItem={(i) => setForm(p => ({
-                        ...p,
-                        sharedEmails: p.sharedEmails.filter((_, j) => j !== i),
-                        personalEmails: [...p.personalEmails, p.sharedEmails[i]],
-                      }))}
-                    />
-                  </div>
-                  <div>
-                    <label className="v-label">Phones</label>
-                    <MultiValueInput
-                      values={form.sharedCellPhones}
-                      onChange={(v) => setForm(p => ({ ...p, sharedCellPhones: v }))}
-                      placeholder="212-555-0100"
-                      addLabel="Add phone"
-                      onSwapItem={(i) => setForm(p => ({
-                        ...p,
-                        sharedCellPhones: p.sharedCellPhones.filter((_, j) => j !== i),
-                        personalPhones: [...p.personalPhones, p.sharedCellPhones[i]],
-                      }))}
-                    />
-                  </div>
-                </div>
+                {sharedEmails.length > 0 && renderFieldGroup(sharedEmails, 'Emails', 'Add email', 1, 'shared', 'sEmails')}
 
-                {sharedPhoneFields.length > 0 && (
-                  <div>
-                    <p className="v-label mb-1">Named Phones & Fax</p>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                      {sharedPhoneFields.map(field => (
-                        <div key={field} className="flex items-center gap-1">
-                          <div className="flex-1">
-                            <label className="v-label">{EXTENDED_PHONE_LABELS[field]}</label>
-                            <input value={form[field]} onChange={f(field)} className="v-input" />
-                          </div>
-                          <button type="button" onClick={() => flipPhone(field)}
-                            className="mt-3.5 flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
-                            → Personal
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                {sharedPhones.length > 0 && renderFieldGroup(sharedPhones, 'Phones', 'Add phone', 1, 'shared', 'sPhones')}
+
+                {sharedFax.length > 0 && renderFieldGroup(sharedFax, 'Fax', 'Add fax', 0, 'shared', 'sFax')}
+
+                {sharedEmails.length === 0 && sharedPhones.length === 0 && sharedFax.length === 0 && (
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">All fields are in Personal. Use swap buttons to move fields here.</p>
                 )}
 
                 <div>
                   <label className="v-label">Notes</label>
                   <textarea value={form.sharedNotes} onChange={f('sharedNotes')} rows={3} className="v-input resize-y w-full" placeholder="Team-facing notes..." />
                   <button type="button" onClick={() => setForm(p => ({ ...p, sharedNotes: p.notes, notes: p.sharedNotes }))}
-                    className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">Swap</button>
+                    className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline flex items-center gap-0.5">
+                    <ArrowLeftRight size={9} /> Swap
+                  </button>
                 </div>
               </>
             ) : (
@@ -689,7 +667,7 @@ export function ContactDetail({ backTo }) {
             {(() => {
               const canSeePrivate = isOwner || contact.visibility !== 'shared'
               const allEmails = [...new Set([
-                ...(canSeePrivate ? [contact.email, ...(contact.personalEmails || [])] : []),
+                ...(canSeePrivate ? [contact.email, contact.email2, contact.email3, ...(contact.personalEmails || [])] : []),
                 ...(contact.sharedEmails || [])
               ].filter(Boolean))]
               const allPhones = [...new Set([

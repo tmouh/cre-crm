@@ -79,7 +79,11 @@ function outlookToCrmPatch(c) {
   if (c.jobTitle         !== undefined) patch.title         = c.jobTitle         || ''
   if (c.personalNotes    !== undefined) patch.notes         = c.personalNotes    || ''
   if (c.mobilePhone      !== undefined) patch.mobile        = c.mobilePhone      || ''
-  if (c.emailAddresses   !== undefined) patch.email         = c.emailAddresses?.[0]?.address || ''
+  if (c.emailAddresses   !== undefined) {
+    patch.email          = c.emailAddresses?.[0]?.address || ''
+    patch.email2         = c.emailAddresses?.[1]?.address || ''
+    patch.email3         = c.emailAddresses?.[2]?.address || ''
+  }
   if (c.businessPhones   !== undefined) {
     patch.phone          = c.businessPhones?.[0] || ''
     patch.businessPhone2 = c.businessPhones?.[1] || ''

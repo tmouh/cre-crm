@@ -209,6 +209,8 @@ export default function OutlookImport({ onClose }) {
           title:      oc.jobTitle   || '',
           companyId:  companyId || undefined,
           email,
+          email2: allEmails[1] || '',
+          email3: allEmails[2] || '',
           phone:  oc.businessPhones?.[0] || '',
           mobile: oc.mobilePhone || '',
           personalEmails:   importVisibility === 'private' ? allEmails : [],

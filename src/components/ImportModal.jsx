@@ -205,6 +205,8 @@ function rowToContact(row, map, companies, importVisibility = 'shared') {
     contactFunction:    v('contactFunction') || '',
     companyId,
     email:              allEmails[0] || '',
+    email2:             allEmails[1] || '',
+    email3:             allEmails[2] || '',
     phone:              v('phone'),
     mobile:             v('mobile'),
     personalEmails:     isPersonal ? allEmails : [],
