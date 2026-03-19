@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, Component } from 'react'
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle, Lock, Users, Save, X, CheckSquare, Share2, ArrowLeftRight, ChevronDown, Globe, Cake, Calendar } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle, Lock, Users, Save, X, CheckSquare, Share2, ArrowLeftRight, Globe, Cake, Calendar } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
@@ -96,9 +96,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
   })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
-  const [showExtended, setShowExtended] = useState(() =>
-    !!(initial.homePhone || initial.homePhone2 || initial.businessPhone2 || initial.carPhone || initial.otherPhone || initial.primaryPhone || initial.pager || initial.businessFax || initial.homeFax || initial.otherFax || initial.companyMainPhone || initial.businessStreet || initial.homeStreet || initial.otherStreet)
-  )
+  const [activeTab, setActiveTab] = useState('general')
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   function toggleOwner(id) {
@@ -113,6 +111,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
   async function handleSubmit(e) {
     e.preventDefault()
     e.stopPropagation()
+    if (!form.firstName || !form.lastName) { setActiveTab('general'); return }
     setSaveError(null)
     setSaving(true)
     try {
@@ -141,355 +140,374 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
     }
   }
 
+  const hasExtendedPhones = !!(form.homePhone || form.homePhone2 || form.businessPhone2 || form.carPhone || form.otherPhone || form.primaryPhone || form.pager || form.businessFax || form.homeFax || form.otherFax || form.companyMainPhone)
+  const hasAddresses = !!(form.businessStreet || form.homeStreet || form.otherStreet)
+
   return (
-    <form onSubmit={handleSubmit}>
-      {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800 mb-3">{saveError}</p>}
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800">{saveError}</p>}
 
-      <div className="grid gap-3" style={{ gridTemplateColumns: '4fr 3fr 3fr' }}>
-
-        {/* ── Column 1: Basic Info ── */}
-        <div className="border border-[var(--border)] p-3 flex flex-col gap-2">
-          <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Basic Info</p>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="v-label">First name <span className="text-red-500">*</span></label>
-              <input value={form.firstName} onChange={f('firstName')} className="v-input" required />
-            </div>
-            <div>
-              <label className="v-label">Last name <span className="text-red-500">*</span></label>
-              <input value={form.lastName} onChange={f('lastName')} className="v-input" required />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className="v-label">Middle</label>
-              <input value={form.middleName} onChange={f('middleName')} className="v-input" />
-            </div>
-            <div>
-              <label className="v-label">Suffix</label>
-              <input value={form.suffix} onChange={f('suffix')} className="v-input" placeholder="Jr., Sr., III" />
-            </div>
-            <div>
-              <label className="v-label">Nickname</label>
-              <input value={form.nickname} onChange={f('nickname')} className="v-input" />
-            </div>
-          </div>
-
-          <div>
-            <label className="v-label">Title / Role</label>
-            <input value={form.title} onChange={f('title')} className="v-input" placeholder="e.g. VP Real Estate" />
-          </div>
-
-          <div>
-            <label className="v-label">Company</label>
-            <CompanyCombobox
-              value={form.companyId}
-              onChange={(id) => setForm(p => ({ ...p, companyId: id }))}
-              onCreateAndSelect={async (name) => {
-                const c = await addCompany({ name, type: 'other' })
-                setForm(p => ({ ...p, companyId: c.id }))
-              }}
-            />
-          </div>
-
-          <div>
-            <label className="v-label">Function</label>
-            <select value={form.contactFunction || ''} onChange={f('contactFunction')} className="v-select">
-              <option value="">— Select —</option>
-              {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="v-label">LinkedIn</label>
-            <input value={form.linkedIn} onChange={f('linkedIn')} className="v-input" placeholder="linkedin.com/in/..." />
-          </div>
-
-          <div>
-            <label className="v-label">Web Page</label>
-            <input value={form.webPage} onChange={f('webPage')} className="v-input" placeholder="https://..." />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="v-label">Birthday</label>
-              <input type="date" value={form.birthday} onChange={f('birthday')} className="v-input" />
-            </div>
-            <div>
-              <label className="v-label">Anniversary</label>
-              <input type="date" value={form.anniversary} onChange={f('anniversary')} className="v-input" />
-            </div>
-          </div>
-
-          <div>
-            <label className="v-label">Tags</label>
-            <TagInput tags={form.tags || []} onChange={(tags) => setForm(p => ({ ...p, tags }))} />
-          </div>
-
-          {/* Owners / Visibility / Share With at bottom of Basic Info */}
-          <div className="border-t border-[var(--border)] pt-2 mt-auto space-y-2">
-            {teamMembers.length > 0 && (
-              <div>
-                <label className="v-label">Owners</label>
-                {ownersEditable ? (
-                  <div className="border border-[var(--border)] p-1.5 space-y-0.5 max-h-20 overflow-y-auto">
-                    {teamMembers.map(m => (
-                      <label key={m.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-100 px-1.5 py-0.5">
-                        <input type="checkbox" checked={form.ownerIds.includes(m.id)} onChange={() => toggleOwner(m.id)} />
-                        <span className="text-slate-700 dark:text-slate-300">{m.displayName || m.email}</span>
-                        {m.id === user?.id && <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">(you)</span>}
-                      </label>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="border border-[var(--border)] p-1.5 flex flex-wrap gap-1.5">
-                    {(form.ownerIds || []).map(id => {
-                      const m = teamMembers.find(t => t.id === id)
-                      return m ? (
-                        <span key={id} className="text-[11px] text-slate-600 dark:text-slate-300 bg-surface-100 dark:bg-surface-200 px-2 py-0.5 border border-[var(--border)]">
-                          {m.displayName || m.email}{m.id === user?.id ? ' (you)' : ''}
-                        </span>
-                      ) : null
-                    })}
-                    {form.ownerIds.length === 0 && <span className="text-[10px] text-slate-400 dark:text-slate-500">No owners</span>}
-                  </div>
-                )}
-                {!ownersEditable && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Only admins can change owners after creation.</p>}
-              </div>
-            )}
-
-            {isOwner && (
-              <div>
-                <label className="v-label">Visibility</label>
-                <div className="flex gap-1.5">
-                  <button type="button" onClick={() => setForm(p => ({ ...p, visibility: 'private' }))}
-                    className={clsx('flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] font-medium border transition-colors',
-                      form.visibility === 'private'
-                        ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
-                        : 'border-[var(--border)] text-slate-500 hover:border-slate-400 dark:text-slate-400'
-                    )}>
-                    <Lock size={10} /> Private
-                  </button>
-                  <button type="button" onClick={() => setForm(p => ({ ...p, visibility: 'shared' }))}
-                    className={clsx('flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] font-medium border transition-colors',
-                      form.visibility === 'shared'
-                        ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
-                        : 'border-[var(--border)] text-slate-500 hover:border-slate-400 dark:text-slate-400'
-                    )}>
-                    <Users size={10} /> Shared
-                  </button>
-                </div>
-                {form.visibility === 'private' && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Only visible to owners.</p>}
-                {form.visibility === 'shared' && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Visible in the shared CRM.</p>}
-              </div>
-            )}
-
-            {isOwner && form.visibility === 'shared' && teamMembers.length > 0 && (
-              <div>
-                <label className="v-label">Share with <span className="text-[9px] font-normal text-slate-400 ml-1">(blank = all)</span></label>
-                <div className="border border-[var(--border)] p-1.5 space-y-0.5 max-h-20 overflow-y-auto">
-                  {teamMembers.map(m => (
-                    <label key={m.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-100 px-1.5 py-0.5">
-                      <input
-                        type="checkbox"
-                        checked={form.sharedWith.length === 0 || form.sharedWith.includes(m.id)}
-                        onChange={() => {
-                          setForm(p => {
-                            if (p.sharedWith.length === 0) {
-                              return { ...p, sharedWith: teamMembers.filter(tm => tm.id !== m.id).map(tm => tm.id) }
-                            }
-                            const next = p.sharedWith.includes(m.id)
-                              ? p.sharedWith.filter(id => id !== m.id)
-                              : [...p.sharedWith, m.id]
-                            return { ...p, sharedWith: next.length === teamMembers.length ? [] : next }
-                          })
-                        }}
-                      />
-                      <span className="text-slate-700 dark:text-slate-300">{m.displayName || m.email}</span>
-                      {m.id === user?.id && <span className="text-[10px] text-slate-400 font-mono">(you)</span>}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── Column 2: Personal (private) — only visible to owner ── */}
+      {/* ══════ Section 1: Sharing bar ══════ */}
+      <div className="border border-[var(--border)] px-3 py-2 flex items-center gap-4 flex-wrap">
         {isOwner && (
-        <div className="border border-[var(--border)] p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono flex items-center gap-1">
-              <Lock size={9} /> Personal <span className="font-normal normal-case text-[9px] text-slate-400 dark:text-slate-500">(private to you)</span>
-            </p>
-            {form.visibility === 'shared' && (
-              <button
-                type="button"
-                onClick={() => setForm(p => ({
-                  ...p,
-                  notes: p.sharedNotes, sharedNotes: p.notes,
-                  personalPhones: p.sharedCellPhones, sharedCellPhones: p.personalPhones,
-                  personalEmails: p.sharedEmails, sharedEmails: p.personalEmails,
-                }))}
-                className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
-              >
-                <ArrowLeftRight size={11} /> Swap All
-              </button>
-            )}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Visibility</span>
+            <button type="button" onClick={() => setForm(p => ({ ...p, visibility: 'private' }))}
+              className={clsx('flex items-center gap-1 px-2 py-1 text-[10px] font-medium border transition-colors',
+                form.visibility === 'private'
+                  ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
+                  : 'border-[var(--border)] text-slate-500 hover:border-slate-400 dark:text-slate-400'
+              )}>
+              <Lock size={10} /> Private
+            </button>
+            <button type="button" onClick={() => setForm(p => ({ ...p, visibility: 'shared' }))}
+              className={clsx('flex items-center gap-1 px-2 py-1 text-[10px] font-medium border transition-colors',
+                form.visibility === 'shared'
+                  ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
+                  : 'border-[var(--border)] text-slate-500 hover:border-slate-400 dark:text-slate-400'
+              )}>
+              <Users size={10} /> Shared
+            </button>
           </div>
-
-          <div>
-            <label className="v-label">Notes</label>
-            <textarea value={form.notes} onChange={f('notes')} rows={4} className="v-input resize-y w-full" placeholder="Background, preferences, how you met..." />
-            {form.visibility === 'shared' && (
-              <button type="button" onClick={() => setForm(p => ({ ...p, notes: p.sharedNotes, sharedNotes: p.notes }))}
-                className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">
-                Swap
-              </button>
-            )}
-          </div>
-
-          <div>
-            <label className="v-label">Phones</label>
-            <MultiValueInput
-              values={form.personalPhones}
-              onChange={(v) => setForm(p => ({ ...p, personalPhones: v }))}
-              placeholder="212-555-0100"
-              addLabel="Add phone"
-              onSwapItem={form.visibility === 'shared' ? (i) => setForm(p => ({
-                ...p,
-                personalPhones: p.personalPhones.filter((_, j) => j !== i),
-                sharedCellPhones: [...p.sharedCellPhones, p.personalPhones[i]],
-              })) : undefined}
-            />
-          </div>
-
-          <div>
-            <label className="v-label">Emails</label>
-            <MultiValueInput
-              values={form.personalEmails}
-              onChange={(v) => setForm(p => ({ ...p, personalEmails: v }))}
-              type="email"
-              placeholder="name@company.com"
-              addLabel="Add email"
-              onSwapItem={form.visibility === 'shared' ? (i) => setForm(p => ({
-                ...p,
-                personalEmails: p.personalEmails.filter((_, j) => j !== i),
-                sharedEmails: [...p.sharedEmails, p.personalEmails[i]],
-              })) : undefined}
-            />
-          </div>
-        </div>
         )}
 
-        {/* ── Column 3: Shared ── */}
-        <div className={clsx('border p-3 flex flex-col gap-2', form.visibility === 'shared' ? 'border-brand-200 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-900/10' : 'border-[var(--border)]')}>
-          <p className={clsx('text-[10px] font-semibold uppercase tracking-wide font-mono flex items-center gap-1', form.visibility === 'shared' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500')}>
-            <Users size={9} /> Shared <span className="font-normal normal-case text-[9px] ml-1">(visible to team)</span>
-          </p>
-
-          {form.visibility === 'shared' ? (
-            <>
-              <div>
-                <label className="v-label">Notes</label>
-                <textarea value={form.sharedNotes} onChange={f('sharedNotes')} rows={4} className="v-input resize-y w-full" placeholder="Team-facing notes..." />
-                <button type="button" onClick={() => setForm(p => ({ ...p, sharedNotes: p.notes, notes: p.sharedNotes }))}
-                  className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">
-                  Swap
-                </button>
+        {teamMembers.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Owners</span>
+            {ownersEditable ? (
+              <div className="flex flex-wrap gap-1">
+                {teamMembers.map(m => (
+                  <button key={m.id} type="button" onClick={() => toggleOwner(m.id)}
+                    className={clsx('text-[10px] px-2 py-0.5 border transition-colors',
+                      form.ownerIds.includes(m.id)
+                        ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
+                        : 'border-[var(--border)] text-slate-400 hover:border-slate-400 dark:text-slate-500'
+                    )}>
+                    {m.displayName || m.email}{m.id === user?.id ? ' (you)' : ''}
+                  </button>
+                ))}
               </div>
+            ) : (
+              <div className="flex flex-wrap gap-1">
+                {(form.ownerIds || []).map(id => {
+                  const m = teamMembers.find(t => t.id === id)
+                  return m ? (
+                    <span key={id} className="text-[10px] text-slate-600 dark:text-slate-300 bg-surface-100 dark:bg-surface-200 px-2 py-0.5 border border-[var(--border)]">
+                      {m.displayName || m.email}{m.id === user?.id ? ' (you)' : ''}
+                    </span>
+                  ) : null
+                })}
+                {form.ownerIds.length === 0 && <span className="text-[10px] text-slate-400 dark:text-slate-500">None</span>}
+              </div>
+            )}
+          </div>
+        )}
 
+        {isOwner && form.visibility === 'shared' && teamMembers.length > 0 && (
+          <div className="flex items-center gap-1.5 ml-auto">
+            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Share with</span>
+            <div className="flex flex-wrap gap-1">
+              {teamMembers.map(m => (
+                <button key={m.id} type="button"
+                  onClick={() => {
+                    setForm(p => {
+                      if (p.sharedWith.length === 0) {
+                        return { ...p, sharedWith: teamMembers.filter(tm => tm.id !== m.id).map(tm => tm.id) }
+                      }
+                      const next = p.sharedWith.includes(m.id)
+                        ? p.sharedWith.filter(id => id !== m.id)
+                        : [...p.sharedWith, m.id]
+                      return { ...p, sharedWith: next.length === teamMembers.length ? [] : next }
+                    })
+                  }}
+                  className={clsx('text-[10px] px-2 py-0.5 border transition-colors',
+                    form.sharedWith.length === 0 || form.sharedWith.includes(m.id)
+                      ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
+                      : 'border-[var(--border)] text-slate-400 hover:border-slate-400 dark:text-slate-500'
+                  )}>
+                  {m.displayName || m.email}
+                </button>
+              ))}
+            </div>
+            {form.sharedWith.length === 0 && <span className="text-[9px] text-slate-400 dark:text-slate-500">(all)</span>}
+          </div>
+        )}
+      </div>
+
+      {/* ══════ Tab Bar ══════ */}
+      <div className="flex gap-0 border-b border-[var(--border)]">
+        {[
+          { id: 'general', label: 'General' },
+          { id: 'contact', label: 'Contact Info', dot: form.personalEmails.length > 0 || form.personalPhones.length > 0 || form.sharedEmails.length > 0 || form.sharedCellPhones.length > 0 },
+          { id: 'extended', label: 'Addresses & More', dot: hasExtendedPhones || hasAddresses },
+        ].map(tab => (
+          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
+            className={clsx('px-4 py-2 text-[11px] font-semibold tracking-wide font-mono transition-colors relative flex items-center gap-1.5',
+              activeTab === tab.id
+                ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-500 -mb-px'
+                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+            )}>
+            {tab.label}
+            {tab.dot && activeTab !== tab.id && <span className="w-1.5 h-1.5 rounded-full bg-brand-500 flex-shrink-0" />}
+          </button>
+        ))}
+      </div>
+
+      {/* ══════ Tab: General ══════ */}
+      {activeTab === 'general' && (
+        <div className="space-y-3">
+          {/* Name */}
+          <div className="border border-[var(--border)] p-3 space-y-2">
+            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Name</p>
+            <div className="grid grid-cols-4 gap-2">
               <div>
-                <label className="v-label">Phones</label>
-                <MultiValueInput
-                  values={form.sharedCellPhones}
-                  onChange={(v) => setForm(p => ({ ...p, sharedCellPhones: v }))}
-                  placeholder="212-555-0100"
-                  addLabel="Add phone"
-                  onSwapItem={(i) => setForm(p => ({
-                    ...p,
-                    sharedCellPhones: p.sharedCellPhones.filter((_, j) => j !== i),
-                    personalPhones: [...p.personalPhones, p.sharedCellPhones[i]],
-                  }))}
+                <label className="v-label">First name <span className="text-red-500">*</span></label>
+                <input value={form.firstName} onChange={f('firstName')} className="v-input" required />
+              </div>
+              <div>
+                <label className="v-label">Last name <span className="text-red-500">*</span></label>
+                <input value={form.lastName} onChange={f('lastName')} className="v-input" required />
+              </div>
+              <div>
+                <label className="v-label">Middle</label>
+                <input value={form.middleName} onChange={f('middleName')} className="v-input" />
+              </div>
+              <div>
+                <label className="v-label">Suffix</label>
+                <input value={form.suffix} onChange={f('suffix')} className="v-input" placeholder="Jr." />
+              </div>
+            </div>
+          </div>
+
+          {/* Professional */}
+          <div className="border border-[var(--border)] p-3 space-y-2">
+            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Professional</p>
+            <div className="grid grid-cols-4 gap-2">
+              <div>
+                <label className="v-label">Title / Role</label>
+                <input value={form.title} onChange={f('title')} className="v-input" placeholder="e.g. VP Real Estate" />
+              </div>
+              <div>
+                <label className="v-label">Company</label>
+                <CompanyCombobox
+                  value={form.companyId}
+                  onChange={(id) => setForm(p => ({ ...p, companyId: id }))}
+                  onCreateAndSelect={async (name) => {
+                    const c = await addCompany({ name, type: 'other' })
+                    setForm(p => ({ ...p, companyId: c.id }))
+                  }}
                 />
               </div>
+              <div>
+                <label className="v-label">Function</label>
+                <select value={form.contactFunction || ''} onChange={f('contactFunction')} className="v-select">
+                  <option value="">— Select —</option>
+                  {CONTACT_FUNCTIONS.map(fn => <option key={fn} value={fn}>{formatContactFunction(fn)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="v-label">Nickname</label>
+                <input value={form.nickname} onChange={f('nickname')} className="v-input" />
+              </div>
+            </div>
+          </div>
 
+          {/* Online & Dates */}
+          <div className="border border-[var(--border)] p-3 space-y-2">
+            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Online & Dates</p>
+            <div className="grid grid-cols-4 gap-2">
+              <div>
+                <label className="v-label">LinkedIn</label>
+                <input value={form.linkedIn} onChange={f('linkedIn')} className="v-input" placeholder="linkedin.com/in/..." />
+              </div>
+              <div>
+                <label className="v-label">Web Page</label>
+                <input value={form.webPage} onChange={f('webPage')} className="v-input" placeholder="https://..." />
+              </div>
+              <div>
+                <label className="v-label">Birthday</label>
+                <input type="date" value={form.birthday} onChange={f('birthday')} className="v-input" />
+              </div>
+              <div>
+                <label className="v-label">Anniversary</label>
+                <input type="date" value={form.anniversary} onChange={f('anniversary')} className="v-input" />
+              </div>
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div className="border border-[var(--border)] p-3 space-y-2">
+            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Tags</p>
+            <TagInput tags={form.tags || []} onChange={(tags) => setForm(p => ({ ...p, tags }))} />
+          </div>
+        </div>
+      )}
+
+      {/* ══════ Tab: Contact Info ══════ */}
+      {activeTab === 'contact' && (
+        <div className="space-y-3">
+          {/* Personal */}
+          {isOwner && (
+          <div className="border border-[var(--border)] p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono flex items-center gap-1">
+                <Lock size={9} /> Personal <span className="font-normal normal-case text-[9px] text-slate-400 dark:text-slate-500">(private to you)</span>
+              </p>
+              {form.visibility === 'shared' && (
+                <button type="button"
+                  onClick={() => setForm(p => ({
+                    ...p,
+                    notes: p.sharedNotes, sharedNotes: p.notes,
+                    personalPhones: p.sharedCellPhones, sharedCellPhones: p.personalPhones,
+                    personalEmails: p.sharedEmails, sharedEmails: p.personalEmails,
+                  }))}
+                  className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+                  <ArrowLeftRight size={11} /> Swap All
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="v-label">Emails</label>
                 <MultiValueInput
-                  values={form.sharedEmails}
-                  onChange={(v) => setForm(p => ({ ...p, sharedEmails: v }))}
+                  values={form.personalEmails}
+                  onChange={(v) => setForm(p => ({ ...p, personalEmails: v }))}
                   type="email"
                   placeholder="name@company.com"
                   addLabel="Add email"
-                  onSwapItem={(i) => setForm(p => ({
+                  onSwapItem={form.visibility === 'shared' ? (i) => setForm(p => ({
                     ...p,
-                    sharedEmails: p.sharedEmails.filter((_, j) => j !== i),
-                    personalEmails: [...p.personalEmails, p.sharedEmails[i]],
-                  }))}
+                    personalEmails: p.personalEmails.filter((_, j) => j !== i),
+                    sharedEmails: [...p.sharedEmails, p.personalEmails[i]],
+                  })) : undefined}
                 />
               </div>
-            </>
-          ) : (
-            <p className="text-[10px] text-slate-400 dark:text-slate-500">Set visibility to Shared to enable shared fields.</p>
-          )}
-        </div>
-
-      </div>
-
-      {/* ── Collapsible: Additional Details (phones, fax, addresses) ── */}
-      <div className="border border-[var(--border)] mt-3">
-        <button type="button" onClick={() => setShowExtended(p => !p)}
-          className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-          Additional Details
-          <ChevronDown size={12} className={clsx('transition-transform', showExtended && 'rotate-180')} />
-        </button>
-        {showExtended && (
-          <div className="px-3 pb-3 pt-1 grid gap-4" style={{ gridTemplateColumns: '1fr 1fr' }}>
-            {/* Phones */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Phones & Fax</p>
-              <div className="grid grid-cols-2 gap-2">
-                <div><label className="v-label">Home Phone</label><input value={form.homePhone} onChange={f('homePhone')} className="v-input" /></div>
-                <div><label className="v-label">Home Phone 2</label><input value={form.homePhone2} onChange={f('homePhone2')} className="v-input" /></div>
-                <div><label className="v-label">Business Phone 2</label><input value={form.businessPhone2} onChange={f('businessPhone2')} className="v-input" /></div>
-                <div><label className="v-label">Car Phone</label><input value={form.carPhone} onChange={f('carPhone')} className="v-input" /></div>
-                <div><label className="v-label">Other Phone</label><input value={form.otherPhone} onChange={f('otherPhone')} className="v-input" /></div>
-                <div><label className="v-label">Primary Phone</label><input value={form.primaryPhone} onChange={f('primaryPhone')} className="v-input" /></div>
-                <div><label className="v-label">Pager</label><input value={form.pager} onChange={f('pager')} className="v-input" /></div>
-                <div><label className="v-label">Company Main</label><input value={form.companyMainPhone} onChange={f('companyMainPhone')} className="v-input" /></div>
-                <div><label className="v-label">Business Fax</label><input value={form.businessFax} onChange={f('businessFax')} className="v-input" /></div>
-                <div><label className="v-label">Home Fax</label><input value={form.homeFax} onChange={f('homeFax')} className="v-input" /></div>
-                <div><label className="v-label">Other Fax</label><input value={form.otherFax} onChange={f('otherFax')} className="v-input" /></div>
+              <div>
+                <label className="v-label">Phones</label>
+                <MultiValueInput
+                  values={form.personalPhones}
+                  onChange={(v) => setForm(p => ({ ...p, personalPhones: v }))}
+                  placeholder="212-555-0100"
+                  addLabel="Add phone"
+                  onSwapItem={form.visibility === 'shared' ? (i) => setForm(p => ({
+                    ...p,
+                    personalPhones: p.personalPhones.filter((_, j) => j !== i),
+                    sharedCellPhones: [...p.sharedCellPhones, p.personalPhones[i]],
+                  })) : undefined}
+                />
               </div>
             </div>
-            {/* Addresses */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Addresses</p>
-              {[
-                { label: 'Business', prefix: 'business' },
-                { label: 'Home', prefix: 'home' },
-                { label: 'Other', prefix: 'other' },
-              ].map(({ label, prefix }) => (
-                <div key={prefix} className="space-y-1">
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{label}</p>
-                  <input value={form[`${prefix}Street`]} onChange={f(`${prefix}Street`)} className="v-input" placeholder="Street" />
-                  <div className="grid grid-cols-3 gap-1">
-                    <input value={form[`${prefix}City`]} onChange={f(`${prefix}City`)} className="v-input" placeholder="City" />
-                    <input value={form[`${prefix}State`]} onChange={f(`${prefix}State`)} className="v-input" placeholder="State" />
-                    <input value={form[`${prefix}PostalCode`]} onChange={f(`${prefix}PostalCode`)} className="v-input" placeholder="Zip" />
-                  </div>
-                  <input value={form[`${prefix}Country`]} onChange={f(`${prefix}Country`)} className="v-input" placeholder="Country" />
-                </div>
-              ))}
+
+            <div>
+              <label className="v-label">Notes</label>
+              <textarea value={form.notes} onChange={f('notes')} rows={3} className="v-input resize-y w-full" placeholder="Background, preferences, how you met..." />
+              {form.visibility === 'shared' && (
+                <button type="button" onClick={() => setForm(p => ({ ...p, notes: p.sharedNotes, sharedNotes: p.notes }))}
+                  className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">Swap</button>
+              )}
             </div>
           </div>
-        )}
-      </div>
+          )}
 
-      <div className="flex gap-2 pt-3">
+          {/* Shared */}
+          <div className={clsx('border p-3 space-y-2', form.visibility === 'shared' ? 'border-brand-200 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-900/10' : 'border-[var(--border)]')}>
+            <p className={clsx('text-[10px] font-semibold uppercase tracking-wide font-mono flex items-center gap-1', form.visibility === 'shared' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500')}>
+              <Users size={9} /> Shared <span className="font-normal normal-case text-[9px] ml-1">(visible to team)</span>
+            </p>
+
+            {form.visibility === 'shared' ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="v-label">Emails</label>
+                    <MultiValueInput
+                      values={form.sharedEmails}
+                      onChange={(v) => setForm(p => ({ ...p, sharedEmails: v }))}
+                      type="email"
+                      placeholder="name@company.com"
+                      addLabel="Add email"
+                      onSwapItem={(i) => setForm(p => ({
+                        ...p,
+                        sharedEmails: p.sharedEmails.filter((_, j) => j !== i),
+                        personalEmails: [...p.personalEmails, p.sharedEmails[i]],
+                      }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="v-label">Phones</label>
+                    <MultiValueInput
+                      values={form.sharedCellPhones}
+                      onChange={(v) => setForm(p => ({ ...p, sharedCellPhones: v }))}
+                      placeholder="212-555-0100"
+                      addLabel="Add phone"
+                      onSwapItem={(i) => setForm(p => ({
+                        ...p,
+                        sharedCellPhones: p.sharedCellPhones.filter((_, j) => j !== i),
+                        personalPhones: [...p.personalPhones, p.sharedCellPhones[i]],
+                      }))}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="v-label">Notes</label>
+                  <textarea value={form.sharedNotes} onChange={f('sharedNotes')} rows={3} className="v-input resize-y w-full" placeholder="Team-facing notes..." />
+                  <button type="button" onClick={() => setForm(p => ({ ...p, sharedNotes: p.notes, notes: p.sharedNotes }))}
+                    className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">Swap</button>
+                </div>
+              </>
+            ) : (
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">Set visibility to Shared to enable shared fields.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════ Tab: Addresses & More ══════ */}
+      {activeTab === 'extended' && (
+        <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          {/* Phones & Fax */}
+          <div className="border border-[var(--border)] p-3 space-y-2">
+            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Phones & Fax</p>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+              <div><label className="v-label">Home Phone</label><input value={form.homePhone} onChange={f('homePhone')} className="v-input" /></div>
+              <div><label className="v-label">Home Phone 2</label><input value={form.homePhone2} onChange={f('homePhone2')} className="v-input" /></div>
+              <div><label className="v-label">Business Phone 2</label><input value={form.businessPhone2} onChange={f('businessPhone2')} className="v-input" /></div>
+              <div><label className="v-label">Car Phone</label><input value={form.carPhone} onChange={f('carPhone')} className="v-input" /></div>
+              <div><label className="v-label">Other Phone</label><input value={form.otherPhone} onChange={f('otherPhone')} className="v-input" /></div>
+              <div><label className="v-label">Primary Phone</label><input value={form.primaryPhone} onChange={f('primaryPhone')} className="v-input" /></div>
+              <div><label className="v-label">Pager</label><input value={form.pager} onChange={f('pager')} className="v-input" /></div>
+              <div><label className="v-label">Company Main</label><input value={form.companyMainPhone} onChange={f('companyMainPhone')} className="v-input" /></div>
+              <div><label className="v-label">Business Fax</label><input value={form.businessFax} onChange={f('businessFax')} className="v-input" /></div>
+              <div><label className="v-label">Home Fax</label><input value={form.homeFax} onChange={f('homeFax')} className="v-input" /></div>
+              <div><label className="v-label">Other Fax</label><input value={form.otherFax} onChange={f('otherFax')} className="v-input" /></div>
+            </div>
+          </div>
+          {/* Addresses */}
+          <div className="border border-[var(--border)] p-3 space-y-2">
+            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Addresses</p>
+            {[
+              { label: 'Business', prefix: 'business' },
+              { label: 'Home', prefix: 'home' },
+              { label: 'Other', prefix: 'other' },
+            ].map(({ label, prefix }) => (
+              <div key={prefix} className="space-y-1">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{label}</p>
+                <input value={form[`${prefix}Street`]} onChange={f(`${prefix}Street`)} className="v-input" placeholder="Street" />
+                <div className="grid grid-cols-3 gap-1">
+                  <input value={form[`${prefix}City`]} onChange={f(`${prefix}City`)} className="v-input" placeholder="City" />
+                  <input value={form[`${prefix}State`]} onChange={f(`${prefix}State`)} className="v-input" placeholder="State" />
+                  <input value={form[`${prefix}PostalCode`]} onChange={f(`${prefix}PostalCode`)} className="v-input" placeholder="Zip" />
+                </div>
+                <input value={form[`${prefix}Country`]} onChange={f(`${prefix}Country`)} className="v-input" placeholder="Country" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-2">
         <button type="submit" disabled={saving} className="v-btn-primary flex-1 disabled:opacity-60">{saving ? 'Saving…' : 'Save Contact'}</button>
         <button type="button" onClick={onCancel} disabled={saving} className="v-btn-secondary">Cancel</button>
       </div>
