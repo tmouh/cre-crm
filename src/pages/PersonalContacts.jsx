@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, Phone, Mail, Linkedin, Trash2, Share2, Lock, Users, X, CheckSquare, AlertTriangle } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Linkedin, Trash2, Share2, Lock, Users, X, CheckSquare, AlertTriangle, Upload } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useIntelligence } from '../hooks/useIntelligence'
@@ -8,6 +8,8 @@ import { fullName, initials, formatDate, daysDiff, CONTACT_FUNCTIONS, formatCont
 import Modal from '../components/Modal'
 import EmptyState from '../components/EmptyState'
 import ShareModal from '../components/ShareModal'
+import ImportModal from '../components/ImportModal'
+import OutlookImport from '../components/OutlookImport'
 import { ContactForm, ContactDetail } from './Contacts'
 
 export default function PersonalContacts() {
@@ -27,6 +29,8 @@ function PersonalContactsList() {
   const [selected, setSelected] = useState(new Set())
   const [showShare, setShowShare] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [showOutlookImport, setShowOutlookImport] = useState(false)
   const [barStuck, setBarStuck] = useState(false)
   const observerRef = useRef(null)
   const barSentinelRef = useCallback(node => {
@@ -158,6 +162,8 @@ function PersonalContactsList() {
         <div className="flex-1" />
         <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">{filtered.length} / {personalContacts.length} mine</span>
         <div className="flex gap-1">
+          <button onClick={() => setShowImport(true)} className="v-btn-secondary text-[10px]"><Upload size={11} /> CSV</button>
+          <button onClick={() => setShowOutlookImport(true)} className="v-btn-secondary text-[10px]"><Mail size={11} /> Outlook</button>
           <button onClick={() => setShowAdd(true)} className="v-btn-primary text-[10px]"><Plus size={11} /> NEW</button>
         </div>
       </div>
@@ -291,7 +297,7 @@ function PersonalContactsList() {
       </div>
 
       {showAdd && (
-        <Modal title="Add Contact" onClose={() => setShowAdd(false)} size="lg" disableBackdropClose>
+        <Modal title="Add Contact" onClose={() => setShowAdd(false)} size="3xl" disableBackdropClose>
           <ContactForm onSubmit={handleAdd} onCancel={() => setShowAdd(false)} defaultVisibility="private" />
         </Modal>
       )}
@@ -305,6 +311,16 @@ function PersonalContactsList() {
           onCancel={() => setShowShare(false)}
           loading={sharing}
         />
+      )}
+
+      {showImport && (
+        <ImportModal entity="contacts" onClose={() => setShowImport(false)} />
+      )}
+
+      {showOutlookImport && (
+        <Modal title="Import from Outlook" onClose={() => setShowOutlookImport(false)} size="2xl">
+          <OutlookImport onClose={() => setShowOutlookImport(false)} />
+        </Modal>
       )}
     </div>
   )
