@@ -46,24 +46,30 @@ const ALL_EMAIL_FIELDS = [
   { key: 'email6', label: 'Legacy Email 5' },
 ]
 const ALL_PHONE_FIELDS = [
-  { key: 'phone',          label: 'Work Phone' },
   { key: 'mobile',         label: 'Mobile Phone' },
+  { key: 'phone',          label: 'Work Phone' },
   { key: 'homePhone',      label: 'Home Phone' },
-  { key: 'homePhone2',     label: 'Home Phone 2' },
-  { key: 'businessPhone2', label: 'Work Phone 2' },
-  { key: 'carPhone',       label: 'Mobile Phone 2' },
   { key: 'otherPhone',     label: 'Other Phone' },
+  { key: 'carPhone',       label: 'Mobile Phone 2' },
+  { key: 'businessPhone2', label: 'Work Phone 2' },
+  { key: 'homePhone2',     label: 'Home Phone 2' },
 ]
 const ALL_FAX_FIELDS = [
   { key: 'homeFax', label: 'Home Fax' },
 ]
-// Extra phone keys that are hidden until the user expands
-const EXTRA_PHONE_KEYS = new Set(['homePhone2', 'businessPhone2'])
+// Phone pairs: primary always shown, secondary revealed via "+ add"
+const PHONE_PAIRS = [
+  { key: 'mobile',    label: 'Mobile Phone', secondaryKey: 'carPhone',       secondaryLabel: 'Mobile Phone 2' },
+  { key: 'phone',     label: 'Work Phone',   secondaryKey: 'businessPhone2', secondaryLabel: 'Work Phone 2' },
+  { key: 'homePhone', label: 'Home Phone',   secondaryKey: 'homePhone2',     secondaryLabel: 'Home Phone 2' },
+  { key: 'otherPhone', label: 'Other Phone', secondaryKey: null,             secondaryLabel: null },
+]
+const PHONE_SECONDARY_MAP = { mobile: 'carPhone', phone: 'businessPhone2', homePhone: 'homePhone2' }
 const DEFAULT_FIELD_ASSIGNMENTS = {
   email: 'personal', email2: 'personal', email3: 'personal', email4: 'personal', email5: 'personal', email6: 'personal',
   phone: 'personal', mobile: 'personal',
-  homePhone: 'personal', homePhone2: 'personal', carPhone: 'personal', otherPhone: 'personal', homeFax: 'personal',
-  businessPhone2: 'shared',
+  homePhone: 'personal', homePhone2: 'personal', carPhone: 'personal', otherPhone: 'personal',
+  businessPhone2: 'personal', homeFax: 'personal',
 }
 
 export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibility = 'shared' }) {
@@ -111,7 +117,13 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
   // Progressive disclosure: extra revealed slots per field group
   const [extraSlots, setExtraSlots] = useState({ pEmails: 0, pPhones: 0, pFax: 0, sEmails: 0, sPhones: 0, sFax: 0 })
   const addSlot = (key) => setExtraSlots(s => ({ ...s, [key]: s[key] + 1 }))
-  const [showExtraPhones, setShowExtraPhones] = useState(!!(initial.homePhone2 || initial.businessPhone2))
+  const [expandedPhones, setExpandedPhones] = useState(() => {
+    const s = new Set()
+    if (initial.carPhone) s.add('mobile')
+    if (initial.businessPhone2) s.add('phone')
+    if (initial.homePhone2) s.add('homePhone')
+    return s
+  })
   const [showOtherAddress, setShowOtherAddress] = useState(!!(initial.otherStreet || initial.otherCity || initial.otherState || initial.otherPostalCode || initial.otherCountry))
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
@@ -401,99 +413,108 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
       {activeTab === 'contact' && (() => {
         const canSwap = form.visibility === 'shared'
         const fieldAssign = (field) => canSwap ? (form.phoneAssignments[field] || DEFAULT_FIELD_ASSIGNMENTS[field] || 'personal') : 'personal'
-        const flipField = (field) => setForm(p => ({
-          ...p,
-          phoneAssignments: { ...p.phoneAssignments, [field]: fieldAssign(field) === 'personal' ? 'shared' : 'personal' },
-        }))
+        const flipField = (field) => setForm(p => {
+          const newAssign = fieldAssign(field) === 'personal' ? 'shared' : 'personal'
+          const newAssignments = { ...p.phoneAssignments, [field]: newAssign }
+          const sec = PHONE_SECONDARY_MAP[field]
+          if (sec) newAssignments[sec] = newAssign
+          return { ...p, phoneAssignments: newAssignments }
+        })
+        const swapAll = () => setForm(p => {
+          const newAssignments = { ...p.phoneAssignments }
+          for (const fld of [...ALL_EMAIL_FIELDS, ...ALL_PHONE_FIELDS]) {
+            const cur = newAssignments[fld.key] || DEFAULT_FIELD_ASSIGNMENTS[fld.key] || 'personal'
+            newAssignments[fld.key] = cur === 'personal' ? 'shared' : 'personal'
+          }
+          return { ...p, phoneAssignments: newAssignments, notes: p.sharedNotes, sharedNotes: p.notes }
+        })
 
-        // Determine which fields go in each section
-        const visiblePhoneFields = ALL_PHONE_FIELDS.filter(f => showExtraPhones || !EXTRA_PHONE_KEYS.has(f.key))
-        const personalEmails = ALL_EMAIL_FIELDS.filter(f => fieldAssign(f.key) === 'personal')
-        const sharedEmails = ALL_EMAIL_FIELDS.filter(f => fieldAssign(f.key) === 'shared')
-        const personalPhones = visiblePhoneFields.filter(f => fieldAssign(f.key) === 'personal')
-        const sharedPhones = visiblePhoneFields.filter(f => fieldAssign(f.key) === 'shared')
-        const personalFax = ALL_FAX_FIELDS.filter(f => fieldAssign(f.key) === 'personal')
-        const sharedFax = ALL_FAX_FIELDS.filter(f => fieldAssign(f.key) === 'shared')
+        const personalEmails = ALL_EMAIL_FIELDS.filter(fld => fieldAssign(fld.key) === 'personal')
+        const sharedEmails = ALL_EMAIL_FIELDS.filter(fld => fieldAssign(fld.key) === 'shared')
+        const personalPairs = PHONE_PAIRS.filter(pair => fieldAssign(pair.key) === 'personal')
+        const sharedPairs = PHONE_PAIRS.filter(pair => fieldAssign(pair.key) === 'shared')
 
-        // Render a group of named fields with progressive disclosure
-        const renderFieldGroup = (fields, label, _addLabel, _minVisible, section, _slotKey) => {
-          return (
-            <div>
-              <p className="v-label mb-1 font-bold">{label}</p>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                {fields.map(({ key, label: fieldLabel }) => (
-                  <div key={key} className="flex items-center gap-1">
-                    <div className="flex-1">
-                      <label className="v-label">{fieldLabel}</label>
-                      <input value={form[key] || ''} onChange={f(key)} className="v-input"
-                        type={label === 'Emails' ? 'email' : 'text'}
-                        placeholder={label === 'Emails' ? 'name@company.com' : ''}
-                      />
-                    </div>
+        const renderEmails = (emails, section) => emails.length === 0 ? null : (
+          <div>
+            <p className="v-label mb-1 font-bold">Emails</p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+              {emails.map(({ key, label: fieldLabel }) => (
+                <div key={key} className="flex items-center gap-1">
+                  <div className="flex-1">
+                    <label className="v-label">{fieldLabel}</label>
+                    <input value={form[key] || ''} onChange={f(key)} className="v-input" type="email" placeholder="name@company.com" />
+                  </div>
+                  {canSwap && (
+                    <button type="button" onClick={() => flipField(key)}
+                      className="mt-3.5 flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
+                      {section === 'personal' ? <><ArrowDown size={9} className="inline" /> Shared</> : <><ArrowUp size={9} className="inline" /> Personal</>}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+
+        const renderPhones = (pairs, section) => pairs.length === 0 ? null : (
+          <div className="mt-4">
+            <p className="v-label mb-1 font-bold">Phones</p>
+            <div className="grid grid-cols-3 gap-x-3 gap-y-3">
+              {pairs.map(pair => (
+                <div key={pair.key} className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="v-label">{pair.label}</label>
+                    {pair.secondaryKey && !expandedPhones.has(pair.key) && (
+                      <button type="button"
+                        onClick={() => setExpandedPhones(s => { const n = new Set(s); n.add(pair.key); return n })}
+                        className="text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+                        + add
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <input value={form[pair.key] || ''} onChange={f(pair.key)} className="v-input flex-1" />
                     {canSwap && (
-                      <button type="button" onClick={() => flipField(key)}
-                        className="mt-3.5 flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
+                      <button type="button" onClick={() => flipField(pair.key)}
+                        className="flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
                         {section === 'personal' ? <><ArrowDown size={9} className="inline" /> Shared</> : <><ArrowUp size={9} className="inline" /> Personal</>}
                       </button>
                     )}
                   </div>
-                ))}
-              </div>
+                  {pair.secondaryKey && expandedPhones.has(pair.key) && (
+                    <div>
+                      <label className="v-label">{pair.secondaryLabel}</label>
+                      <input value={form[pair.secondaryKey] || ''} onChange={f(pair.secondaryKey)} className="v-input" />
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          )
-        }
+          </div>
+        )
 
-        return (
-        <div className="space-y-3">
-          {/* Personal */}
-          {isOwner && (
-          <div className="border border-[var(--border)] p-3 space-y-3">
+        const renderSection = ({ section, title, icon, emails, pairs, notes, notesKey, borderClass, titleClass, emptyMsg }) => (
+          <div className={clsx('border p-3 space-y-3', borderClass)}>
             <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono flex items-center gap-1">
-                <Lock size={9} /> Personal <span className="font-normal normal-case text-[9px] text-slate-400 dark:text-slate-500">(private to you)</span>
+              <p className={clsx('text-[10px] font-semibold uppercase tracking-wide font-mono flex items-center gap-1', titleClass)}>
+                {icon} {title} <span className="font-normal normal-case text-[9px] ml-1">{section === 'personal' ? '(private to you)' : '(visible to team)'}</span>
               </p>
               {canSwap && (
-                <button type="button"
-                  onClick={() => {
-                    // Swap all field assignments between personal and shared
-                    setForm(p => {
-                      const newAssignments = { ...p.phoneAssignments }
-                      for (const f of [...ALL_EMAIL_FIELDS, ...ALL_PHONE_FIELDS, ...ALL_FAX_FIELDS]) {
-                        const cur = newAssignments[f.key] || DEFAULT_FIELD_ASSIGNMENTS[f.key] || 'personal'
-                        newAssignments[f.key] = cur === 'personal' ? 'shared' : 'personal'
-                      }
-                      return { ...p, phoneAssignments: newAssignments, notes: p.sharedNotes, sharedNotes: p.notes }
-                    })
-                  }}
+                <button type="button" onClick={swapAll}
                   className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
                   <ArrowLeftRight size={11} /> Swap All
                 </button>
               )}
             </div>
-
-            {personalEmails.length > 0 && renderFieldGroup(personalEmails, 'Emails', 'Add email', 1, 'personal', 'pEmails')}
-
-            {personalPhones.length > 0 && <div className="mt-4">{renderFieldGroup(personalPhones, 'Phones', 'Add phone', 2, 'personal', 'pPhones')}</div>}
-            {!showExtraPhones && (
-              <button type="button" onClick={() => setShowExtraPhones(true)}
-                className="text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline -mt-1">
-                + more phone fields
-              </button>
+            {renderEmails(emails, section)}
+            {renderPhones(pairs, section)}
+            {emails.length === 0 && pairs.length === 0 && canSwap && (
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">{emptyMsg}</p>
             )}
-
-            {personalFax.length > 0 && renderFieldGroup(personalFax, 'Fax', 'Add fax', 0, 'personal', 'pFax')}
-
-            {/* Show add buttons when all fields of a type have been moved to shared */}
-            {personalEmails.length === 0 && canSwap && (
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">All emails moved to Shared</p>
-            )}
-            {personalPhones.length === 0 && personalFax.length === 0 && canSwap && (
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">All phones moved to Shared</p>
-            )}
-
             <div>
               <label className="v-label">Notes</label>
-              <textarea value={form.notes} onChange={f('notes')} rows={3} className="v-input resize-y w-full" placeholder="Background, preferences, how you met..." />
+              <textarea value={form[notesKey] || ''} onChange={f(notesKey)} rows={3} className="v-input resize-y w-full"
+                placeholder={section === 'personal' ? 'Background, preferences, how you met...' : 'Team-facing notes...'} />
               {canSwap && (
                 <button type="button" onClick={() => setForm(p => ({ ...p, notes: p.sharedNotes, sharedNotes: p.notes }))}
                   className="mt-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline flex items-center gap-0.5">
@@ -502,32 +523,41 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
               )}
             </div>
           </div>
-          )}
+        )
 
-          {/* Shared */}
+        return (
+        <div className="space-y-3">
+          {isOwner && renderSection({
+            section: 'personal',
+            title: 'Personal',
+            icon: <Lock size={9} />,
+            emails: personalEmails,
+            pairs: personalPairs,
+            notesKey: 'notes',
+            borderClass: 'border-[var(--border)]',
+            titleClass: 'text-slate-500 dark:text-slate-400',
+            emptyMsg: 'All fields moved to Shared',
+          })}
+
           <div className={clsx('border p-3 space-y-3', canSwap ? 'border-brand-200 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-900/10' : 'border-[var(--border)]')}>
-            <p className={clsx('text-[10px] font-semibold uppercase tracking-wide font-mono flex items-center gap-1', canSwap ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500')}>
-              <Users size={9} /> Shared <span className="font-normal normal-case text-[9px] ml-1">(visible to team)</span>
-            </p>
-
+            <div className="flex items-center justify-between">
+              <p className={clsx('text-[10px] font-semibold uppercase tracking-wide font-mono flex items-center gap-1', canSwap ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500')}>
+                <Users size={9} /> Shared <span className="font-normal normal-case text-[9px] ml-1">(visible to team)</span>
+              </p>
+              {canSwap && (
+                <button type="button" onClick={swapAll}
+                  className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+                  <ArrowLeftRight size={11} /> Swap All
+                </button>
+              )}
+            </div>
             {canSwap ? (
               <>
-                {sharedEmails.length > 0 && renderFieldGroup(sharedEmails, 'Emails', 'Add email', 1, 'shared', 'sEmails')}
-
-                {sharedPhones.length > 0 && <div className="mt-4">{renderFieldGroup(sharedPhones, 'Phones', 'Add phone', 1, 'shared', 'sPhones')}</div>}
-                {!showExtraPhones && (
-                  <button type="button" onClick={() => setShowExtraPhones(true)}
-                    className="text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline -mt-1">
-                    + more phone fields
-                  </button>
-                )}
-
-                {sharedFax.length > 0 && renderFieldGroup(sharedFax, 'Fax', 'Add fax', 0, 'shared', 'sFax')}
-
-                {sharedEmails.length === 0 && sharedPhones.length === 0 && sharedFax.length === 0 && (
+                {renderEmails(sharedEmails, 'shared')}
+                {renderPhones(sharedPairs, 'shared')}
+                {sharedEmails.length === 0 && sharedPairs.length === 0 && (
                   <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">All fields are in Personal. Use swap buttons to move fields here.</p>
                 )}
-
                 <div>
                   <label className="v-label">Notes</label>
                   <textarea value={form.sharedNotes} onChange={f('sharedNotes')} rows={3} className="v-input resize-y w-full" placeholder="Team-facing notes..." />
