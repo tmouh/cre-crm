@@ -45,6 +45,8 @@ export function CRMProvider({ children }) {
   // saves automatically propagate to Outlook without creating a circular dep.
   const outlookPushRef = useRef(null)
   const registerOutlookPush = useCallback((fn) => { outlookPushRef.current = fn }, [])
+  const outlookDeleteRef = useRef(null)
+  const registerOutlookDelete = useCallback((fn) => { outlookDeleteRef.current = fn }, [])
 
   // ─── Initial load + seed ───────────────────────────────────────────────────
   useEffect(() => {
@@ -125,12 +127,15 @@ export function CRMProvider({ children }) {
     return rec
   }, [])
 
-  const deleteContact = useCallback(async (id) => {
+  const deleteContact = useCallback(async (id, options = {}) => {
     const item = contacts.find(c => c.id === id)
     const rec = await db.contacts.softDelete(id)
     setContacts(prev => prev.filter(c => c.id !== id))
     setDeletedContacts(prev => [rec, ...prev])
     setUndoStack(prev => [{ type: 'contact', id, label: item ? `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Contact' : 'Contact' }, ...prev.slice(0, 9)])
+    if (outlookDeleteRef.current && item?.outlookContactId && !options.skipOutlookDelete) {
+      outlookDeleteRef.current(item.outlookContactId).catch(() => {})
+    }
   }, [contacts])
 
   const restoreContact = useCallback(async (id) => {
@@ -571,6 +576,7 @@ export function CRMProvider({ children }) {
       getContact, getCompany, getProperty,
       activitiesFor, remindersFor, dealActivitiesFor,
       registerOutlookPush,
+      registerOutlookDelete,
     }}>
       {children}
     </CRMContext.Provider>

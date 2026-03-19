@@ -330,10 +330,11 @@ function crmToOutlookBody(contact, companyName) {
   if (contact.nickname   !== undefined) body.nickName        = contact.nickname   || ''
   if (contact.title      !== undefined) body.jobTitle        = contact.title      || ''
   if (contact.notes      !== undefined) body.personalNotes   = contact.notes      || ''
-  if (contact.email      !== undefined) {
-    body.emailAddresses = contact.email
-      ? [{ address: contact.email, name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() }]
-      : []
+  if (contact.email !== undefined || contact.email2 !== undefined || contact.email3 !== undefined) {
+    const displayName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim()
+    body.emailAddresses = [contact.email, contact.email2, contact.email3]
+      .filter(Boolean)
+      .map(addr => ({ address: addr, name: displayName }))
   }
   if (contact.phone !== undefined || contact.businessPhone2 !== undefined) {
     body.businessPhones = [contact.phone, contact.businessPhone2].filter(Boolean)
@@ -381,6 +382,10 @@ export async function createOutlookContact(contact, companyName) {
   if (!body.givenName && !body.surname)
     body.givenName = contact.firstName || contact.email || 'Unknown'
   return graphPost('/me/contacts', body)
+}
+
+export async function deleteOutlookContact(outlookId) {
+  return graphDelete(`/me/contacts/${outlookId}`)
 }
 
 export async function getOutlookContact(outlookId) {

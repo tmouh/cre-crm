@@ -13,6 +13,7 @@ import {
   listGraphSubscriptions,
   updateOutlookContact,
   createOutlookContact,
+  deleteOutlookContact,
   getOutlookContact,
   getModifiedOutlookContacts,
 } from '../services/microsoft'
@@ -121,14 +122,14 @@ function outlookToCrmPatch(c) {
 
 export function MicrosoftProvider({ children }) {
   // CRMProvider wraps MicrosoftProvider in App.jsx, so useCRM() is safe here.
-  const { contacts, companies, properties, addDealActivity, updateDealActivity, registerOutlookPush, updateContact } = useCRM()
+  const { contacts, companies, properties, addDealActivity, updateDealActivity, registerOutlookPush, registerOutlookDelete, updateContact, deleteContact } = useCRM()
 
   // Keep a ref so the sync callback always sees fresh CRM data without
   // needing contacts/companies/properties in its dependency array.
-  const crmDataRef = useRef({ contacts, companies, properties, addDealActivity, updateDealActivity, updateContact })
+  const crmDataRef = useRef({ contacts, companies, properties, addDealActivity, updateDealActivity, updateContact, deleteContact })
   useEffect(() => {
-    crmDataRef.current = { contacts, companies, properties, addDealActivity, updateDealActivity, updateContact }
-  }, [contacts, companies, properties, addDealActivity, updateDealActivity, updateContact])
+    crmDataRef.current = { contacts, companies, properties, addDealActivity, updateDealActivity, updateContact, deleteContact }
+  }, [contacts, companies, properties, addDealActivity, updateDealActivity, updateContact, deleteContact])
 
   const [account, setAccount] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -173,6 +174,16 @@ export function MicrosoftProvider({ children }) {
       } catch (err) { console.error('[OutlookPush] failed:', err?.message || err) }
     })
   }, [registerOutlookPush]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Outlook contact delete (CRM → Outlook) ───────────────────────────────
+  useEffect(() => {
+    registerOutlookDelete(async (outlookId) => {
+      try {
+        console.log('[OutlookPush] deleting Outlook contact', outlookId)
+        await deleteOutlookContact(outlookId)
+      } catch (err) { console.error('[OutlookPush] delete failed:', err?.message || err) }
+    })
+  }, [registerOutlookDelete]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check connection status on mount
   useEffect(() => {
@@ -344,10 +355,9 @@ export function MicrosoftProvider({ children }) {
 
         // ── Outlook → CRM contact sync ──────────────────────────────────────
         if (contactNotifs.length > 0) {
-          const { contacts: crmContacts, updateContact: uc } = crmDataRef.current
+          const { contacts: crmContacts, updateContact: uc, deleteContact: dc } = crmDataRef.current
           const seen = new Set()
           for (const n of contactNotifs) {
-            if (n.change_type === 'deleted') continue  // never delete from CRM
             const match = (n.resource || '').match(/\/contacts\/([^/?]+)/i)
             if (!match) continue
             const outlookId = match[1]
@@ -355,6 +365,16 @@ export function MicrosoftProvider({ children }) {
             seen.add(outlookId)
             const crmContact = crmContacts.find(c => c.outlookContactId === outlookId)
             if (!crmContact) continue  // not tracked in CRM, skip
+
+            if (n.change_type === 'deleted') {
+              // Outlook-side delete → soft-delete CRM contact, skip Outlook push to avoid loop
+              try {
+                console.log('[OutlookSync] soft-deleting CRM contact from Outlook deletion:', crmContact.firstName, crmContact.lastName)
+                await dc(crmContact.id, { skipOutlookDelete: true })
+              } catch (err) { console.warn('[OutlookSync] delete failed for', outlookId, err?.message) }
+              continue
+            }
+
             try {
               const outlookContact = await getOutlookContact(outlookId)
               if (!outlookContact) continue
