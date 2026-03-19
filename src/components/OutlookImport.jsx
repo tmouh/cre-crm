@@ -191,8 +191,9 @@ export default function OutlookImport({ onClose }) {
         }
       }
 
-      // Look up LinkedIn URL — first from the contact's own imAddresses, then People API
+      // Look up LinkedIn URL — from businessHomePage, imAddresses, then People API
       const directLinkedIn = [
+        oc.businessHomePage || '',
         ...(oc.imAddresses || []),
       ].find(url => url && url.toLowerCase().includes('linkedin.com')) || ''
       const peopleLinkedIn = email ? (linkedInMap.get(email.toLowerCase()) || '') : ''
