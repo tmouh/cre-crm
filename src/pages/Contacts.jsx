@@ -430,22 +430,22 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
           return { ...p, phoneAssignments: newAssignments, notes: p.sharedNotes, sharedNotes: p.notes }
         })
 
-        // Both sections always render ALL fields; active = assigned to this section
+        // Both sections always render ALL fields; value shows in assigned section only
         const renderEmails = (section) => (
           <div>
             <p className="v-label mb-1 font-bold">Emails</p>
             <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
               {ALL_EMAIL_FIELDS.map(({ key, label: fieldLabel }) => {
-                const active = fieldAssign(key) === section
+                const mine = fieldAssign(key) === section
                 return (
-                  <div key={key} className={clsx('flex items-center gap-1', !active && 'opacity-40')}>
+                  <div key={key} className="flex items-center gap-1">
                     <div className="flex-1">
                       <label className="v-label">{fieldLabel}</label>
                       <input
-                        value={active ? (form[key] || '') : ''}
-                        onChange={active ? f(key) : undefined}
-                        readOnly={!active}
-                        className={clsx('v-input', !active && 'cursor-default')}
+                        value={mine ? (form[key] || '') : ''}
+                        onChange={mine ? f(key) : undefined}
+                        readOnly={!mine}
+                        className="v-input"
                         type="email"
                       />
                     </div>
@@ -467,12 +467,12 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
             <p className="v-label mb-1 font-bold">Phones</p>
             <div className="grid grid-cols-3 gap-x-3 gap-y-3">
               {PHONE_PAIRS.map(pair => {
-                const active = fieldAssign(pair.key) === section
+                const mine = fieldAssign(pair.key) === section
                 return (
-                  <div key={pair.key} className={clsx('space-y-1.5', !active && 'opacity-40')}>
+                  <div key={pair.key} className="space-y-1.5">
                     <label className="v-label flex items-center gap-1.5">
                       {pair.label}
-                      {active && pair.secondaryKey && !expandedPhones.has(pair.key) && (
+                      {pair.secondaryKey && !expandedPhones.has(pair.key) && (
                         <button type="button"
                           onClick={() => setExpandedPhones(s => { const n = new Set(s); n.add(pair.key); return n })}
                           className="text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
@@ -482,10 +482,10 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                     </label>
                     <div className="flex items-center gap-1">
                       <input
-                        value={active ? (form[pair.key] || '') : ''}
-                        onChange={active ? f(pair.key) : undefined}
-                        readOnly={!active}
-                        className={clsx('v-input flex-1', !active && 'cursor-default')}
+                        value={mine ? (form[pair.key] || '') : ''}
+                        onChange={mine ? f(pair.key) : undefined}
+                        readOnly={!mine}
+                        className="v-input flex-1"
                       />
                       {canSwap && (
                         <button type="button" onClick={() => flipField(pair.key)}
@@ -499,10 +499,10 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                         <label className="v-label">{pair.secondaryLabel}</label>
                         <div className="flex items-center gap-1">
                           <input
-                            value={active ? (form[pair.secondaryKey] || '') : ''}
-                            onChange={active ? f(pair.secondaryKey) : undefined}
-                            readOnly={!active}
-                            className={clsx('v-input flex-1', !active && 'cursor-default')}
+                            value={mine ? (form[pair.secondaryKey] || '') : ''}
+                            onChange={mine ? f(pair.secondaryKey) : undefined}
+                            readOnly={!mine}
+                            className="v-input flex-1"
                           />
                           {canSwap && (
                             <button type="button" onClick={() => flipField(pair.secondaryKey)}
