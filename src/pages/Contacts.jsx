@@ -435,7 +435,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
         const personalPairs = PHONE_PAIRS.filter(pair => fieldAssign(pair.key) === 'personal')
         const sharedPairs = PHONE_PAIRS.filter(pair => fieldAssign(pair.key) === 'shared')
 
-        const renderEmails = (emails, section) => emails.length === 0 ? null : (
+        const renderEmails = (emails, section) => (
           <div>
             <p className="v-label mb-1 font-bold">Emails</p>
             <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
@@ -457,7 +457,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
           </div>
         )
 
-        const renderPhones = (pairs, section) => pairs.length === 0 ? null : (
+        const renderPhones = (pairs, section) => (
           <div className="mt-4">
             <p className="v-label mb-1 font-bold">Phones</p>
             <div className="grid grid-cols-3 gap-x-3 gap-y-3">
