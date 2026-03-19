@@ -8,6 +8,26 @@ import { Link } from 'react-router-dom'
 
 const WEEKS = 26 // show 6 months
 
+function daysSince(isoDate) {
+  if (!isoDate) return Infinity
+  return Math.floor((Date.now() - new Date(isoDate).getTime()) / (1000 * 60 * 60 * 24))
+}
+
+function recencyDot(days) {
+  if (days <= 30) return 'bg-emerald-400 dark:bg-emerald-500'
+  if (days <= 90) return 'bg-yellow-400 dark:bg-yellow-500'
+  return 'bg-slate-300 dark:bg-slate-600'
+}
+
+function recencyLabel(days) {
+  if (days === Infinity) return null
+  if (days === 0) return 'today'
+  if (days === 1) return 'yesterday'
+  if (days < 30) return `${days}d ago`
+  if (days < 60) return '~1mo ago'
+  return `${Math.floor(days / 30)}mo ago`
+}
+
 function startOfWeek(date) {
   const d = new Date(date)
   const day = d.getDay()
@@ -125,6 +145,18 @@ export default function CommunicationHeatmap({ contactId }) {
     return result
   }, [teamMembers, properties, contacts, contactId])
 
+  // Per-member last email date (keyed on userId stored in email_interactions)
+  const memberLastEmail = useMemo(() => {
+    const map = {}
+    emailItems.forEach(e => {
+      if (!e.userId || !e.receivedAt) return
+      if (!map[e.userId] || e.receivedAt > map[e.userId]) {
+        map[e.userId] = e.receivedAt
+      }
+    })
+    return map
+  }, [emailItems])
+
   // Month labels for heatmap
   const monthLabels = useMemo(() => {
     const labels = []
@@ -209,28 +241,49 @@ export default function CommunicationHeatmap({ contactId }) {
             <span className="os-zone-title">Who Knows This Contact</span>
           </div>
           <div className="space-y-1.5">
-            {whoKnows.map(({ member, via, viaId }, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className="w-5 h-5 bg-brand-600 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[8px] font-bold text-white font-mono">
-                    {(member.displayName || member.email || '?')[0].toUpperCase()}
-                  </span>
+            {whoKnows.map(({ member, via, viaId }, i) => {
+              const lastEmail = memberLastEmail[member.id]
+              const days = daysSince(lastEmail)
+              const label = recencyLabel(days)
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  {/* Avatar with recency dot */}
+                  <div className="relative flex-shrink-0">
+                    <div className="w-6 h-6 bg-brand-600 flex items-center justify-center">
+                      <span className="text-[9px] font-bold text-white font-mono">
+                        {(member.displayName || member.email || '?')[0].toUpperCase()}
+                      </span>
+                    </div>
+                    <span className={clsx('absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white dark:border-surface-0', recencyDot(days))} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate">
+                        {member.displayName || member.email}
+                      </p>
+                      {label && (
+                        <span className={clsx(
+                          'text-[9px] font-mono flex-shrink-0',
+                          days <= 30 ? 'text-emerald-500 dark:text-emerald-400' :
+                          days <= 90 ? 'text-yellow-500 dark:text-yellow-400' :
+                          'text-slate-400 dark:text-slate-500'
+                        )}>
+                          {label}
+                        </span>
+                      )}
+                    </div>
+                    {via && (
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                        via{' '}
+                        {viaId ? (
+                          <Link to={`/deals/${viaId}`} className="hover:text-brand-500 dark:hover:text-brand-400">{via}</Link>
+                        ) : via}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate">
-                    {member.displayName || member.email}
-                  </p>
-                  {via && (
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-                      via{' '}
-                      {viaId ? (
-                        <Link to={`/deals/${viaId}`} className="hover:text-brand-500 dark:hover:text-brand-400">{via}</Link>
-                      ) : via}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

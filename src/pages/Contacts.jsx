@@ -396,16 +396,12 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
         const sharedFax = ALL_FAX_FIELDS.filter(f => fieldAssign(f.key) === 'shared')
 
         // Render a group of named fields with progressive disclosure
-        const renderFieldGroup = (fields, label, addLabel, minVisible, section, slotKey) => {
-          const populated = fields.filter(f => form[f.key]).length
-          const visible = Math.max(minVisible, populated, Math.min(minVisible + extraSlots[slotKey], fields.length))
-          const canAdd = visible < fields.length
-
+        const renderFieldGroup = (fields, label, _addLabel, _minVisible, section, _slotKey) => {
           return (
             <div>
               <p className="v-label mb-1">{label}</p>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                {fields.slice(0, visible).map(({ key, label: fieldLabel }) => (
+                {fields.map(({ key, label: fieldLabel }) => (
                   <div key={key} className="flex items-center gap-1">
                     <div className="flex-1">
                       <label className="v-label">{fieldLabel}</label>
@@ -423,12 +419,6 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                   </div>
                 ))}
               </div>
-              {canAdd && (
-                <button type="button" onClick={() => addSlot(slotKey)}
-                  className="flex items-center gap-1 text-[10px] text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors mt-1.5">
-                  <Plus size={10} /> {addLabel}
-                </button>
-              )}
             </div>
           )
         }
@@ -694,14 +684,12 @@ export function ContactDetail({ backTo }) {
               return (<>
                 {EMAIL_SLOTS.map(({ label, key }) => {
                   const em = canSeePrivate ? contact[key] : null
+                  if (!em) return null
                   return (
                     <div key={key} className="flex items-center gap-1.5 text-[11px]">
                       <Mail size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
                       <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono uppercase w-[44px] flex-shrink-0">{label}</span>
-                      {em
-                        ? <a href={`mailto:${em}`} className="text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 truncate">{em}</a>
-                        : <span className="text-slate-300 dark:text-slate-600">—</span>
-                      }
+                      <a href={`mailto:${em}`} className="text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 truncate">{em}</a>
                     </div>
                   )
                 })}
@@ -994,10 +982,23 @@ export function ContactDetail({ backTo }) {
 
         {/* Right: activity + comms workspace */}
         <div className="flex-1 overflow-auto bg-surface-50">
-          <div className="p-4 space-y-3">
+          <div className="p-4 space-y-4">
+
+            {/* ── Box 1: Communication Activity ── */}
             <CommunicationHeatmap contactId={id} />
-            <ReminderList contactId={id} />
-            <ActivityFeed contactId={id} contactDeals={contactLinkedDeals} onLinkDeal={linkContactToDeal} />
+
+            {/* ── Box 2: Reminders & Activity Log ── */}
+            <div className="border border-[var(--border)] overflow-hidden bg-surface-0 dark:bg-surface-100">
+              <div className="px-3 py-1.5 bg-surface-100 dark:bg-surface-200 border-b border-[var(--border)]">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">Reminders &amp; Activity</span>
+              </div>
+              <div className="space-y-3 p-3">
+                <ReminderList contactId={id} />
+                <ActivityFeed contactId={id} contactDeals={contactLinkedDeals} onLinkDeal={linkContactToDeal} />
+              </div>
+            </div>
+
+            {/* ── Box 3: Email & Outlook ── */}
             {(() => {
               const SLOT_LABELS = ['Current', 'Legacy 1', 'Legacy 2', 'Legacy 3', 'Legacy 4', 'Legacy 5']
               const outlookSlots = isOwner
@@ -1006,29 +1007,37 @@ export function ContactDetail({ backTo }) {
               const safeIdx = Math.min(selectedEmailIdx, outlookSlots.length - 1)
               const activeOutlookEmail = outlookSlots[safeIdx] || null
               const outlookViewLabel = safeIdx === 0 ? '' : ` — ${SLOT_LABELS[safeIdx]}`
-              return (<>
-                <div className="flex items-center gap-1.5 flex-wrap px-1">
-                  {outlookSlots.map((em, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setSelectedEmailIdx(i)}
-                      className={clsx(
-                        'px-2.5 py-1 text-[10px] font-mono border transition-colors',
-                        i === safeIdx
-                          ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
-                          : em
-                            ? 'border-[var(--border)] text-slate-400 hover:border-slate-400 dark:text-slate-500'
-                            : 'border-[var(--border)] text-slate-300 dark:text-slate-600 opacity-60'
-                      )}
-                    >
-                      {SLOT_LABELS[i]}{em ? `: ${em}` : ''}
-                    </button>
-                  ))}
+              return (
+                <div className="border border-[var(--border)] overflow-hidden bg-surface-0 dark:bg-surface-100">
+                  <div className="px-3 py-1.5 bg-surface-100 dark:bg-surface-200 border-b border-[var(--border)]">
+                    <span className="text-[9px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">Email &amp; Attachments</span>
+                  </div>
+                  <div className="space-y-3 p-3">
+                    {/* Email slot selector — always show all 6 */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {outlookSlots.map((em, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setSelectedEmailIdx(i)}
+                          className={clsx(
+                            'px-2.5 py-1 text-[10px] font-mono border transition-colors',
+                            i === safeIdx
+                              ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
+                              : em
+                                ? 'border-[var(--border)] text-slate-400 hover:border-slate-400 dark:text-slate-500'
+                                : 'border-[var(--border)] text-slate-300 dark:text-slate-600 opacity-60'
+                          )}
+                        >
+                          {SLOT_LABELS[i]}{em ? `: ${em}` : ''}
+                        </button>
+                      ))}
+                    </div>
+                    <OutlookMessages email={activeOutlookEmail} contactId={id} viewingLabel={outlookViewLabel} />
+                    <OutlookAttachments email={activeOutlookEmail} viewingLabel={outlookViewLabel} />
+                  </div>
                 </div>
-                <OutlookMessages email={activeOutlookEmail} contactId={id} viewingLabel={outlookViewLabel} />
-                <OutlookAttachments email={activeOutlookEmail} viewingLabel={outlookViewLabel} />
-              </>)
+              )
             })()}
           </div>
         </div>
