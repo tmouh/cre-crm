@@ -142,7 +142,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
     <form onSubmit={handleSubmit}>
       {saveError && <p className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 border border-red-200 dark:border-red-800 mb-3">{saveError}</p>}
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid gap-3" style={{ gridTemplateColumns: '4fr 3fr 3fr' }}>
 
         {/* ── Column 1: Basic Info ── */}
         <div className="border border-[var(--border)] p-3 flex flex-col gap-2">
@@ -802,7 +802,7 @@ export function ContactDetail({ backTo }) {
       </div>
 
       {editing && (
-        <Modal title={`Edit ${fullName(contact)}`} onClose={() => setEditing(false)} size="2xl" disableBackdropClose>
+        <Modal title={`Edit ${fullName(contact)}`} onClose={() => setEditing(false)} size="3xl" disableBackdropClose>
           <ContactForm initial={contact} onSubmit={handleUpdate} onCancel={() => setEditing(false)} />
         </Modal>
       )}
@@ -1173,7 +1173,7 @@ export default function Contacts() {
       </div>
 
       {showAdd && (
-        <Modal title="Add Contact" onClose={() => setShowAdd(false)} size="2xl" disableBackdropClose>
+        <Modal title="Add Contact" onClose={() => setShowAdd(false)} size="3xl" disableBackdropClose>
           <ContactForm onSubmit={handleAdd} onCancel={() => setShowAdd(false)} />
         </Modal>
       )}
