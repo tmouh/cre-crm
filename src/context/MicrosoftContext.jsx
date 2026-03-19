@@ -71,14 +71,47 @@ async function syncOutlookContactsToCrm({ contacts: crmContacts, updateContact: 
 // Maps Outlook contact fields → CRM patch (direction: Outlook → CRM)
 function outlookToCrmPatch(c) {
   const patch = {}
-  if (c.givenName        !== undefined) patch.firstName = c.givenName        || ''
-  if (c.surname          !== undefined) patch.lastName  = c.surname          || ''
-  if (c.jobTitle         !== undefined) patch.title     = c.jobTitle         || ''
-  if (c.personalNotes    !== undefined) patch.notes     = c.personalNotes    || ''
-  if (c.mobilePhone      !== undefined) patch.mobile    = c.mobilePhone      || ''
-  if (c.emailAddresses   !== undefined) patch.email     = c.emailAddresses?.[0]?.address || ''
-  if (c.businessPhones   !== undefined) patch.phone     = c.businessPhones?.[0]           || ''
-  if (c.categories       !== undefined) patch.tags      = c.categories       || []
+  if (c.givenName        !== undefined) patch.firstName     = c.givenName        || ''
+  if (c.surname          !== undefined) patch.lastName      = c.surname          || ''
+  if (c.middleName       !== undefined) patch.middleName    = c.middleName       || ''
+  if (c.generation       !== undefined) patch.suffix        = c.generation       || ''
+  if (c.nickName         !== undefined) patch.nickname      = c.nickName         || ''
+  if (c.jobTitle         !== undefined) patch.title         = c.jobTitle         || ''
+  if (c.personalNotes    !== undefined) patch.notes         = c.personalNotes    || ''
+  if (c.mobilePhone      !== undefined) patch.mobile        = c.mobilePhone      || ''
+  if (c.emailAddresses   !== undefined) patch.email         = c.emailAddresses?.[0]?.address || ''
+  if (c.businessPhones   !== undefined) {
+    patch.phone          = c.businessPhones?.[0] || ''
+    patch.businessPhone2 = c.businessPhones?.[1] || ''
+  }
+  if (c.homePhones       !== undefined) {
+    patch.homePhone      = c.homePhones?.[0] || ''
+    patch.homePhone2     = c.homePhones?.[1] || ''
+  }
+  if (c.categories       !== undefined) patch.tags          = c.categories       || []
+  if (c.birthday         !== undefined) patch.birthday      = c.birthday         || ''
+  if (c.businessHomePage !== undefined) patch.webPage       = c.businessHomePage  || ''
+  if (c.businessAddress  !== undefined) {
+    patch.businessStreet     = c.businessAddress?.street          || ''
+    patch.businessCity       = c.businessAddress?.city            || ''
+    patch.businessState      = c.businessAddress?.state           || ''
+    patch.businessPostalCode = c.businessAddress?.postalCode      || ''
+    patch.businessCountry    = c.businessAddress?.countryOrRegion || ''
+  }
+  if (c.homeAddress      !== undefined) {
+    patch.homeStreet     = c.homeAddress?.street          || ''
+    patch.homeCity       = c.homeAddress?.city            || ''
+    patch.homeState      = c.homeAddress?.state           || ''
+    patch.homePostalCode = c.homeAddress?.postalCode      || ''
+    patch.homeCountry    = c.homeAddress?.countryOrRegion || ''
+  }
+  if (c.otherAddress     !== undefined) {
+    patch.otherStreet     = c.otherAddress?.street          || ''
+    patch.otherCity       = c.otherAddress?.city            || ''
+    patch.otherState      = c.otherAddress?.state           || ''
+    patch.otherPostalCode = c.otherAddress?.postalCode      || ''
+    patch.otherCountry    = c.otherAddress?.countryOrRegion || ''
+  }
   return patch
 }
 

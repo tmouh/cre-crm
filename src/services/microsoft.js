@@ -303,7 +303,7 @@ export async function getEventsForContact(email, daysBack = 90) {
 
 export async function getOutlookContacts() {
   let all = []
-  let path = '/me/contacts?$top=100&$select=id,displayName,givenName,surname,emailAddresses,businessPhones,mobilePhone,jobTitle,companyName,personalNotes,categories'
+  let path = '/me/contacts?$top=100&$select=id,displayName,givenName,surname,middleName,generation,nickName,emailAddresses,businessPhones,mobilePhone,homePhones,jobTitle,companyName,personalNotes,categories,birthday,businessHomePage,businessAddress,homeAddress,otherAddress'
   while (path) {
     const data = await graphGet(path)
     all = [...all, ...(data?.value || [])]
@@ -325,17 +325,48 @@ function crmToOutlookBody(contact, companyName) {
     body.givenName = contact.firstName || ''
     body.surname   = contact.lastName  || ''
   }
-  if (contact.title  !== undefined) body.jobTitle      = contact.title  || ''
-  if (contact.notes  !== undefined) body.personalNotes = contact.notes  || ''
-  if (contact.email  !== undefined) {
+  if (contact.middleName !== undefined) body.middleName     = contact.middleName || ''
+  if (contact.suffix     !== undefined) body.generation      = contact.suffix     || ''
+  if (contact.nickname   !== undefined) body.nickName        = contact.nickname   || ''
+  if (contact.title      !== undefined) body.jobTitle        = contact.title      || ''
+  if (contact.notes      !== undefined) body.personalNotes   = contact.notes      || ''
+  if (contact.email      !== undefined) {
     body.emailAddresses = contact.email
       ? [{ address: contact.email, name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() }]
       : []
   }
-  if (contact.phone  !== undefined) body.businessPhones = contact.phone  ? [contact.phone]  : []
-  if (contact.mobile !== undefined) body.mobilePhone    = contact.mobile || ''
-  if (companyName    !== undefined) body.companyName    = companyName    || ''
-  if (contact.tags   !== undefined) body.categories     = contact.tags   || []
+  if (contact.phone !== undefined || contact.businessPhone2 !== undefined) {
+    body.businessPhones = [contact.phone, contact.businessPhone2].filter(Boolean)
+  }
+  if (contact.mobile !== undefined) body.mobilePhone = contact.mobile || ''
+  if (contact.homePhone !== undefined || contact.homePhone2 !== undefined) {
+    body.homePhones = [contact.homePhone, contact.homePhone2].filter(Boolean)
+  }
+  if (companyName       !== undefined) body.companyName      = companyName    || ''
+  if (contact.tags      !== undefined) body.categories       = contact.tags   || []
+  if (contact.birthday  !== undefined) body.birthday         = contact.birthday || null
+  if (contact.webPage   !== undefined) body.businessHomePage = contact.webPage  || ''
+  if (contact.businessStreet !== undefined) {
+    body.businessAddress = {
+      street: contact.businessStreet || '', city: contact.businessCity || '',
+      state: contact.businessState || '', postalCode: contact.businessPostalCode || '',
+      countryOrRegion: contact.businessCountry || '',
+    }
+  }
+  if (contact.homeStreet !== undefined) {
+    body.homeAddress = {
+      street: contact.homeStreet || '', city: contact.homeCity || '',
+      state: contact.homeState || '', postalCode: contact.homePostalCode || '',
+      countryOrRegion: contact.homeCountry || '',
+    }
+  }
+  if (contact.otherStreet !== undefined) {
+    body.otherAddress = {
+      street: contact.otherStreet || '', city: contact.otherCity || '',
+      state: contact.otherState || '', postalCode: contact.otherPostalCode || '',
+      countryOrRegion: contact.otherCountry || '',
+    }
+  }
   return body
 }
 
@@ -353,7 +384,7 @@ export async function createOutlookContact(contact, companyName) {
 }
 
 export async function getOutlookContact(outlookId) {
-  return graphGet(`/me/contacts/${outlookId}?$select=id,givenName,surname,emailAddresses,businessPhones,mobilePhone,jobTitle,personalNotes,categories`)
+  return graphGet(`/me/contacts/${outlookId}?$select=id,givenName,surname,middleName,generation,nickName,emailAddresses,businessPhones,mobilePhone,homePhones,jobTitle,personalNotes,categories,birthday,businessHomePage,businessAddress,homeAddress,otherAddress`)
 }
 
 /**
@@ -363,7 +394,7 @@ export async function getOutlookContact(outlookId) {
 export async function getModifiedOutlookContacts(since) {
   // Graph requires the datetime in ISO format without quotes in the $filter value
   const data = await graphGet(
-    `/me/contacts?$select=id,givenName,surname,emailAddresses,businessPhones,mobilePhone,jobTitle,personalNotes,categories` +
+    `/me/contacts?$select=id,givenName,surname,middleName,generation,nickName,emailAddresses,businessPhones,mobilePhone,homePhones,jobTitle,personalNotes,categories,birthday,businessHomePage,businessAddress,homeAddress,otherAddress` +
     `&$filter=lastModifiedDateTime gt ${encodeURIComponent(since)}&$top=100`,
   )
   return data?.value || []

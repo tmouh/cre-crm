@@ -57,7 +57,7 @@ export async function getMicrosoftAccount() {
 export async function getOutlookContacts() {
   let all = []
   let path =
-    '/me/contacts?$top=100&$select=id,displayName,givenName,surname,emailAddresses,businessPhones,mobilePhone,jobTitle,companyName,personalNotes,categories,imAddresses,businessHomePage'
+    '/me/contacts?$top=100&$select=id,displayName,givenName,surname,middleName,generation,nickName,emailAddresses,businessPhones,mobilePhone,homePhones,jobTitle,companyName,personalNotes,categories,imAddresses,businessHomePage,birthday,businessAddress,homeAddress,otherAddress'
 
   while (path) {
     const data = await graphGet(path)

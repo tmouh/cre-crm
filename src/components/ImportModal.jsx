@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Upload, X, CheckCircle, AlertCircle, Loader2, FileText, UserPlus } from 'lucide-react'
+import { Upload, X, CheckCircle, AlertCircle, Loader2, FileText, UserPlus, Lock, Users } from 'lucide-react'
 import { useCRM } from '../context/CRMContext'
 
 // ─── CSV parser (handles quoted fields with commas inside) ─────────────────────
@@ -38,13 +38,47 @@ function norm(s) { return s.toLowerCase().replace(/[\s_\-]/g, '') }
 const CONTACT_ALIASES = {
   firstName:           ['firstname','first','fname'],
   lastName:            ['lastname','last','lname'],
+  middleName:          ['middlename','middle'],
+  suffix:              ['suffix','namesuffix'],
+  nickname:            ['nickname','nick'],
   title:               ['title','jobtitle','role'],
   contactFunction:     ['function','contactfunction','type','contacttype'],
   company:             ['company','companyname','organization','org'],
   email:               ['email','emailaddress'],
-  phone:               ['phone','phonenumber','tel','telephone'],
-  mobile:              ['mobile','cell','cellphone'],
+  email2:              ['email2address','email2','emailaddress2'],
+  email3:              ['email3address','email3','emailaddress3'],
+  phone:               ['phone','phonenumber','tel','telephone','businessphone'],
+  mobile:              ['mobile','cell','cellphone','mobilephone'],
+  homePhone:           ['homephone'],
+  homePhone2:          ['homephone2'],
+  businessPhone2:      ['businessphone2'],
+  carPhone:            ['carphone'],
+  otherPhone:          ['otherphone'],
+  primaryPhone:        ['primaryphone'],
+  pager:               ['pager'],
+  businessFax:         ['businessfax','fax'],
+  homeFax:             ['homefax'],
+  otherFax:            ['otherfax'],
+  companyMainPhone:    ['companymainphone','mainphone'],
+  businessStreet:      ['businessstreet'],
+  businessCity:        ['businesscity'],
+  businessState:       ['businessstate'],
+  businessPostalCode:  ['businesspostalcode','businesszip','businesszipcode'],
+  businessCountry:     ['businesscountryregion','businesscountry'],
+  homeStreet:          ['homestreet'],
+  homeCity:            ['homecity'],
+  homeState:           ['homestate'],
+  homePostalCode:      ['homepostalcode','homezip','homezipcode'],
+  homeCountry:         ['homecountryregion','homecountry'],
+  otherStreet:         ['otherstreet'],
+  otherCity:           ['othercity'],
+  otherState:          ['otherstate'],
+  otherPostalCode:     ['otherpostalcode','otherzip','otherzipcode'],
+  otherCountry:        ['othercountryregion','othercountry'],
   linkedIn:            ['linkedin','linkedinurl'],
+  webPage:             ['webpage','website','url','webpageother'],
+  birthday:            ['birthday','birthdate','dateofbirth'],
+  anniversary:         ['anniversary'],
   tags:                ['tags','tag'],
   notes:               ['notes','note','comments'],
 }
@@ -152,25 +186,65 @@ function rowToCompany(row, map) {
   }
 }
 
-function rowToContact(row, map, companies) {
+function rowToContact(row, map, companies, importVisibility = 'shared') {
   const v = (f) => getCell(row, map, f)
   const compName = v('company')
   const companyId = compName
     ? (companies.find(c => c.name.toLowerCase() === compName.toLowerCase())?.id || '')
     : ''
+  const allEmails = [v('email'), v('email2'), v('email3')].filter(Boolean)
+  const allPhones = [v('phone'), v('mobile')].filter(Boolean)
+  const isPersonal = importVisibility === 'private'
   return {
     firstName:          v('firstName'),
     lastName:           v('lastName'),
+    middleName:         v('middleName'),
+    suffix:             v('suffix'),
+    nickname:           v('nickname'),
     title:              v('title'),
     contactFunction:    v('contactFunction') || '',
     companyId,
-    email:              v('email'),
+    email:              allEmails[0] || '',
     phone:              v('phone'),
     mobile:             v('mobile'),
+    personalEmails:     isPersonal ? allEmails : [],
+    sharedEmails:       isPersonal ? [] : allEmails,
+    personalPhones:     isPersonal ? allPhones : [],
+    sharedCellPhones:   isPersonal ? [] : allPhones,
+    homePhone:          v('homePhone'),
+    homePhone2:         v('homePhone2'),
+    businessPhone2:     v('businessPhone2'),
+    carPhone:           v('carPhone'),
+    otherPhone:         v('otherPhone'),
+    primaryPhone:       v('primaryPhone'),
+    pager:              v('pager'),
+    businessFax:        v('businessFax'),
+    homeFax:            v('homeFax'),
+    otherFax:           v('otherFax'),
+    companyMainPhone:   v('companyMainPhone'),
+    businessStreet:     v('businessStreet'),
+    businessCity:       v('businessCity'),
+    businessState:      v('businessState'),
+    businessPostalCode: v('businessPostalCode'),
+    businessCountry:    v('businessCountry'),
+    homeStreet:         v('homeStreet'),
+    homeCity:           v('homeCity'),
+    homeState:          v('homeState'),
+    homePostalCode:     v('homePostalCode'),
+    homeCountry:        v('homeCountry'),
+    otherStreet:        v('otherStreet'),
+    otherCity:          v('otherCity'),
+    otherState:         v('otherState'),
+    otherPostalCode:    v('otherPostalCode'),
+    otherCountry:       v('otherCountry'),
     linkedIn:           v('linkedIn'),
+    webPage:            v('webPage'),
+    birthday:           v('birthday'),
+    anniversary:        v('anniversary'),
     tags:               v('tags') ? v('tags').split(';').map(t => t.trim()).filter(Boolean) : [],
     notes:              v('notes'),
     ownerIds:           [],
+    visibility:         importVisibility,
   }
 }
 
@@ -287,6 +361,7 @@ export default function ImportModal({ entity, onClose }) {
   const [results, setResults]   = useState([])     // [{ ok, error }]
   const fileRef = useRef()
   const [hasHeaders, setHasHeaders] = useState(true)
+  const [importVisibility, setImportVisibility] = useState('shared')
   // contact-review state
   const [unmatchedContacts, setUnmatchedContacts] = useState([]) // [{ name, rows: [rowIdx] }]
   const [selectedContacts, setSelectedContacts] = useState({})   // name -> bool
@@ -367,7 +442,7 @@ export default function ImportModal({ entity, onClose }) {
           if (!obj.name) throw new Error('Missing name')
           await addCompany(obj)
         } else if (entity === 'contacts') {
-          const obj = rowToContact(row, mapping, companies)
+          const obj = rowToContact(row, mapping, companies, importVisibility)
           if (!obj.firstName || !obj.lastName) throw new Error('Missing first or last name')
           await addContact(obj)
         } else if (entity === 'comps') {
@@ -456,9 +531,9 @@ export default function ImportModal({ entity, onClose }) {
 
               {entity === 'contacts' && (
                 <div className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/50 px-3 py-2.5 space-y-1.5">
-                  <p className="font-medium text-slate-500 dark:text-slate-400">Expected column order:</p>
-                  <p className="font-mono bg-white dark:bg-slate-800 px-2 py-1 border border-[var(--border)] text-[11px] overflow-x-auto whitespace-nowrap">firstName*, lastName*, title, function, company, email, phone, mobile, linkedIn, tags, notes</p>
-                  <p>* Required. <code className="font-mono">company</code> = exact company name. <code className="font-mono">function</code>: lp-investor, broker, developer, lender, owner-operator, tenant, attorney, accountant, property-manager, other. Arrays separated by semicolons.</p>
+                  <p className="font-medium text-slate-500 dark:text-slate-400">Expected columns (all optional except *):</p>
+                  <p className="font-mono bg-white dark:bg-slate-800 px-2 py-1 border border-[var(--border)] text-[11px] overflow-x-auto whitespace-nowrap">firstName*, lastName*, middleName, suffix, nickname, title, function, company, email, email2, email3, phone, mobile, homePhone, homePhone2, businessPhone2, carPhone, otherPhone, primaryPhone, pager, businessFax, homeFax, otherFax, companyMainPhone, businessStreet, businessCity, businessState, businessPostalCode, businessCountry, homeStreet, homeCity, homeState, homePostalCode, homeCountry, otherStreet, otherCity, otherState, otherPostalCode, otherCountry, linkedIn, webPage, birthday, anniversary, tags, notes</p>
+                  <p>* Required. <code className="font-mono">company</code> = exact company name. <code className="font-mono">function</code>: lp-investor, broker, developer, lender, owner-operator, tenant, attorney, accountant, property-manager, other. Outlook CSV headers are auto-matched. Arrays separated by semicolons.</p>
                 </div>
               )}
               {entity === 'companies' && (
@@ -518,6 +593,28 @@ export default function ImportModal({ entity, onClose }) {
               <p className="text-sm text-slate-600 dark:text-slate-300">
                 <span className="font-medium">{parsed.rows.length} rows</span> ready to import. Preview of first 5:
               </p>
+              {entity === 'contacts' && (
+                <div className="flex items-center gap-3 py-2">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Import as:</span>
+                  <button
+                    type="button"
+                    onClick={() => setImportVisibility('private')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs border-2 transition-colors ${importVisibility === 'private' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 dark:border-brand-600 text-brand-700 dark:text-brand-300' : 'border-[var(--border)] text-slate-500 dark:text-slate-400 hover:border-slate-400'}`}
+                  >
+                    <Lock size={12} /> Personal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImportVisibility('shared')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs border-2 transition-colors ${importVisibility === 'shared' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 dark:border-brand-600 text-brand-700 dark:text-brand-300' : 'border-[var(--border)] text-slate-500 dark:text-slate-400 hover:border-slate-400'}`}
+                  >
+                    <Users size={12} /> Shared
+                  </button>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                    {importVisibility === 'private' ? 'Emails & phones go to your personal fields' : 'Emails & phones go to shared (team-visible) fields'}
+                  </span>
+                </div>
+              )}
               <div className="overflow-x-auto">
                 <table className="w-full text-xs border border-[var(--border)] overflow-hidden">
                   <thead className="bg-slate-50 dark:bg-slate-700">

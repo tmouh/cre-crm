@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, Component } from 'react'
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle, Lock, Users, Save, X, CheckSquare, Share2, ArrowLeftRight } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Linkedin, Building2, MapPin, Trash2, Edit2, ArrowLeft, ExternalLink, Upload, UserCheck, AlertTriangle, Lock, Users, Save, X, CheckSquare, Share2, ArrowLeftRight, ChevronDown, Globe, Cake, Calendar } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { useAuth } from '../context/AuthContext'
@@ -34,7 +34,7 @@ class LinkedInErrorBoundary extends Component {
   }
 }
 
-const BLANK = { firstName: '', lastName: '', title: '', contactFunction: '', companyId: '', linkedIn: '', notes: '', tags: [], ownerIds: [], visibility: 'shared', sharedWith: [], sharedNotes: '', sharedCellPhones: [], sharedEmails: [], personalPhones: [], personalEmails: [], email: '', phone: '', mobile: '' }
+const BLANK = { firstName: '', lastName: '', middleName: '', suffix: '', nickname: '', title: '', contactFunction: '', companyId: '', linkedIn: '', webPage: '', birthday: '', anniversary: '', notes: '', tags: [], ownerIds: [], visibility: 'shared', sharedWith: [], sharedNotes: '', sharedCellPhones: [], sharedEmails: [], personalPhones: [], personalEmails: [], email: '', phone: '', mobile: '', homePhone: '', homePhone2: '', businessPhone2: '', carPhone: '', otherPhone: '', primaryPhone: '', pager: '', businessFax: '', homeFax: '', otherFax: '', companyMainPhone: '', businessStreet: '', businessCity: '', businessState: '', businessPostalCode: '', businessCountry: '', homeStreet: '', homeCity: '', homeState: '', homePostalCode: '', homeCountry: '', otherStreet: '', otherCity: '', otherState: '', otherPostalCode: '', otherCountry: '' }
 
 // Multi-value input: individual boxes with X to remove and + to add
 function MultiValueInput({ values, onChange, type = 'text', placeholder, addLabel, onSwapItem }) {
@@ -96,6 +96,9 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
   })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
+  const [showExtended, setShowExtended] = useState(() =>
+    !!(initial.homePhone || initial.homePhone2 || initial.businessPhone2 || initial.carPhone || initial.otherPhone || initial.primaryPhone || initial.pager || initial.businessFax || initial.homeFax || initial.otherFax || initial.companyMainPhone || initial.businessStreet || initial.homeStreet || initial.otherStreet)
+  )
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   function toggleOwner(id) {
@@ -159,6 +162,21 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
             </div>
           </div>
 
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="v-label">Middle</label>
+              <input value={form.middleName} onChange={f('middleName')} className="v-input" />
+            </div>
+            <div>
+              <label className="v-label">Suffix</label>
+              <input value={form.suffix} onChange={f('suffix')} className="v-input" placeholder="Jr., Sr., III" />
+            </div>
+            <div>
+              <label className="v-label">Nickname</label>
+              <input value={form.nickname} onChange={f('nickname')} className="v-input" />
+            </div>
+          </div>
+
           <div>
             <label className="v-label">Title / Role</label>
             <input value={form.title} onChange={f('title')} className="v-input" placeholder="e.g. VP Real Estate" />
@@ -187,6 +205,22 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
           <div>
             <label className="v-label">LinkedIn</label>
             <input value={form.linkedIn} onChange={f('linkedIn')} className="v-input" placeholder="linkedin.com/in/..." />
+          </div>
+
+          <div>
+            <label className="v-label">Web Page</label>
+            <input value={form.webPage} onChange={f('webPage')} className="v-input" placeholder="https://..." />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="v-label">Birthday</label>
+              <input type="date" value={form.birthday} onChange={f('birthday')} className="v-input" />
+            </div>
+            <div>
+              <label className="v-label">Anniversary</label>
+              <input type="date" value={form.anniversary} onChange={f('anniversary')} className="v-input" />
+            </div>
           </div>
 
           <div>
@@ -405,6 +439,56 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
 
       </div>
 
+      {/* ── Collapsible: Additional Details (phones, fax, addresses) ── */}
+      <div className="border border-[var(--border)] mt-3">
+        <button type="button" onClick={() => setShowExtended(p => !p)}
+          className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+          Additional Details
+          <ChevronDown size={12} className={clsx('transition-transform', showExtended && 'rotate-180')} />
+        </button>
+        {showExtended && (
+          <div className="px-3 pb-3 pt-1 grid gap-4" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            {/* Phones */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Phones & Fax</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div><label className="v-label">Home Phone</label><input value={form.homePhone} onChange={f('homePhone')} className="v-input" /></div>
+                <div><label className="v-label">Home Phone 2</label><input value={form.homePhone2} onChange={f('homePhone2')} className="v-input" /></div>
+                <div><label className="v-label">Business Phone 2</label><input value={form.businessPhone2} onChange={f('businessPhone2')} className="v-input" /></div>
+                <div><label className="v-label">Car Phone</label><input value={form.carPhone} onChange={f('carPhone')} className="v-input" /></div>
+                <div><label className="v-label">Other Phone</label><input value={form.otherPhone} onChange={f('otherPhone')} className="v-input" /></div>
+                <div><label className="v-label">Primary Phone</label><input value={form.primaryPhone} onChange={f('primaryPhone')} className="v-input" /></div>
+                <div><label className="v-label">Pager</label><input value={form.pager} onChange={f('pager')} className="v-input" /></div>
+                <div><label className="v-label">Company Main</label><input value={form.companyMainPhone} onChange={f('companyMainPhone')} className="v-input" /></div>
+                <div><label className="v-label">Business Fax</label><input value={form.businessFax} onChange={f('businessFax')} className="v-input" /></div>
+                <div><label className="v-label">Home Fax</label><input value={form.homeFax} onChange={f('homeFax')} className="v-input" /></div>
+                <div><label className="v-label">Other Fax</label><input value={form.otherFax} onChange={f('otherFax')} className="v-input" /></div>
+              </div>
+            </div>
+            {/* Addresses */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Addresses</p>
+              {[
+                { label: 'Business', prefix: 'business' },
+                { label: 'Home', prefix: 'home' },
+                { label: 'Other', prefix: 'other' },
+              ].map(({ label, prefix }) => (
+                <div key={prefix} className="space-y-1">
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{label}</p>
+                  <input value={form[`${prefix}Street`]} onChange={f(`${prefix}Street`)} className="v-input" placeholder="Street" />
+                  <div className="grid grid-cols-3 gap-1">
+                    <input value={form[`${prefix}City`]} onChange={f(`${prefix}City`)} className="v-input" placeholder="City" />
+                    <input value={form[`${prefix}State`]} onChange={f(`${prefix}State`)} className="v-input" placeholder="State" />
+                    <input value={form[`${prefix}PostalCode`]} onChange={f(`${prefix}PostalCode`)} className="v-input" placeholder="Zip" />
+                  </div>
+                  <input value={form[`${prefix}Country`]} onChange={f(`${prefix}Country`)} className="v-input" placeholder="Country" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-2 pt-3">
         <button type="submit" disabled={saving} className="v-btn-primary flex-1 disabled:opacity-60">{saving ? 'Saving…' : 'Save Contact'}</button>
         <button type="button" onClick={onCancel} disabled={saving} className="v-btn-secondary">Cancel</button>
@@ -504,7 +588,9 @@ export function ContactDetail({ backTo }) {
           <span className="text-[11px] font-bold text-white font-mono">{initials(contact)}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-[13px] font-bold text-slate-900 dark:text-white truncate">{fullName(contact)}</h2>
+          <h2 className="text-[13px] font-bold text-slate-900 dark:text-white truncate">
+            {fullName(contact)}{contact.suffix ? ` ${contact.suffix}` : ''}{contact.nickname ? ` "${contact.nickname}"` : ''}
+          </h2>
           <div className="flex items-center gap-2">
             {contact.title && <span className="text-[10px] text-slate-500 dark:text-slate-400">{contact.title}</span>}
             {company && (
@@ -560,6 +646,52 @@ export function ContactDetail({ backTo }) {
                 <Linkedin size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> LinkedIn <ExternalLink size={9} className="text-slate-400" />
               </a>
             )}
+            {contact.webPage && (
+              <a href={contact.webPage.startsWith('http') ? contact.webPage : `https://${contact.webPage}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                <Globe size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> Web <ExternalLink size={9} className="text-slate-400" />
+              </a>
+            )}
+            {(contact.birthday || contact.anniversary) && (
+              <div className="pt-1 space-y-0.5">
+                {contact.birthday && (
+                  <p className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                    <Cake size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {formatDate(contact.birthday)}
+                  </p>
+                )}
+                {contact.anniversary && (
+                  <p className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                    <Calendar size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {formatDate(contact.anniversary)}
+                  </p>
+                )}
+              </div>
+            )}
+            {contact.businessStreet && (
+              <div className="pt-1">
+                <p className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  <MapPin size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                  <span>{[contact.businessStreet, contact.businessCity, contact.businessState, contact.businessPostalCode].filter(Boolean).join(', ')}</span>
+                </p>
+              </div>
+            )}
+            {(() => {
+              const extraPhones = [
+                contact.homePhone && { label: 'Home', num: contact.homePhone },
+                contact.homePhone2 && { label: 'Home 2', num: contact.homePhone2 },
+                contact.businessPhone2 && { label: 'Bus 2', num: contact.businessPhone2 },
+                contact.carPhone && { label: 'Car', num: contact.carPhone },
+                contact.otherPhone && { label: 'Other', num: contact.otherPhone },
+                contact.companyMainPhone && { label: 'Main', num: contact.companyMainPhone },
+              ].filter(Boolean)
+              return extraPhones.length > 0 && (
+                <div className="pt-1 space-y-0.5">
+                  {extraPhones.map(({ label, num }) => (
+                    <a key={label} href={`tel:${num}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                      <Phone size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {num} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">{label.toUpperCase()}</span>
+                    </a>
+                  ))}
+                </div>
+              )
+            })()}
           </div>
 
           {/* Health score */}
