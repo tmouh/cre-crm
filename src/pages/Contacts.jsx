@@ -462,8 +462,8 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
             <div className="grid grid-cols-3 gap-x-3 gap-y-3">
               {pairs.map(pair => (
                 <div key={pair.key} className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="v-label">{pair.label}</label>
+                  <label className="v-label flex items-center gap-1.5">
+                    {pair.label}
                     {pair.secondaryKey && !expandedPhones.has(pair.key) && (
                       <button type="button"
                         onClick={() => setExpandedPhones(s => { const n = new Set(s); n.add(pair.key); return n })}
@@ -471,20 +471,28 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                         + add
                       </button>
                     )}
-                  </div>
+                  </label>
                   <div className="flex items-center gap-1">
                     <input value={form[pair.key] || ''} onChange={f(pair.key)} className="v-input flex-1" />
                     {canSwap && (
                       <button type="button" onClick={() => flipField(pair.key)}
                         className="flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
-                        <><ArrowLeftRight size={9} className="inline" /> Swap</>
+                        <ArrowLeftRight size={9} className="inline" /> Swap
                       </button>
                     )}
                   </div>
                   {pair.secondaryKey && expandedPhones.has(pair.key) && (
-                    <div>
+                    <div className="space-y-1">
                       <label className="v-label">{pair.secondaryLabel}</label>
-                      <input value={form[pair.secondaryKey] || ''} onChange={f(pair.secondaryKey)} className="v-input" />
+                      <div className="flex items-center gap-1">
+                        <input value={form[pair.secondaryKey] || ''} onChange={f(pair.secondaryKey)} className="v-input flex-1" />
+                        {canSwap && (
+                          <button type="button" onClick={() => flipField(pair.secondaryKey)}
+                            className="flex-shrink-0 text-[9px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline whitespace-nowrap">
+                            <ArrowLeftRight size={9} className="inline" /> Swap
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
