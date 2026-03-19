@@ -39,35 +39,31 @@ const BLANK = { firstName: '', lastName: '', middleName: '', suffix: '', nicknam
 // All named field labels — emails, phones, fax
 const ALL_EMAIL_FIELDS = [
   { key: 'email',  label: 'Current Email' },
-  { key: 'email2', label: 'Legacy Email 1' },
+  { key: 'email2', label: 'Legacy Email' },
   { key: 'email3', label: 'Legacy Email 2' },
   { key: 'email4', label: 'Legacy Email 3' },
   { key: 'email5', label: 'Legacy Email 4' },
   { key: 'email6', label: 'Legacy Email 5' },
 ]
 const ALL_PHONE_FIELDS = [
-  { key: 'phone',            label: 'Business Phone' },
-  { key: 'mobile',           label: 'Mobile Phone' },
-  { key: 'homePhone',        label: 'Home Phone' },
-  { key: 'homePhone2',       label: 'Home Phone 2' },
-  { key: 'businessPhone2',   label: 'Business Phone 2' },
-  { key: 'carPhone',         label: 'Car Phone' },
-  { key: 'otherPhone',       label: 'Other Phone' },
-  { key: 'primaryPhone',     label: 'Primary Phone' },
-  { key: 'pager',            label: 'Pager' },
-  { key: 'companyMainPhone', label: 'Company Main' },
+  { key: 'phone',          label: 'Work Phone' },
+  { key: 'mobile',         label: 'Mobile Phone' },
+  { key: 'homePhone',      label: 'Home Phone' },
+  { key: 'homePhone2',     label: 'Home Phone 2' },
+  { key: 'businessPhone2', label: 'Work Phone 2' },
+  { key: 'carPhone',       label: 'Mobile Phone 2' },
+  { key: 'otherPhone',     label: 'Other Phone' },
 ]
 const ALL_FAX_FIELDS = [
-  { key: 'businessFax', label: 'Business Fax' },
-  { key: 'homeFax',     label: 'Home Fax' },
-  { key: 'otherFax',    label: 'Other Fax' },
+  { key: 'homeFax', label: 'Home Fax' },
 ]
+// Extra phone keys that are hidden until the user expands
+const EXTRA_PHONE_KEYS = new Set(['homePhone2', 'businessPhone2'])
 const DEFAULT_FIELD_ASSIGNMENTS = {
   email: 'personal', email2: 'personal', email3: 'personal', email4: 'personal', email5: 'personal', email6: 'personal',
   phone: 'personal', mobile: 'personal',
-  homePhone: 'personal', homePhone2: 'personal', carPhone: 'personal',
-  pager: 'personal', otherPhone: 'personal', primaryPhone: 'personal', homeFax: 'personal',
-  businessPhone2: 'shared', companyMainPhone: 'shared', businessFax: 'shared', otherFax: 'shared',
+  homePhone: 'personal', homePhone2: 'personal', carPhone: 'personal', otherPhone: 'personal', homeFax: 'personal',
+  businessPhone2: 'shared',
 }
 
 export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibility = 'shared' }) {
@@ -115,6 +111,8 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
   // Progressive disclosure: extra revealed slots per field group
   const [extraSlots, setExtraSlots] = useState({ pEmails: 0, pPhones: 0, pFax: 0, sEmails: 0, sPhones: 0, sFax: 0 })
   const addSlot = (key) => setExtraSlots(s => ({ ...s, [key]: s[key] + 1 }))
+  const [showExtraPhones, setShowExtraPhones] = useState(!!(initial.homePhone2 || initial.businessPhone2))
+  const [showOtherAddress, setShowOtherAddress] = useState(!!(initial.otherStreet || initial.otherCity || initial.otherState || initial.otherPostalCode || initial.otherCountry))
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
   function toggleOwner(id) {
@@ -340,10 +338,6 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
             <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-mono">Professional</p>
             <div className="grid grid-cols-4 gap-2">
               <div>
-                <label className="v-label">Title / Role</label>
-                <input value={form.title} onChange={f('title')} className="v-input" placeholder="e.g. VP Real Estate" />
-              </div>
-              <div>
                 <label className="v-label">Company</label>
                 <CompanyCombobox
                   value={form.companyId}
@@ -353,6 +347,10 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                     setForm(p => ({ ...p, companyId: c.id }))
                   }}
                 />
+              </div>
+              <div>
+                <label className="v-label">Title / Role</label>
+                <input value={form.title} onChange={f('title')} className="v-input" placeholder="e.g. VP Real Estate" />
               </div>
               <div>
                 <label className="v-label">Function</label>
@@ -409,10 +407,11 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
         }))
 
         // Determine which fields go in each section
+        const visiblePhoneFields = ALL_PHONE_FIELDS.filter(f => showExtraPhones || !EXTRA_PHONE_KEYS.has(f.key))
         const personalEmails = ALL_EMAIL_FIELDS.filter(f => fieldAssign(f.key) === 'personal')
         const sharedEmails = ALL_EMAIL_FIELDS.filter(f => fieldAssign(f.key) === 'shared')
-        const personalPhones = ALL_PHONE_FIELDS.filter(f => fieldAssign(f.key) === 'personal')
-        const sharedPhones = ALL_PHONE_FIELDS.filter(f => fieldAssign(f.key) === 'shared')
+        const personalPhones = visiblePhoneFields.filter(f => fieldAssign(f.key) === 'personal')
+        const sharedPhones = visiblePhoneFields.filter(f => fieldAssign(f.key) === 'shared')
         const personalFax = ALL_FAX_FIELDS.filter(f => fieldAssign(f.key) === 'personal')
         const sharedFax = ALL_FAX_FIELDS.filter(f => fieldAssign(f.key) === 'shared')
 
@@ -475,6 +474,12 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
             {personalEmails.length > 0 && renderFieldGroup(personalEmails, 'Emails', 'Add email', 1, 'personal', 'pEmails')}
 
             {personalPhones.length > 0 && renderFieldGroup(personalPhones, 'Phones', 'Add phone', 2, 'personal', 'pPhones')}
+            {!showExtraPhones && (
+              <button type="button" onClick={() => setShowExtraPhones(true)}
+                className="text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline -mt-1">
+                + more phone fields
+              </button>
+            )}
 
             {personalFax.length > 0 && renderFieldGroup(personalFax, 'Fax', 'Add fax', 0, 'personal', 'pFax')}
 
@@ -510,6 +515,12 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                 {sharedEmails.length > 0 && renderFieldGroup(sharedEmails, 'Emails', 'Add email', 1, 'shared', 'sEmails')}
 
                 {sharedPhones.length > 0 && renderFieldGroup(sharedPhones, 'Phones', 'Add phone', 1, 'shared', 'sPhones')}
+                {!showExtraPhones && (
+                  <button type="button" onClick={() => setShowExtraPhones(true)}
+                    className="text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline -mt-1">
+                    + more phone fields
+                  </button>
+                )}
 
                 {sharedFax.length > 0 && renderFieldGroup(sharedFax, 'Fax', 'Add fax', 0, 'shared', 'sFax')}
 
@@ -542,7 +553,6 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
             {[
               { label: 'Business', prefix: 'business' },
               { label: 'Home', prefix: 'home' },
-              { label: 'Other', prefix: 'other' },
             ].map(({ label, prefix }) => (
               <div key={prefix} className="space-y-1">
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{label}</p>
@@ -555,6 +565,23 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
                 <input value={form[`${prefix}Country`]} onChange={f(`${prefix}Country`)} className="v-input" placeholder="Country" />
               </div>
             ))}
+            {showOtherAddress ? (
+              <div className="space-y-1">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Other</p>
+                <input value={form.otherStreet} onChange={f('otherStreet')} className="v-input" placeholder="Street" />
+                <div className="grid grid-cols-3 gap-1">
+                  <input value={form.otherCity} onChange={f('otherCity')} className="v-input" placeholder="City" />
+                  <input value={form.otherState} onChange={f('otherState')} className="v-input" placeholder="State" />
+                  <input value={form.otherPostalCode} onChange={f('otherPostalCode')} className="v-input" placeholder="Zip" />
+                </div>
+                <input value={form.otherCountry} onChange={f('otherCountry')} className="v-input" placeholder="Country" />
+              </div>
+            ) : (
+              <button type="button" onClick={() => setShowOtherAddress(true)}
+                className="text-[10px] text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline">
+                + add other address
+              </button>
+            )}
         </div>
       )}
 
