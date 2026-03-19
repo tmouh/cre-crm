@@ -679,20 +679,32 @@ export function ContactDetail({ backTo }) {
             )}
             {(() => {
               const canSeePrivate = isOwner || contact.visibility !== 'shared'
-              const allEmails = [...new Set([
-                ...(canSeePrivate ? [contact.email, contact.email2, contact.email3, contact.email4, contact.email5, contact.email6, ...(contact.personalEmails || [])] : []),
-                ...(contact.sharedEmails || [])
-              ].filter(Boolean))]
+              const EMAIL_SLOTS = [
+                { label: 'Current', key: 'email' },
+                { label: 'Legacy 1', key: 'email2' },
+                { label: 'Legacy 2', key: 'email3' },
+                { label: 'Legacy 3', key: 'email4' },
+                { label: 'Legacy 4', key: 'email5' },
+                { label: 'Legacy 5', key: 'email6' },
+              ]
               const allPhones = [...new Set([
                 ...(canSeePrivate ? [contact.phone, contact.mobile, ...(contact.personalPhones || [])] : []),
                 ...(contact.sharedCellPhones || [])
               ].filter(Boolean))]
               return (<>
-                {allEmails.map((em, i) => (
-                  <a key={em} href={`mailto:${em}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
-                    <Mail size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> <span className="truncate">{em}</span>
-                  </a>
-                ))}
+                {EMAIL_SLOTS.map(({ label, key }) => {
+                  const em = canSeePrivate ? contact[key] : null
+                  return (
+                    <div key={key} className="flex items-center gap-1.5 text-[11px]">
+                      <Mail size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono uppercase w-[44px] flex-shrink-0">{label}</span>
+                      {em
+                        ? <a href={`mailto:${em}`} className="text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 truncate">{em}</a>
+                        : <span className="text-slate-300 dark:text-slate-600">—</span>
+                      }
+                    </div>
+                  )
+                })}
                 {allPhones.map((ph, i) => (
                   <a key={ph} href={`tel:${ph}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
                     <Phone size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {ph} {ph === contact.mobile && <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">MOB</span>}
@@ -987,33 +999,33 @@ export function ContactDetail({ backTo }) {
             <ReminderList contactId={id} />
             <ActivityFeed contactId={id} contactDeals={contactLinkedDeals} onLinkDeal={linkContactToDeal} />
             {(() => {
-              const outlookEmails = [...new Set([
-                ...(isOwner ? [contact.email, contact.email2, contact.email3, contact.email4, contact.email5, contact.email6].filter(Boolean) : []),
-                ...(contact.sharedEmails || [])
-              ].filter(Boolean))]
-              const safeIdx = Math.min(selectedEmailIdx, Math.max(0, outlookEmails.length - 1))
-              const activeOutlookEmail = outlookEmails[safeIdx] || null
-              const outlookViewLabel = safeIdx === 0 ? '' : ` — ${outlookEmails[safeIdx]}`
+              const SLOT_LABELS = ['Current', 'Legacy 1', 'Legacy 2', 'Legacy 3', 'Legacy 4', 'Legacy 5']
+              const outlookSlots = isOwner
+                ? [contact.email || '', contact.email2 || '', contact.email3 || '', contact.email4 || '', contact.email5 || '', contact.email6 || '']
+                : [...(contact.sharedEmails || []), ...Array(Math.max(0, 6 - (contact.sharedEmails || []).length)).fill('')]
+              const safeIdx = Math.min(selectedEmailIdx, outlookSlots.length - 1)
+              const activeOutlookEmail = outlookSlots[safeIdx] || null
+              const outlookViewLabel = safeIdx === 0 ? '' : ` — ${SLOT_LABELS[safeIdx]}`
               return (<>
-                {outlookEmails.length > 1 && (
-                  <div className="flex items-center gap-1.5 flex-wrap px-1">
-                    {outlookEmails.map((em, i) => (
-                      <button
-                        key={em}
-                        type="button"
-                        onClick={() => setSelectedEmailIdx(i)}
-                        className={clsx(
-                          'px-2.5 py-1 text-[10px] font-mono border transition-colors',
-                          i === safeIdx
-                            ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
-                            : 'border-[var(--border)] text-slate-400 hover:border-slate-400 dark:text-slate-500'
-                        )}
-                      >
-                        {i === 0 ? `Current: ${em}` : `Legacy: ${em}`}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className="flex items-center gap-1.5 flex-wrap px-1">
+                  {outlookSlots.map((em, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setSelectedEmailIdx(i)}
+                      className={clsx(
+                        'px-2.5 py-1 text-[10px] font-mono border transition-colors',
+                        i === safeIdx
+                          ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
+                          : em
+                            ? 'border-[var(--border)] text-slate-400 hover:border-slate-400 dark:text-slate-500'
+                            : 'border-[var(--border)] text-slate-300 dark:text-slate-600 opacity-60'
+                      )}
+                    >
+                      {SLOT_LABELS[i]}{em ? `: ${em}` : ''}
+                    </button>
+                  ))}
+                </div>
                 <OutlookMessages email={activeOutlookEmail} contactId={id} viewingLabel={outlookViewLabel} />
                 <OutlookAttachments email={activeOutlookEmail} viewingLabel={outlookViewLabel} />
               </>)
