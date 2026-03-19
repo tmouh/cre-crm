@@ -636,6 +636,7 @@ export function ContactDetail({ backTo }) {
   const [privateForm, setPrivateForm] = useState({ privateNotes: '', privateCellPhones: [], privatePersonalEmails: [] })
   const [savingPrivate, setSavingPrivate] = useState(false)
   const [selectedEmailIdx, setSelectedEmailIdx] = useState(0)
+  const [inlineEdit, setInlineEdit] = useState(null) // { field: string, value: string }
 
   // Determine back link: use explicit backTo prop, else detect from current path
   const resolvedBackTo = backTo || (location.pathname.startsWith('/personal/') ? '/personal/contacts' : '/contacts')
@@ -701,6 +702,12 @@ export function ContactDetail({ backTo }) {
     }
   }
 
+  async function handleInlineSave(field, value) {
+    if (!value?.trim()) { setInlineEdit(null); return }
+    await updateContact(id, { ...contact, [field]: value.trim() })
+    setInlineEdit(null)
+  }
+
   return (
     <div className="h-full flex flex-col animate-fade-in">
       {/* ─ Contact command header ─ */}
@@ -734,7 +741,7 @@ export function ContactDetail({ backTo }) {
       {/* ─ Two-zone workspace ─ */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: profile + intel */}
-        <div className="w-[280px] flex-shrink-0 border-r border-[var(--border)] overflow-auto bg-surface-0">
+        <div className="w-[320px] flex-shrink-0 border-r border-[var(--border)] overflow-auto bg-surface-0">
           {/* Contact info */}
           <div className="px-3 py-3 border-b border-[var(--border-subtle)] dark:border-[var(--border)] space-y-1.5">
             {contact.contactFunction && (
@@ -752,11 +759,37 @@ export function ContactDetail({ backTo }) {
                 { label: 'Legacy 4', key: 'email5' },
                 { label: 'Legacy 5', key: 'email6' },
               ]
+              const PHONE_SLOTS = [
+                { key: 'phone', label: 'WORK' },
+                { key: 'mobile', label: 'MOB' },
+                { key: 'homePhone', label: 'HOME' },
+                { key: 'homePhone2', label: 'HOME 2' },
+                { key: 'businessPhone2', label: 'BUS 2' },
+                { key: 'carPhone', label: 'CAR' },
+                { key: 'otherPhone', label: 'OTHER' },
+              ]
               const allPhones = [...new Set([
                 ...(canSeePrivate ? [contact.phone, contact.mobile, ...(contact.personalPhones || [])] : []),
                 ...(contact.sharedCellPhones || [])
               ].filter(Boolean))]
+              const extraPhones = canSeePrivate ? [
+                contact.homePhone && { label: 'Home', num: contact.homePhone },
+                contact.homePhone2 && { label: 'Home 2', num: contact.homePhone2 },
+                contact.businessPhone2 && { label: 'Bus 2', num: contact.businessPhone2 },
+                contact.carPhone && { label: 'Car', num: contact.carPhone },
+                contact.otherPhone && { label: 'Other', num: contact.otherPhone },
+                contact.companyMainPhone && { label: 'Main', num: contact.companyMainPhone },
+              ].filter(Boolean) : []
+              const hasAnyPhone = allPhones.length > 0 || extraPhones.length > 0
+              const hasAnyEmail = canSeePrivate ? EMAIL_SLOTS.some(({ key }) => contact[key]) : (contact.sharedEmails?.length > 0)
+              const nextEmptyEmailSlot = isOwner ? EMAIL_SLOTS.find(({ key }) => !contact[key]) : null
+              const nextEmptyPhoneSlot = isOwner ? PHONE_SLOTS.find(({ key }) => !contact[key]) : null
+              const inlineInputCls = "flex-1 text-[11px] border-b border-brand-400 bg-transparent outline-none text-slate-700 dark:text-slate-300 py-0.5 min-w-0"
+              const inlineSaveCls = "text-[9px] text-brand-600 dark:text-brand-400 hover:underline font-medium flex-shrink-0"
+              const inlineCancelCls = "text-[9px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0"
+              const addBtnCls = "flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400"
               return (<>
+                {/* Emails */}
                 {EMAIL_SLOTS.map(({ label, key }) => {
                   const em = canSeePrivate ? contact[key] : null
                   if (!em) return null
@@ -768,64 +801,168 @@ export function ContactDetail({ backTo }) {
                     </div>
                   )
                 })}
-                {allPhones.map((ph, i) => (
+                {/* Email inline add */}
+                {isOwner && nextEmptyEmailSlot && (
+                  inlineEdit?.field === nextEmptyEmailSlot.key ? (
+                    <div className="flex items-center gap-1 text-[11px]">
+                      <Mail size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono uppercase w-[44px] flex-shrink-0">{nextEmptyEmailSlot.label}</span>
+                      <input type="email" autoFocus value={inlineEdit.value}
+                        onChange={e => setInlineEdit(p => ({ ...p, value: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(nextEmptyEmailSlot.key, inlineEdit.value); if (e.key === 'Escape') setInlineEdit(null) }}
+                        className={inlineInputCls} placeholder="email@example.com"
+                      />
+                      <button onClick={() => handleInlineSave(nextEmptyEmailSlot.key, inlineEdit.value)} className={inlineSaveCls}>Save</button>
+                      <button onClick={() => setInlineEdit(null)} className={inlineCancelCls}>✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setInlineEdit({ field: nextEmptyEmailSlot.key, value: '' })} className={addBtnCls}>
+                      <Mail size={10} className="flex-shrink-0" />
+                      <span className="italic">{hasAnyEmail ? '+ add another email' : '+ add email'}</span>
+                    </button>
+                  )
+                )}
+                {/* Phones */}
+                {allPhones.map((ph) => (
                   <a key={ph} href={`tel:${ph}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
-                    <Phone size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {ph} {ph === contact.mobile && <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">MOB</span>}
+                    <Phone size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                    <span className="flex-1">{ph}</span>
+                    {ph === contact.mobile && <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">MOB</span>}
                   </a>
                 ))}
+                {extraPhones.map(({ label, num }) => (
+                  <a key={label} href={`tel:${num}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
+                    <Phone size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {num} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">{label.toUpperCase()}</span>
+                  </a>
+                ))}
+                {/* Phone inline add */}
+                {isOwner && nextEmptyPhoneSlot && (
+                  inlineEdit?.field === nextEmptyPhoneSlot.key ? (
+                    <div className="flex items-center gap-1 text-[11px]">
+                      <Phone size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono uppercase w-[28px] flex-shrink-0">{nextEmptyPhoneSlot.label}</span>
+                      <input type="tel" autoFocus value={inlineEdit.value}
+                        onChange={e => setInlineEdit(p => ({ ...p, value: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(nextEmptyPhoneSlot.key, inlineEdit.value); if (e.key === 'Escape') setInlineEdit(null) }}
+                        className={inlineInputCls} placeholder="+1 555 000 0000"
+                      />
+                      <button onClick={() => handleInlineSave(nextEmptyPhoneSlot.key, inlineEdit.value)} className={inlineSaveCls}>Save</button>
+                      <button onClick={() => setInlineEdit(null)} className={inlineCancelCls}>✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setInlineEdit({ field: nextEmptyPhoneSlot.key, value: '' })} className={addBtnCls}>
+                      <Phone size={10} className="flex-shrink-0" />
+                      <span className="italic">{hasAnyPhone ? '+ add another phone' : '+ add phone'}</span>
+                    </button>
+                  )
+                )}
               </>)
             })()}
-            {contact.linkedIn && (
+            {/* LinkedIn */}
+            {contact.linkedIn ? (
               <a href={`https://${contact.linkedIn}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
                 <Linkedin size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> LinkedIn <ExternalLink size={9} className="text-slate-400" />
               </a>
+            ) : isOwner && (
+              inlineEdit?.field === 'linkedIn' ? (
+                <div className="flex items-center gap-1 text-[11px]">
+                  <Linkedin size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                  <input type="text" autoFocus value={inlineEdit.value}
+                    onChange={e => setInlineEdit(p => ({ ...p, value: e.target.value }))}
+                    onKeyDown={e => { if (e.key === 'Enter') handleInlineSave('linkedIn', inlineEdit.value); if (e.key === 'Escape') setInlineEdit(null) }}
+                    className="flex-1 text-[11px] border-b border-brand-400 bg-transparent outline-none text-slate-700 dark:text-slate-300 py-0.5 min-w-0"
+                    placeholder="linkedin.com/in/..."
+                  />
+                  <button onClick={() => handleInlineSave('linkedIn', inlineEdit.value)} className="text-[9px] text-brand-600 dark:text-brand-400 hover:underline font-medium flex-shrink-0">Save</button>
+                  <button onClick={() => setInlineEdit(null)} className="text-[9px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0">✕</button>
+                </div>
+              ) : (
+                <button onClick={() => setInlineEdit({ field: 'linkedIn', value: '' })} className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400">
+                  <Linkedin size={10} className="flex-shrink-0" /><span className="italic">+ add LinkedIn</span>
+                </button>
+              )
             )}
-            {contact.webPage && (
+            {/* Web Page */}
+            {contact.webPage ? (
               <a href={contact.webPage.startsWith('http') ? contact.webPage : `https://${contact.webPage}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
                 <Globe size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> Web <ExternalLink size={9} className="text-slate-400" />
               </a>
-            )}
-            {(contact.birthday || contact.anniversary) && (
-              <div className="pt-1 space-y-0.5">
-                {contact.birthday && (
-                  <p className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                    <Cake size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {formatDate(contact.birthday)}
-                  </p>
-                )}
-                {contact.anniversary && (
-                  <p className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                    <Calendar size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {formatDate(contact.anniversary)}
-                  </p>
-                )}
-              </div>
-            )}
-            {contact.businessStreet && (
-              <div className="pt-1">
-                <p className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                  <MapPin size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
-                  <span>{[contact.businessStreet, contact.businessCity, contact.businessState, contact.businessPostalCode].filter(Boolean).join(', ')}</span>
-                </p>
-              </div>
-            )}
-            {(() => {
-              const extraPhones = [
-                contact.homePhone && { label: 'Home', num: contact.homePhone },
-                contact.homePhone2 && { label: 'Home 2', num: contact.homePhone2 },
-                contact.businessPhone2 && { label: 'Bus 2', num: contact.businessPhone2 },
-                contact.carPhone && { label: 'Car', num: contact.carPhone },
-                contact.otherPhone && { label: 'Other', num: contact.otherPhone },
-                contact.companyMainPhone && { label: 'Main', num: contact.companyMainPhone },
-              ].filter(Boolean)
-              return extraPhones.length > 0 && (
-                <div className="pt-1 space-y-0.5">
-                  {extraPhones.map(({ label, num }) => (
-                    <a key={label} href={`tel:${num}`} className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400">
-                      <Phone size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {num} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">{label.toUpperCase()}</span>
-                    </a>
-                  ))}
+            ) : isOwner && (
+              inlineEdit?.field === 'webPage' ? (
+                <div className="flex items-center gap-1 text-[11px]">
+                  <Globe size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                  <input type="text" autoFocus value={inlineEdit.value}
+                    onChange={e => setInlineEdit(p => ({ ...p, value: e.target.value }))}
+                    onKeyDown={e => { if (e.key === 'Enter') handleInlineSave('webPage', inlineEdit.value); if (e.key === 'Escape') setInlineEdit(null) }}
+                    className="flex-1 text-[11px] border-b border-brand-400 bg-transparent outline-none text-slate-700 dark:text-slate-300 py-0.5 min-w-0"
+                    placeholder="example.com"
+                  />
+                  <button onClick={() => handleInlineSave('webPage', inlineEdit.value)} className="text-[9px] text-brand-600 dark:text-brand-400 hover:underline font-medium flex-shrink-0">Save</button>
+                  <button onClick={() => setInlineEdit(null)} className="text-[9px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0">✕</button>
                 </div>
+              ) : (
+                <button onClick={() => setInlineEdit({ field: 'webPage', value: '' })} className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400">
+                  <Globe size={10} className="flex-shrink-0" /><span className="italic">+ add web page</span>
+                </button>
               )
-            })()}
+            )}
+            {/* Birthday */}
+            {contact.birthday ? (
+              <p className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                <Cake size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {formatDate(contact.birthday)}
+              </p>
+            ) : isOwner && (
+              inlineEdit?.field === 'birthday' ? (
+                <div className="flex items-center gap-1 text-[11px]">
+                  <Cake size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                  <input type="date" autoFocus value={inlineEdit.value}
+                    onChange={e => setInlineEdit(p => ({ ...p, value: e.target.value }))}
+                    onKeyDown={e => { if (e.key === 'Enter') handleInlineSave('birthday', inlineEdit.value); if (e.key === 'Escape') setInlineEdit(null) }}
+                    className="flex-1 text-[11px] border-b border-brand-400 bg-transparent outline-none text-slate-700 dark:text-slate-300 py-0.5 min-w-0"
+                  />
+                  <button onClick={() => handleInlineSave('birthday', inlineEdit.value)} className="text-[9px] text-brand-600 dark:text-brand-400 hover:underline font-medium flex-shrink-0">Save</button>
+                  <button onClick={() => setInlineEdit(null)} className="text-[9px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0">✕</button>
+                </div>
+              ) : (
+                <button onClick={() => setInlineEdit({ field: 'birthday', value: '' })} className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400">
+                  <Cake size={10} className="flex-shrink-0" /><span className="italic">+ add birthday</span>
+                </button>
+              )
+            )}
+            {/* Anniversary */}
+            {contact.anniversary ? (
+              <p className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                <Calendar size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" /> {formatDate(contact.anniversary)}
+              </p>
+            ) : isOwner && (
+              inlineEdit?.field === 'anniversary' ? (
+                <div className="flex items-center gap-1 text-[11px]">
+                  <Calendar size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                  <input type="date" autoFocus value={inlineEdit.value}
+                    onChange={e => setInlineEdit(p => ({ ...p, value: e.target.value }))}
+                    onKeyDown={e => { if (e.key === 'Enter') handleInlineSave('anniversary', inlineEdit.value); if (e.key === 'Escape') setInlineEdit(null) }}
+                    className="flex-1 text-[11px] border-b border-brand-400 bg-transparent outline-none text-slate-700 dark:text-slate-300 py-0.5 min-w-0"
+                  />
+                  <button onClick={() => handleInlineSave('anniversary', inlineEdit.value)} className="text-[9px] text-brand-600 dark:text-brand-400 hover:underline font-medium flex-shrink-0">Save</button>
+                  <button onClick={() => setInlineEdit(null)} className="text-[9px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0">✕</button>
+                </div>
+              ) : (
+                <button onClick={() => setInlineEdit({ field: 'anniversary', value: '' })} className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400">
+                  <Calendar size={10} className="flex-shrink-0" /><span className="italic">+ add anniversary</span>
+                </button>
+              )
+            )}
+            {/* Business Address */}
+            {contact.businessStreet ? (
+              <p className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                <MapPin size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                <span>{[contact.businessStreet, contact.businessCity, contact.businessState, contact.businessPostalCode].filter(Boolean).join(', ')}</span>
+              </p>
+            ) : isOwner && (
+              <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400">
+                <MapPin size={10} className="flex-shrink-0" /><span className="italic">+ add address</span>
+              </button>
+            )}
           </div>
 
           {/* Health score */}
