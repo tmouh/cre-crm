@@ -27,7 +27,7 @@ function formatMessageDate(iso) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function OutlookMessages({ email, contactId }) {
+export default function OutlookMessages({ email, contactId, viewingLabel = '' }) {
   const { getContact, updateContact } = useCRM()
   const [account, setAccount] = useState(null)
   const [checked, setChecked] = useState(false)
@@ -105,7 +105,7 @@ export default function OutlookMessages({ email, contactId }) {
       <div className="os-zone-header">
         <div className="flex items-center gap-1.5">
           <Mail size={12} className="text-slate-400 dark:text-slate-500" />
-          <span className="os-zone-title">Outlook Messages</span>
+          <span className="os-zone-title">Outlook Messages{viewingLabel}</span>
           {messages.length > 0 && (
             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">({messages.length})</span>
           )}

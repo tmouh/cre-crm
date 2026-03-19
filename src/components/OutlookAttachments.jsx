@@ -22,7 +22,7 @@ function FileIcon({ contentType }) {
   return <File size={14} className="text-slate-400" />
 }
 
-export default function OutlookAttachments({ email }) {
+export default function OutlookAttachments({ email, viewingLabel = '' }) {
   const [account, setAccount] = useState(null)
   const [checked, setChecked] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -78,7 +78,7 @@ export default function OutlookAttachments({ email }) {
       <div className="os-zone-header">
         <div className="flex items-center gap-1.5">
           <Paperclip size={12} className="text-slate-400 dark:text-slate-500" />
-          <span className="os-zone-title">Outlook Attachments</span>
+          <span className="os-zone-title">Outlook Attachments{viewingLabel}</span>
           {attachments.length > 0 && (
             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">({attachments.length})</span>
           )}

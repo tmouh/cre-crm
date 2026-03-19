@@ -34,13 +34,16 @@ class LinkedInErrorBoundary extends Component {
   }
 }
 
-const BLANK = { firstName: '', lastName: '', middleName: '', suffix: '', nickname: '', title: '', contactFunction: '', companyId: '', linkedIn: '', webPage: '', birthday: '', anniversary: '', notes: '', tags: [], ownerIds: [], visibility: 'shared', sharedWith: [], sharedNotes: '', sharedCellPhones: [], sharedEmails: [], personalPhones: [], personalEmails: [], email: '', email2: '', email3: '', phone: '', mobile: '', homePhone: '', homePhone2: '', businessPhone2: '', carPhone: '', otherPhone: '', primaryPhone: '', pager: '', businessFax: '', homeFax: '', otherFax: '', companyMainPhone: '', businessStreet: '', businessCity: '', businessState: '', businessPostalCode: '', businessCountry: '', homeStreet: '', homeCity: '', homeState: '', homePostalCode: '', homeCountry: '', otherStreet: '', otherCity: '', otherState: '', otherPostalCode: '', otherCountry: '', phoneAssignments: {} }
+const BLANK = { firstName: '', lastName: '', middleName: '', suffix: '', nickname: '', title: '', contactFunction: '', companyId: '', linkedIn: '', webPage: '', birthday: '', anniversary: '', notes: '', tags: [], ownerIds: [], visibility: 'shared', sharedWith: [], sharedNotes: '', sharedCellPhones: [], sharedEmails: [], personalPhones: [], personalEmails: [], email: '', email2: '', email3: '', email4: '', email5: '', email6: '', phone: '', mobile: '', homePhone: '', homePhone2: '', businessPhone2: '', carPhone: '', otherPhone: '', primaryPhone: '', pager: '', businessFax: '', homeFax: '', otherFax: '', companyMainPhone: '', businessStreet: '', businessCity: '', businessState: '', businessPostalCode: '', businessCountry: '', homeStreet: '', homeCity: '', homeState: '', homePostalCode: '', homeCountry: '', otherStreet: '', otherCity: '', otherState: '', otherPostalCode: '', otherCountry: '', phoneAssignments: {} }
 
 // All named field labels — emails, phones, fax
 const ALL_EMAIL_FIELDS = [
-  { key: 'email',  label: 'Email' },
-  { key: 'email2', label: 'Email 2' },
-  { key: 'email3', label: 'Email 3' },
+  { key: 'email',  label: 'Current Email' },
+  { key: 'email2', label: 'Legacy Email 1' },
+  { key: 'email3', label: 'Legacy Email 2' },
+  { key: 'email4', label: 'Legacy Email 3' },
+  { key: 'email5', label: 'Legacy Email 4' },
+  { key: 'email6', label: 'Legacy Email 5' },
 ]
 const ALL_PHONE_FIELDS = [
   { key: 'phone',            label: 'Business Phone' },
@@ -60,7 +63,7 @@ const ALL_FAX_FIELDS = [
   { key: 'otherFax',    label: 'Other Fax' },
 ]
 const DEFAULT_FIELD_ASSIGNMENTS = {
-  email: 'personal', email2: 'personal', email3: 'personal',
+  email: 'personal', email2: 'personal', email3: 'personal', email4: 'personal', email5: 'personal', email6: 'personal',
   phone: 'personal', mobile: 'personal',
   homePhone: 'personal', homePhone2: 'personal', carPhone: 'personal',
   pager: 'personal', otherPhone: 'personal', primaryPhone: 'personal', homeFax: 'personal',
@@ -79,6 +82,9 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
   const initEmail = initial.email || (initial.personalEmails || [])[0] || (initial.sharedEmails || [])[0] || ''
   const initEmail2 = initial.email2 || (initial.personalEmails || [])[1] || (initial.sharedEmails || [])[1] || ''
   const initEmail3 = initial.email3 || (initial.personalEmails || [])[2] || (initial.sharedEmails || [])[2] || ''
+  const initEmail4 = initial.email4 || ''
+  const initEmail5 = initial.email5 || ''
+  const initEmail6 = initial.email6 || ''
   const initPhone = initial.phone || (initial.personalPhones || [])[0] || (initial.sharedCellPhones || [])[0] || ''
   const initMobile = initial.mobile || (initial.personalPhones || [])[1] || (initial.sharedCellPhones || [])[1] || ''
 
@@ -89,6 +95,9 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
     email: initEmail,
     email2: initEmail2,
     email3: initEmail3,
+    email4: initEmail4,
+    email5: initEmail5,
+    email6: initEmail6,
     phone: initPhone,
     mobile: initMobile,
     ownerIds: defaultOwnerIds,
@@ -127,7 +136,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
       // Derive backward-compat arrays from named fields based on assignments
       const fa = { ...DEFAULT_FIELD_ASSIGNMENTS, ...form.phoneAssignments }
       const isShared = form.visibility === 'shared'
-      const emailKeys = ['email', 'email2', 'email3']
+      const emailKeys = ['email', 'email2', 'email3', 'email4', 'email5', 'email6']
       const phoneKeys = ['phone', 'mobile']
       const personalEmailArr = emailKeys.filter(k => form[k] && (!isShared || fa[k] === 'personal')).map(k => form[k])
       const sharedEmailArr = isShared ? emailKeys.filter(k => form[k] && fa[k] === 'shared').map(k => form[k]) : []
@@ -149,6 +158,9 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
           email: undefined,
           email2: undefined,
           email3: undefined,
+          email4: undefined,
+          email5: undefined,
+          email6: undefined,
         } : {}),
       }
       await onSubmit(payload)
@@ -159,7 +171,7 @@ export function ContactForm({ initial = BLANK, onSubmit, onCancel, defaultVisibi
     }
   }
 
-  const hasAnyContactInfo = !!(form.email || form.email2 || form.email3 || form.phone || form.mobile || form.homePhone || form.homePhone2 || form.businessPhone2 || form.carPhone || form.otherPhone || form.primaryPhone || form.pager || form.businessFax || form.homeFax || form.otherFax || form.companyMainPhone || form.notes || form.sharedNotes)
+  const hasAnyContactInfo = !!(form.email || form.email2 || form.email3 || form.email4 || form.email5 || form.email6 || form.phone || form.mobile || form.homePhone || form.homePhone2 || form.businessPhone2 || form.carPhone || form.otherPhone || form.primaryPhone || form.pager || form.businessFax || form.homeFax || form.otherFax || form.companyMainPhone || form.notes || form.sharedNotes)
   const hasAddresses = !!(form.businessStreet || form.homeStreet || form.otherStreet)
 
   return (
@@ -558,6 +570,7 @@ export function ContactDetail({ backTo }) {
   const [editingPrivate, setEditingPrivate] = useState(false)
   const [privateForm, setPrivateForm] = useState({ privateNotes: '', privateCellPhones: [], privatePersonalEmails: [] })
   const [savingPrivate, setSavingPrivate] = useState(false)
+  const [selectedEmailIdx, setSelectedEmailIdx] = useState(0)
 
   // Determine back link: use explicit backTo prop, else detect from current path
   const resolvedBackTo = backTo || (location.pathname.startsWith('/personal/') ? '/personal/contacts' : '/contacts')
@@ -667,7 +680,7 @@ export function ContactDetail({ backTo }) {
             {(() => {
               const canSeePrivate = isOwner || contact.visibility !== 'shared'
               const allEmails = [...new Set([
-                ...(canSeePrivate ? [contact.email, contact.email2, contact.email3, ...(contact.personalEmails || [])] : []),
+                ...(canSeePrivate ? [contact.email, contact.email2, contact.email3, contact.email4, contact.email5, contact.email6, ...(contact.personalEmails || [])] : []),
                 ...(contact.sharedEmails || [])
               ].filter(Boolean))]
               const allPhones = [...new Set([
@@ -973,8 +986,38 @@ export function ContactDetail({ backTo }) {
             <CommunicationHeatmap contactId={id} />
             <ReminderList contactId={id} />
             <ActivityFeed contactId={id} contactDeals={contactLinkedDeals} onLinkDeal={linkContactToDeal} />
-            <OutlookMessages email={(isOwner ? (contact.email || contact.personalEmails?.[0]) : null) || contact.sharedEmails?.[0]} contactId={id} />
-            <OutlookAttachments email={(isOwner ? (contact.email || contact.personalEmails?.[0]) : null) || contact.sharedEmails?.[0]} />
+            {(() => {
+              const outlookEmails = [...new Set([
+                ...(isOwner ? [contact.email, contact.email2, contact.email3, contact.email4, contact.email5, contact.email6].filter(Boolean) : []),
+                ...(contact.sharedEmails || [])
+              ].filter(Boolean))]
+              const safeIdx = Math.min(selectedEmailIdx, Math.max(0, outlookEmails.length - 1))
+              const activeOutlookEmail = outlookEmails[safeIdx] || null
+              const outlookViewLabel = safeIdx === 0 ? '' : ` — ${outlookEmails[safeIdx]}`
+              return (<>
+                {outlookEmails.length > 1 && (
+                  <div className="flex items-center gap-1.5 flex-wrap px-1">
+                    {outlookEmails.map((em, i) => (
+                      <button
+                        key={em}
+                        type="button"
+                        onClick={() => setSelectedEmailIdx(i)}
+                        className={clsx(
+                          'px-2.5 py-1 text-[10px] font-mono border transition-colors',
+                          i === safeIdx
+                            ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 dark:border-brand-600'
+                            : 'border-[var(--border)] text-slate-400 hover:border-slate-400 dark:text-slate-500'
+                        )}
+                      >
+                        {i === 0 ? `Current: ${em}` : `Legacy: ${em}`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <OutlookMessages email={activeOutlookEmail} contactId={id} viewingLabel={outlookViewLabel} />
+                <OutlookAttachments email={activeOutlookEmail} viewingLabel={outlookViewLabel} />
+              </>)
+            })()}
           </div>
         </div>
       </div>
@@ -1036,7 +1079,7 @@ export default function Contacts() {
   const filtered = contacts.filter(c => {
     const q = search.toLowerCase()
     const cIsOwner = (c.ownerIds || []).length === 0 || (c.ownerIds || []).includes(user?.id)
-    const allEmails = [...(cIsOwner ? [c.email, ...(c.personalEmails || [])] : []), ...(c.sharedEmails || [])].filter(Boolean)
+    const allEmails = [...(cIsOwner ? [c.email, c.email2, c.email3, c.email4, c.email5, c.email6, ...(c.personalEmails || [])] : []), ...(c.sharedEmails || [])].filter(Boolean)
     const matches = !q || fullName(c).toLowerCase().includes(q) || allEmails.some(e => e.toLowerCase().includes(q)) || c.title?.toLowerCase().includes(q) || (c.tags || []).some(t => t.toLowerCase().includes(q))
     const comp = !filterCompany || c.companyId === filterCompany
     const owner = !filterOwner || (c.ownerIds || []).length === 0 || (c.ownerIds || []).includes(filterOwner)

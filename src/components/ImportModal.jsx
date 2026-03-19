@@ -47,6 +47,9 @@ const CONTACT_ALIASES = {
   email:               ['email','emailaddress'],
   email2:              ['email2address','email2','emailaddress2'],
   email3:              ['email3address','email3','emailaddress3'],
+  email4:              ['email4address','email4','emailaddress4'],
+  email5:              ['email5address','email5','emailaddress5'],
+  email6:              ['email6address','email6','emailaddress6'],
   phone:               ['phone','phonenumber','tel','telephone','businessphone'],
   mobile:              ['mobile','cell','cellphone','mobilephone'],
   homePhone:           ['homephone'],
@@ -192,7 +195,7 @@ function rowToContact(row, map, companies, importVisibility = 'shared') {
   const companyId = compName
     ? (companies.find(c => c.name.toLowerCase() === compName.toLowerCase())?.id || '')
     : ''
-  const allEmails = [v('email'), v('email2'), v('email3')].filter(Boolean)
+  const allEmails = [v('email'), v('email2'), v('email3'), v('email4'), v('email5'), v('email6')].filter(Boolean)
   const allPhones = [v('phone'), v('mobile')].filter(Boolean)
   const isPersonal = importVisibility === 'private'
   return {
@@ -207,6 +210,9 @@ function rowToContact(row, map, companies, importVisibility = 'shared') {
     email:              allEmails[0] || '',
     email2:             allEmails[1] || '',
     email3:             allEmails[2] || '',
+    email4:             allEmails[3] || '',
+    email5:             allEmails[4] || '',
+    email6:             allEmails[5] || '',
     phone:              v('phone'),
     mobile:             v('mobile'),
     personalEmails:     isPersonal ? allEmails : [],

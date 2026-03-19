@@ -50,7 +50,7 @@ export function scoreEmail(message, attachments = [], crmData, direction = 'outb
   const contactsById    = {}
   for (const c of contacts) {
     contactsById[c.id] = c
-    const emails = [c.email, ...(c.personalEmails || []), ...(c.sharedEmails || [])].filter(Boolean)
+    const emails = [...new Set([c.email, c.email2, c.email3, c.email4, c.email5, c.email6, ...(c.personalEmails || []), ...(c.sharedEmails || [])].filter(Boolean))]
     for (const em of emails) contactsByEmail[em.toLowerCase()] = c
   }
 
