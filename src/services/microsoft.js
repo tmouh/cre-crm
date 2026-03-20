@@ -556,9 +556,7 @@ export async function getChatMessages(chatId, count = 20) {
 
 export async function getOnlineMeetings(count = 25) {
   try {
-    const data = await graphGet(
-      `/me/onlineMeetings?$top=${count}&$orderby=startDateTime desc&$select=id,subject,startDateTime,endDateTime,joinWebUrl,participants`
-    )
+    const data = await graphGet(`/me/onlineMeetings?$top=${count}`)
     return data?.value || []
   } catch {
     return []
@@ -581,10 +579,16 @@ export async function getRecentMeetingsFromCalendar(daysBack = 7) {
       `/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=50&$select=id,subject,start,end,attendees,isOnlineMeeting,onlineMeetingUrl`
     )
 
-    const teamsMeetings = (data?.value || [])
-      .filter(ev => ev.isOnlineMeeting && ev.onlineMeetingUrl && new Date(ev.end?.dateTime + 'Z') < now)
+    const allEvents = data?.value || []
+    console.log(`[MeetingTranscriptSync] CalendarView returned ${allEvents.length} events total`)
 
-    console.log(`[MeetingTranscriptSync] Found ${teamsMeetings.length} Teams calendar events`)
+    const onlineEvents = allEvents.filter(ev => ev.isOnlineMeeting)
+    console.log(`[MeetingTranscriptSync] ${onlineEvents.length} are online meetings`)
+
+    const teamsMeetings = onlineEvents
+      .filter(ev => ev.onlineMeetingUrl && new Date(ev.end?.dateTime + 'Z') < now)
+
+    console.log(`[MeetingTranscriptSync] ${teamsMeetings.length} have ended with a join URL`)
 
     const results = []
     for (const ev of teamsMeetings) {
