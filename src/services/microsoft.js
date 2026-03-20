@@ -585,8 +585,20 @@ export async function getRecentMeetingsFromCalendar(daysBack = 7) {
     const onlineEvents = allEvents.filter(ev => ev.isOnlineMeeting)
     console.log(`[MeetingTranscriptSync] ${onlineEvents.length} are online meetings`)
 
+    for (const ev of onlineEvents) {
+      const endRaw = ev.end?.dateTime
+      const endDt = endRaw ? new Date(endRaw.endsWith('Z') ? endRaw : endRaw + 'Z') : null
+      const hasUrl = !!ev.onlineMeetingUrl
+      console.log(`[MeetingTranscriptSync] "${ev.subject}" end=${endRaw} endParsed=${endDt?.toISOString()} hasUrl=${hasUrl} ended=${endDt ? endDt < now : 'N/A'}`)
+    }
+
     const teamsMeetings = onlineEvents
-      .filter(ev => ev.onlineMeetingUrl && new Date(ev.end?.dateTime + 'Z') < now)
+      .filter(ev => {
+        const endRaw = ev.end?.dateTime
+        if (!endRaw) return false
+        const endDt = new Date(endRaw.endsWith('Z') ? endRaw : endRaw + 'Z')
+        return ev.onlineMeetingUrl && endDt < now
+      })
 
     console.log(`[MeetingTranscriptSync] ${teamsMeetings.length} have ended with a join URL`)
 
