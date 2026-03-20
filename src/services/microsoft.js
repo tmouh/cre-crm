@@ -590,7 +590,7 @@ export async function getRecentMeetingsFromCalendar(daysBack = 7) {
       const endRaw = ev.end?.dateTime
       const endDt = endRaw ? new Date(endRaw.endsWith('Z') ? endRaw : endRaw + 'Z') : null
       const joinUrl = ev.onlineMeetingUrl || ev.onlineMeeting?.joinUrl || null
-      console.log(`[MeetingTranscriptSync] "${ev.subject}" end=${endRaw} joinUrl=${joinUrl ? 'yes' : 'no'} ended=${endDt ? endDt < now : 'N/A'} onlineMeeting=${JSON.stringify(ev.onlineMeeting || null)}`)
+      console.log(`[MeetingTranscriptSync] "${ev.subject}" end=${endRaw} hasUrl=${!!joinUrl} ended=${endDt ? endDt < now : 'N/A'} onlineMeeting=${JSON.stringify(ev.onlineMeeting || null)}`)
     }
 
     // Extract join URL from either field
