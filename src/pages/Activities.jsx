@@ -652,7 +652,7 @@ export default function Activities() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="h-full flex flex-col animate-fade-in px-6 py-5">
+    <div className="h-full flex flex-col animate-fade-in">
 
       {/* Toolbar */}
       <div className="os-toolbar">
@@ -673,6 +673,9 @@ export default function Activities() {
           <Plus size={14} /> Log Activity
         </button>
       </div>
+
+      {/* ── Content area ── */}
+      <div className="flex-1 overflow-auto px-4 py-4">
 
       {/* ── Log form ── */}
       {showForm && (
@@ -842,7 +845,7 @@ export default function Activities() {
       </div>
 
       {/* ── Activity list (date-grouped) ── */}
-      <div className="flex-1 overflow-auto">
+      <div>
         {filtered.length === 0 ? (
           <div className="text-center py-16">
             <MessageSquare size={28} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
@@ -984,6 +987,7 @@ export default function Activities() {
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   )
