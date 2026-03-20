@@ -107,6 +107,7 @@ export async function syncMeetingTranscripts(crmData) {
       if (processedMeetingIds.has(meeting.meetingId)) {
         continue
       }
+      processedMeetingIds.add(meeting.meetingId)
 
       // Skip meetings that ended before the cutoff
       if (meeting.endDateTime && new Date(meeting.endDateTime) < cutoff) {
@@ -168,7 +169,7 @@ export async function syncMeetingTranscripts(crmData) {
           transcriptRaw: cleanedText,
           summaryStatus: 'pending',
         }).catch(err => {
-          if (!err?.message?.includes('unique') && !err?.message?.includes('duplicate')) {
+          if (!err?.message?.includes('unique') && !err?.message?.includes('duplicate') && !err?.message?.includes('409') && !err?.message?.includes('conflict')) {
             console.warn('[MeetingTranscriptSync] insert failed:', err?.message)
           }
           return null
@@ -176,7 +177,6 @@ export async function syncMeetingTranscripts(crmData) {
 
         // Trigger AI summarization
         if (record?.id) {
-          processedMeetingIds.add(meeting.meetingId)
           console.log(`[MeetingTranscriptSync] ✓ Saved "${meeting.subject}", triggering summarization...`)
           triggerSummarization(record.id, cleanedText)
         }
