@@ -1,5 +1,6 @@
-// Vercel Serverless Function — Meeting transcript summarization via OpenAI API
-// Requires OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY in Vercel env vars
+// Vercel Serverless Function — Meeting transcript summarization via Google Gemini API (free tier)
+// Requires GEMINI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY in Vercel env vars
+// Get a free API key at https://aistudio.google.com/apikey
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -19,9 +20,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing "id" or "transcriptRaw" in request body' })
   }
 
-  const openaiKey = process.env.OPENAI_API_KEY
-  if (!openaiKey) {
-    return res.status(500).json({ error: 'OPENAI_API_KEY not configured on server' })
+  const geminiKey = process.env.GEMINI_API_KEY
+  if (!geminiKey) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' })
   }
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
@@ -33,41 +34,45 @@ export default async function handler(req, res) {
   const supabase = createClient(supabaseUrl, supabaseKey)
 
   try {
-    // Call OpenAI API for summarization (gpt-4o-mini for free/low-cost tier)
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 2048,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content: `You are a CRM assistant that summarizes meeting transcripts for a commercial real estate team. Return valid JSON with these fields:
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          generationConfig: {
+            responseMimeType: 'application/json',
+            maxOutputTokens: 2048,
+          },
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: `You are a CRM assistant that summarizes meeting transcripts for a commercial real estate team. Summarize the following meeting transcript and return JSON with these fields:
 - "summary": A concise 2-4 sentence overview of the meeting, highlighting key decisions and outcomes.
 - "keyTopics": An array of 3-8 short topic strings discussed in the meeting.
 - "actionItems": An array of objects with "description" (string) and "assignee" (string or null if unclear).
-- "sentiment": One of "positive", "neutral", or "negative" based on the overall tone.`,
-          },
-          {
-            role: 'user',
-            content: `Summarize this meeting transcript:\n\n${transcriptRaw.slice(0, 80_000)}`,
-          },
-        ],
-      }),
-    })
+- "sentiment": One of "positive", "neutral", or "negative" based on the overall tone.
 
-    if (!openaiRes.ok) {
-      const errText = await openaiRes.text().catch(() => `(status ${openaiRes.status})`)
-      throw new Error(`OpenAI API error ${openaiRes.status}: ${errText.slice(0, 300)}`)
+Meeting transcript:
+
+${transcriptRaw.slice(0, 80_000)}`,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    )
+
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text().catch(() => `(status ${geminiRes.status})`)
+      throw new Error(`Gemini API error ${geminiRes.status}: ${errText.slice(0, 300)}`)
     }
 
-    const openaiData = await openaiRes.json()
-    const rawText = openaiData.choices?.[0]?.message?.content || ''
+    const geminiData = await geminiRes.json()
+    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
     // Parse the JSON response (strip markdown fences if present)
     const jsonStr = rawText.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '').trim()
