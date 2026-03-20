@@ -578,7 +578,7 @@ export async function getRecentMeetingsFromCalendar(daysBack = 7) {
 
     // Fetch both sources in parallel
     const [onlineMeetings, calendarEvents] = await Promise.all([
-      graphGet(`/me/onlineMeetings?$top=50&$orderby=startDateTime desc&$select=id,subject,startDateTime,endDateTime,joinWebUrl,participants`)
+      graphGet(`/me/onlineMeetings?$top=50`)
         .then(d => d?.value || []).catch(() => []),
       graphGet(`/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=50&$select=id,subject,start,end,attendees,isOnlineMeeting,onlineMeetingUrl`)
         .then(d => d?.value || []).catch(() => []),
