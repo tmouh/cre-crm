@@ -106,15 +106,11 @@ export default function Sidebar({ collapsed, onToggle }) {
             Vanadium
           </span>
         )}
-        {isConnected && (
+        {isConnected && !collapsed && (
           <button
             onClick={() => sync()}
             title={syncState === 'syncing' ? 'Syncing with Microsoft 365...' : 'Sync with Microsoft 365'}
-            className={clsx(
-              'flex-shrink-0 p-1 rounded transition-colors',
-              'text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-500 dark:hover:text-blue-400 dark:hover:bg-blue-900/30',
-              collapsed ? '' : 'ml-auto'
-            )}
+            className="flex-shrink-0 p-1 rounded transition-colors ml-auto text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-500 dark:hover:text-blue-400 dark:hover:bg-blue-900/30"
           >
             <RefreshCw size={13} className={syncState === 'syncing' ? 'animate-spin' : ''} />
           </button>
