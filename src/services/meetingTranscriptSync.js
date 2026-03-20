@@ -115,18 +115,12 @@ export async function syncMeetingTranscripts(crmData) {
         continue
       }
 
-      // Check if already in DB — re-trigger summarization if previous attempt failed
+      // Skip if already in DB
       console.log(`[MeetingTranscriptSync] Checking DB for "${meeting.subject}"...`)
       try {
         const existing = await db.meetingTranscripts.getByMeetingId(meeting.meetingId)
         if (existing) {
-          if (existing.summaryStatus === 'failed' && existing.transcriptRaw) {
-            console.log(`[MeetingTranscriptSync] "${meeting.subject}" failed previously, re-triggering summarization...`)
-            await crmData.updateMeetingTranscript(existing.id, { summaryStatus: 'pending', summaryError: null })
-            triggerSummarization(existing.id, existing.transcriptRaw)
-          } else {
-            console.log(`[MeetingTranscriptSync] "${meeting.subject}" already in DB, skipping`)
-          }
+          console.log(`[MeetingTranscriptSync] "${meeting.subject}" already in DB, skipping`)
           continue
         }
       } catch (dbErr) {
