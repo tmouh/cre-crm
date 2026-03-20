@@ -1,5 +1,5 @@
-// Vercel Serverless Function — Meeting transcript summarization via Claude API
-// Requires ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY in Vercel env vars
+// Vercel Serverless Function — Meeting transcript summarization via OpenAI API
+// Requires OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY in Vercel env vars
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -19,9 +19,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing "id" or "transcriptRaw" in request body' })
   }
 
-  const anthropicKey = process.env.ANTHROPIC_API_KEY
-  if (!anthropicKey) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured on server' })
+  const openaiKey = process.env.OPENAI_API_KEY
+  if (!openaiKey) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY not configured on server' })
   }
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
@@ -33,25 +33,26 @@ export default async function handler(req, res) {
   const supabase = createClient(supabaseUrl, supabaseKey)
 
   try {
-    // Call Claude API for summarization
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    // Call OpenAI API for summarization (gpt-4o-mini for free/low-cost tier)
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
+        'Authorization': `Bearer ${openaiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'gpt-4o-mini',
         max_tokens: 2048,
-        system: `You are a CRM assistant that summarizes meeting transcripts for a commercial real estate team. Return valid JSON with these fields:
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: `You are a CRM assistant that summarizes meeting transcripts for a commercial real estate team. Return valid JSON with these fields:
 - "summary": A concise 2-4 sentence overview of the meeting, highlighting key decisions and outcomes.
 - "keyTopics": An array of 3-8 short topic strings discussed in the meeting.
 - "actionItems": An array of objects with "description" (string) and "assignee" (string or null if unclear).
-- "sentiment": One of "positive", "neutral", or "negative" based on the overall tone.
-
-Return ONLY the JSON object, no markdown fences or explanation.`,
-        messages: [
+- "sentiment": One of "positive", "neutral", or "negative" based on the overall tone.`,
+          },
           {
             role: 'user',
             content: `Summarize this meeting transcript:\n\n${transcriptRaw.slice(0, 80_000)}`,
@@ -60,13 +61,13 @@ Return ONLY the JSON object, no markdown fences or explanation.`,
       }),
     })
 
-    if (!claudeRes.ok) {
-      const errText = await claudeRes.text().catch(() => `(status ${claudeRes.status})`)
-      throw new Error(`Claude API error ${claudeRes.status}: ${errText.slice(0, 300)}`)
+    if (!openaiRes.ok) {
+      const errText = await openaiRes.text().catch(() => `(status ${openaiRes.status})`)
+      throw new Error(`OpenAI API error ${openaiRes.status}: ${errText.slice(0, 300)}`)
     }
 
-    const claudeData = await claudeRes.json()
-    const rawText = claudeData.content?.[0]?.text || ''
+    const openaiData = await openaiRes.json()
+    const rawText = openaiData.choices?.[0]?.message?.content || ''
 
     // Parse the JSON response (strip markdown fences if present)
     const jsonStr = rawText.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '').trim()
