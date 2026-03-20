@@ -575,8 +575,9 @@ export async function getRecentMeetingsFromCalendar(daysBack = 7) {
     const start = new Date(now.getTime() - daysBack * 86_400_000).toISOString()
     const end = now.toISOString()
 
+    // Don't use $select — let Graph return all fields so we get onlineMeeting.joinUrl
     const data = await graphGet(
-      `/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=50&$select=id,subject,start,end,attendees,isOnlineMeeting,onlineMeetingUrl`
+      `/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=50`
     )
 
     const allEvents = data?.value || []
@@ -588,29 +589,34 @@ export async function getRecentMeetingsFromCalendar(daysBack = 7) {
     for (const ev of onlineEvents) {
       const endRaw = ev.end?.dateTime
       const endDt = endRaw ? new Date(endRaw.endsWith('Z') ? endRaw : endRaw + 'Z') : null
-      const hasUrl = !!ev.onlineMeetingUrl
-      console.log(`[MeetingTranscriptSync] "${ev.subject}" end=${endRaw} endParsed=${endDt?.toISOString()} hasUrl=${hasUrl} ended=${endDt ? endDt < now : 'N/A'}`)
+      const joinUrl = ev.onlineMeetingUrl || ev.onlineMeeting?.joinUrl || null
+      console.log(`[MeetingTranscriptSync] "${ev.subject}" end=${endRaw} joinUrl=${joinUrl ? 'yes' : 'no'} ended=${endDt ? endDt < now : 'N/A'} onlineMeeting=${JSON.stringify(ev.onlineMeeting || null)}`)
     }
+
+    // Extract join URL from either field
+    const getJoinUrl = (ev) => ev.onlineMeetingUrl || ev.onlineMeeting?.joinUrl || null
 
     const teamsMeetings = onlineEvents
       .filter(ev => {
         const endRaw = ev.end?.dateTime
         if (!endRaw) return false
         const endDt = new Date(endRaw.endsWith('Z') ? endRaw : endRaw + 'Z')
-        return ev.onlineMeetingUrl && endDt < now
+        return getJoinUrl(ev) && endDt < now
       })
 
     console.log(`[MeetingTranscriptSync] ${teamsMeetings.length} have ended with a join URL`)
 
     const results = []
     for (const ev of teamsMeetings) {
+      const joinUrl = getJoinUrl(ev)
       // Look up the online meeting by its join URL to get the real meeting ID
-      const meetingId = await resolveOnlineMeetingId(ev.onlineMeetingUrl)
+      const meetingId = await resolveOnlineMeetingId(joinUrl)
+      console.log(`[MeetingTranscriptSync] Resolved "${ev.subject}" meetingId=${meetingId ? 'found' : 'null'}`)
 
       results.push({
         eventId: ev.id,
         meetingId,
-        joinUrl: ev.onlineMeetingUrl,
+        joinUrl,
         subject: ev.subject || '(no subject)',
         startDateTime: ev.start?.dateTime,
         endDateTime: ev.end?.dateTime,
