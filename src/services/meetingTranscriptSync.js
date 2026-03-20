@@ -101,54 +101,81 @@ export async function syncMeetingTranscripts(crmData) {
       }
 
       // Skip if already processed this session
-      if (processedMeetingIds.has(meeting.meetingId)) continue
+      if (processedMeetingIds.has(meeting.meetingId)) {
+        console.log(`[MeetingTranscriptSync] Skipping "${meeting.subject}" — already processed this session`)
+        continue
+      }
       processedMeetingIds.add(meeting.meetingId)
 
       // Skip meetings that ended before the cutoff
-      if (meeting.endDateTime && new Date(meeting.endDateTime) < cutoff) continue
-
-      // Skip if already in DB
-      const existing = await db.meetingTranscripts.getByMeetingId(meeting.meetingId)
-      if (existing) continue
-
-      // Fetch available transcripts
-      console.log(`[MeetingTranscriptSync] Checking transcripts for "${meeting.subject}" (${meeting.meetingId})`)
-      const transcripts = await getMeetingTranscripts(meeting.meetingId)
-      if (!transcripts.length) {
-        console.log(`[MeetingTranscriptSync] No transcript available yet for "${meeting.subject}" — will retry next cycle`)
-        processedMeetingIds.delete(meeting.meetingId) // Allow retry next cycle
+      if (meeting.endDateTime && new Date(meeting.endDateTime) < cutoff) {
+        console.log(`[MeetingTranscriptSync] Skipping "${meeting.subject}" — ended before cutoff`)
         continue
       }
 
-      // Fetch the first transcript's content
-      const rawVtt = await getTranscriptContent(meeting.meetingId, transcripts[0].id)
-      if (!rawVtt) continue
-
-      const cleanedText = parseVtt(rawVtt)
-      const attendeeContactIds = matchAttendeesToContacts(meeting.attendees, contacts)
-
-      const record = await addMeetingTranscript({
-        msMeetingId: meeting.meetingId,
-        msEventId: meeting.eventId,
-        subject: meeting.subject || '(no subject)',
-        startAt: meeting.startDateTime,
-        endAt: meeting.endDateTime,
-        durationMinutes: getDurationMinutes(meeting.startDateTime, meeting.endDateTime),
-        joinWebUrl: meeting.joinUrl,
-        attendeeEmails: meeting.attendees.map(a => a.email).filter(Boolean),
-        attendeeContactIds,
-        transcriptRaw: cleanedText,
-        summaryStatus: 'pending',
-      }).catch(err => {
-        if (!err?.message?.includes('unique') && !err?.message?.includes('duplicate')) {
-          console.warn('[MeetingTranscriptSync] insert failed:', err?.message)
+      // Skip if already in DB
+      console.log(`[MeetingTranscriptSync] Checking DB for "${meeting.subject}"...`)
+      try {
+        const existing = await db.meetingTranscripts.getByMeetingId(meeting.meetingId)
+        if (existing) {
+          console.log(`[MeetingTranscriptSync] "${meeting.subject}" already in DB, skipping`)
+          continue
         }
-        return null
-      })
+      } catch (dbErr) {
+        console.warn(`[MeetingTranscriptSync] DB check failed for "${meeting.subject}":`, dbErr?.message, '— table may not exist yet. Run the CREATE TABLE SQL in Supabase.')
+        continue
+      }
 
-      // Trigger AI summarization
-      if (record?.id) {
-        triggerSummarization(record.id, cleanedText)
+      // Fetch available transcripts
+      console.log(`[MeetingTranscriptSync] Fetching transcripts for "${meeting.subject}" (${meeting.meetingId})...`)
+      try {
+        const transcripts = await getMeetingTranscripts(meeting.meetingId)
+        console.log(`[MeetingTranscriptSync] "${meeting.subject}" has ${transcripts.length} transcript(s)`)
+        if (!transcripts.length) {
+          console.log(`[MeetingTranscriptSync] No transcript available yet for "${meeting.subject}" — will retry next cycle`)
+          processedMeetingIds.delete(meeting.meetingId) // Allow retry next cycle
+          continue
+        }
+
+        // Fetch the first transcript's content
+        console.log(`[MeetingTranscriptSync] Downloading transcript content for "${meeting.subject}"...`)
+        const rawVtt = await getTranscriptContent(meeting.meetingId, transcripts[0].id)
+        if (!rawVtt) {
+          console.warn(`[MeetingTranscriptSync] Transcript content empty for "${meeting.subject}"`)
+          continue
+        }
+
+        console.log(`[MeetingTranscriptSync] Got transcript (${rawVtt.length} chars), saving to DB...`)
+        const cleanedText = parseVtt(rawVtt)
+        const attendeeContactIds = matchAttendeesToContacts(meeting.attendees, contacts)
+
+        const record = await addMeetingTranscript({
+          msMeetingId: meeting.meetingId,
+          msEventId: meeting.eventId,
+          subject: meeting.subject || '(no subject)',
+          startAt: meeting.startDateTime,
+          endAt: meeting.endDateTime,
+          durationMinutes: getDurationMinutes(meeting.startDateTime, meeting.endDateTime),
+          joinWebUrl: meeting.joinUrl,
+          attendeeEmails: meeting.attendees.map(a => a.email).filter(Boolean),
+          attendeeContactIds,
+          transcriptRaw: cleanedText,
+          summaryStatus: 'pending',
+        }).catch(err => {
+          if (!err?.message?.includes('unique') && !err?.message?.includes('duplicate')) {
+            console.warn('[MeetingTranscriptSync] insert failed:', err?.message)
+          }
+          return null
+        })
+
+        // Trigger AI summarization
+        if (record?.id) {
+          console.log(`[MeetingTranscriptSync] ✓ Saved "${meeting.subject}", triggering summarization...`)
+          triggerSummarization(record.id, cleanedText)
+        }
+      } catch (transcriptErr) {
+        console.warn(`[MeetingTranscriptSync] Transcript fetch failed for "${meeting.subject}":`, transcriptErr?.message)
+        processedMeetingIds.delete(meeting.meetingId)
       }
     }
   } catch (err) {
