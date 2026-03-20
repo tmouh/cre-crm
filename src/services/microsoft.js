@@ -566,9 +566,10 @@ export async function getOnlineMeetings(count = 25) {
 }
 
 /**
- * Fetch recent online meetings with their real Graph IDs.
- * Combines /me/onlineMeetings (for meeting IDs) with calendarView (for attendees).
- * The transcript API requires the onlineMeeting `id`, NOT the joinMeetingId.
+ * Fetch recent Teams meetings from calendar, then resolve their online meeting IDs.
+ * Strategy: calendarView reliably returns Teams meetings; we then use
+ * /me/onlineMeetings?$filter=JoinWebUrl to get the real meeting ID needed
+ * for the transcripts API.
  */
 export async function getRecentMeetingsFromCalendar(daysBack = 7) {
   try {
@@ -576,52 +577,53 @@ export async function getRecentMeetingsFromCalendar(daysBack = 7) {
     const start = new Date(now.getTime() - daysBack * 86_400_000).toISOString()
     const end = now.toISOString()
 
-    // Fetch both sources in parallel
-    const [onlineMeetings, calendarEvents] = await Promise.all([
-      graphGet(`/me/onlineMeetings?$top=50`)
-        .then(d => d?.value || []).catch(() => []),
-      graphGet(`/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=50&$select=id,subject,start,end,attendees,isOnlineMeeting,onlineMeetingUrl`)
-        .then(d => d?.value || []).catch(() => []),
-    ])
+    const data = await graphGet(
+      `/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=50&$select=id,subject,start,end,attendees,isOnlineMeeting,onlineMeetingUrl`
+    )
 
-    // Build a map from join URL → calendar event for attendee data
-    const calendarByUrl = {}
-    for (const ev of calendarEvents) {
-      if (ev.onlineMeetingUrl) calendarByUrl[ev.onlineMeetingUrl.toLowerCase()] = ev
+    const teamsMeetings = (data?.value || [])
+      .filter(ev => ev.isOnlineMeeting && ev.onlineMeetingUrl && new Date(ev.end?.dateTime + 'Z') < now)
+
+    console.log(`[MeetingTranscriptSync] Found ${teamsMeetings.length} Teams calendar events`)
+
+    const results = []
+    for (const ev of teamsMeetings) {
+      // Look up the online meeting by its join URL to get the real meeting ID
+      const meetingId = await resolveOnlineMeetingId(ev.onlineMeetingUrl)
+
+      results.push({
+        eventId: ev.id,
+        meetingId,
+        joinUrl: ev.onlineMeetingUrl,
+        subject: ev.subject || '(no subject)',
+        startDateTime: ev.start?.dateTime,
+        endDateTime: ev.end?.dateTime,
+        attendees: (ev.attendees || []).map(a => ({
+          email: a.emailAddress?.address?.toLowerCase(),
+          name: a.emailAddress?.name,
+        })),
+      })
     }
 
-    return onlineMeetings
-      .filter(m => {
-        // Only include meetings that have ended and are within the daysBack window
-        if (!m.endDateTime) return false
-        const endDt = new Date(m.endDateTime)
-        return endDt < now && endDt >= new Date(start)
-      })
-      .map(m => {
-        // Cross-reference with calendar event for attendee list
-        const calEv = m.joinWebUrl ? calendarByUrl[m.joinWebUrl.toLowerCase()] : null
-        const attendees = calEv
-          ? (calEv.attendees || []).map(a => ({
-              email: a.emailAddress?.address?.toLowerCase(),
-              name: a.emailAddress?.name,
-            }))
-          : (m.participants?.attendees || []).map(a => ({
-              email: a.upn?.toLowerCase() || a.identity?.user?.id,
-              name: a.identity?.user?.displayName,
-            }))
-
-        return {
-          eventId: calEv?.id || null,
-          meetingId: m.id,
-          joinUrl: m.joinWebUrl,
-          subject: m.subject || calEv?.subject || '(no subject)',
-          startDateTime: m.startDateTime,
-          endDateTime: m.endDateTime,
-          attendees,
-        }
-      })
-  } catch {
+    return results
+  } catch (err) {
+    console.warn('[MeetingTranscriptSync] getRecentMeetingsFromCalendar error:', err?.message)
     return []
+  }
+}
+
+/**
+ * Resolve a Teams join URL to the online meeting's Graph ID.
+ * Uses $filter on JoinWebUrl. Returns the meeting ID or null.
+ */
+async function resolveOnlineMeetingId(joinWebUrl) {
+  try {
+    const encoded = encodeURIComponent(`JoinWebUrl eq '${joinWebUrl}'`)
+    const data = await graphGet(`/me/onlineMeetings?$filter=${encoded}`)
+    const meeting = data?.value?.[0]
+    return meeting?.id || null
+  } catch {
+    return null
   }
 }
 
