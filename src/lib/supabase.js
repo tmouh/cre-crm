@@ -350,6 +350,7 @@ export const db = {
       const { data, error } = await supabase
         .from('meeting_transcripts')
         .select('*')
+        .is('deleted_at', null)
         .gte('start_at', cutoff)
         .order('start_at', { ascending: false })
       if (error) throw error
@@ -377,6 +378,7 @@ export const db = {
       const { data, error } = await supabase
         .from('meeting_transcripts')
         .select('*')
+        .is('deleted_at', null)
         .contains('attendee_contact_ids', [contactId])
         .order('start_at', { ascending: false })
       if (error) throw error
@@ -404,7 +406,7 @@ export const db = {
     delete: async (id) => {
       const { error } = await supabase
         .from('meeting_transcripts')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id)
       if (error) throw error
     },
