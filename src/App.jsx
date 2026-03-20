@@ -24,6 +24,7 @@ import MapPage               from './pages/Map'
 import PersonalContacts      from './pages/PersonalContacts'
 import PersonalCompanies     from './pages/PersonalCompanies'
 import Activities            from './pages/Activities'
+import Meetings             from './pages/Meetings'
 
 export default function App() {
   return (
@@ -68,6 +69,8 @@ export default function App() {
               <Route path="/comps/:id"         element={<Comps />} />
               <Route path="/investors"         element={<Investors />} />
               <Route path="/investors/:id"     element={<Investors />} />
+              <Route path="/meetings"          element={<Meetings />} />
+              <Route path="/meetings/:id"      element={<Meetings />} />
               <Route path="/documents"         element={<Documents />} />
               <Route path="/reports"           element={<Reports />} />
               <Route path="/automations"       element={<Automations />} />

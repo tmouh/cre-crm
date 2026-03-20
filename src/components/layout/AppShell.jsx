@@ -26,6 +26,7 @@ const PAGE_TITLES = {
   '/personal/contacts':   { title: 'My Contacts',       subtitle: 'Your private & shared contacts' },
   '/personal/companies':  { title: 'My Companies',      subtitle: 'Your private & shared companies' },
   '/activities':          { title: 'Activities',         subtitle: 'Activity tracker & history' },
+  '/meetings':            { title: 'Meetings',           subtitle: 'Transcripts & summaries' },
 }
 
 function getPageInfo(pathname) {
@@ -36,6 +37,7 @@ function getPageInfo(pathname) {
   if (pathname.startsWith('/deals/'))     return { title: 'Deal',     subtitle: 'Detail view' }
   if (pathname.startsWith('/investors/')) return { title: 'Investor', subtitle: 'Detail view' }
   if (pathname.startsWith('/comps/'))     return { title: 'Comp',     subtitle: 'Detail view' }
+  if (pathname.startsWith('/meetings/')) return { title: 'Meeting',  subtitle: 'Transcript detail' }
   return { title: 'Vanadium OS', subtitle: '' }
 }
 

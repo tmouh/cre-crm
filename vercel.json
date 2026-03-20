@@ -4,7 +4,8 @@
   "framework": "vite",
   "functions": {
     "api/linkedin.js": { "maxDuration": 30 },
-    "api/graph-webhook.js": { "maxDuration": 10 }
+    "api/graph-webhook.js": { "maxDuration": 10 },
+    "api/summarize-meeting.js": { "maxDuration": 60 }
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },

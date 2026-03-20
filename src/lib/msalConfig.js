@@ -36,6 +36,9 @@ export const PRESENCE_SCOPES = ['Presence.Read']
 // Online meetings — use delegated OnlineMeetings.Read (not .All, which is application-only)
 export const MEETINGS_SCOPES = ['OnlineMeetings.Read']
 
+// Meeting transcripts
+export const TRANSCRIPT_SCOPES = ['OnlineMeetingTranscript.Read.All']
+
 // All scopes combined for full integration
 export const ALL_GRAPH_SCOPES = [
   ...BASE_SCOPES,
@@ -47,6 +50,7 @@ export const ALL_GRAPH_SCOPES = [
   ...TEAMS_SCOPES,
   ...PRESENCE_SCOPES,
   ...MEETINGS_SCOPES,
+  ...TRANSCRIPT_SCOPES,
 ]
 
 // Default scopes for initial sign-in (core features)

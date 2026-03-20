@@ -6,7 +6,7 @@
  * All functions return normalized data suitable for CRM consumption.
  */
 
-import { msalInstance, graphScopes, graphScopesFull } from '../lib/msalConfig'
+import { msalInstance, graphScopes, graphScopesFull, TRANSCRIPT_SCOPES } from '../lib/msalConfig'
 
 let initialized = false
 
@@ -565,6 +565,73 @@ export async function getOnlineMeetings(count = 25) {
   }
 }
 
+/**
+ * Fetch recent calendar events that were online meetings (Teams).
+ * Uses calendarView which reliably supports date filtering.
+ * Returns events that have already ended with their online meeting IDs.
+ */
+export async function getRecentMeetingsFromCalendar(daysBack = 7) {
+  try {
+    const now = new Date()
+    const start = new Date(now.getTime() - daysBack * 86_400_000).toISOString()
+    const end = now.toISOString()
+    const data = await graphGet(
+      `/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=50&$orderby=start/dateTime desc&$select=id,subject,start,end,attendees,onlineMeeting,isOnlineMeeting,onlineMeetingUrl`
+    )
+    return (data?.value || [])
+      .filter(ev => ev.isOnlineMeeting && new Date(ev.end?.dateTime + 'Z') < now)
+      .map(ev => ({
+        eventId: ev.id,
+        meetingId: ev.onlineMeeting?.joinMeetingIdSettings?.joinMeetingId || null,
+        joinUrl: ev.onlineMeetingUrl || ev.onlineMeeting?.joinUrl || null,
+        subject: ev.subject,
+        startDateTime: ev.start?.dateTime,
+        endDateTime: ev.end?.dateTime,
+        attendees: (ev.attendees || []).map(a => ({
+          email: a.emailAddress?.address?.toLowerCase(),
+          name: a.emailAddress?.name,
+        })),
+      }))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * List available transcripts for an online meeting.
+ * Requires OnlineMeetingTranscript.Read.All scope.
+ */
+export async function getMeetingTranscripts(meetingId) {
+  try {
+    const data = await graphGet(
+      `/me/onlineMeetings/${meetingId}/transcripts`,
+      TRANSCRIPT_SCOPES
+    )
+    return data?.value || []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Fetch the raw transcript content (VTT format) for a specific transcript.
+ * Uses a raw fetch because the response is text, not JSON.
+ */
+export async function getTranscriptContent(meetingId, transcriptId) {
+  try {
+    const token = await getToken(TRANSCRIPT_SCOPES)
+    if (!token) return null
+    const res = await fetch(
+      `https://graph.microsoft.com/v1.0/me/onlineMeetings/${meetingId}/transcripts/${transcriptId}/content?$format=text/vtt`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    if (!res.ok) return null
+    return await res.text()
+  } catch {
+    return null
+  }
+}
+
 // ─── Sync utility ──────────────────────────────────────────────────────────────
 
 /**
@@ -576,7 +643,7 @@ export async function getOnlineMeetings(count = 25) {
  * probe each group separately to get an accurate picture of what's granted.
  */
 export async function checkCapabilities() {
-  const none = { mail: false, calendar: false, contacts: false, files: false, people: false, teams: false, presence: false, meetings: false }
+  const none = { mail: false, calendar: false, contacts: false, files: false, people: false, teams: false, presence: false, meetings: false, transcripts: false }
   try {
     await ensureInit()
     const accounts = msalInstance.getAllAccounts()
@@ -595,7 +662,7 @@ export async function checkCapabilities() {
       }
     }
 
-    const [mail, calendar, contacts, files, people, teams, presence, meetings] = await Promise.all([
+    const [mail, calendar, contacts, files, people, teams, presence, meetings, transcripts] = await Promise.all([
       hasScope(['Mail.Read']),
       hasScope(['Calendars.Read']),
       hasScope(['Contacts.ReadWrite']),
@@ -604,9 +671,10 @@ export async function checkCapabilities() {
       hasScope(['Team.ReadBasic.All']),  // delegated; may need admin consent on tenant
       hasScope(['Presence.Read']),
       hasScope(['OnlineMeetings.Read']),
+      hasScope(['OnlineMeetingTranscript.Read.All']),
     ])
 
-    return { mail, calendar, contacts, files, people, teams, presence, meetings }
+    return { mail, calendar, contacts, files, people, teams, presence, meetings, transcripts }
   } catch {
     return none
   }

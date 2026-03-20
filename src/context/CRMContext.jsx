@@ -27,8 +27,9 @@ export function CRMProvider({ children }) {
   const [investors,      setInvestors]      = useState([])
   const [dealInvestors,  setDealInvestors]  = useState([])
   const [automations,    setAutomations]    = useState([])
-  const [dealActivities, setDealActivities] = useState([])
-  const [customOptions,  setCustomOptions]  = useState([])
+  const [dealActivities,      setDealActivities]      = useState([])
+  const [meetingTranscripts,  setMeetingTranscripts]  = useState([])
+  const [customOptions,       setCustomOptions]       = useState([])
   const [loading,        setLoading]        = useState(true)
   const [error,          setError]          = useState(null)
 
@@ -59,7 +60,7 @@ export function CRMProvider({ children }) {
           await seedDatabase()
           await db.config.markSeeded()
         }
-        const [co, ct, pr, re, ac, tm, delCo, delCt, delPr, delRe, cp, inv, di, auto, da, custOpts] = await Promise.all([
+        const [co, ct, pr, re, ac, tm, delCo, delCt, delPr, delRe, cp, inv, di, auto, da, mt, custOpts] = await Promise.all([
           db.companies.getAll(),
           db.contacts.getAll(),
           db.properties.getAll(),
@@ -75,6 +76,7 @@ export function CRMProvider({ children }) {
           db.dealInvestors.getAll().catch(() => []),
           db.automations.getAll().catch(() => []),
           db.dealActivities.getAll().catch(() => []),
+          db.meetingTranscripts.getAll().catch(() => []),
           db.customOptions.getAll().catch(() => []),
         ])
         setCompanies(co)
@@ -92,6 +94,7 @@ export function CRMProvider({ children }) {
         setDealInvestors(di)
         setAutomations(auto)
         setDealActivities(da)
+        setMeetingTranscripts(mt)
         setCustomOptions(custOpts)
       } catch (err) {
         setError(err.message || 'Failed to load data.')
@@ -527,6 +530,25 @@ export function CRMProvider({ children }) {
     return rec
   }, [])
 
+  // ─── MEETING TRANSCRIPTS ─────────────────────────────────────────────────
+  const addMeetingTranscript = useCallback(async (mt) => {
+    const rec = await db.meetingTranscripts.insert(mt)
+    setMeetingTranscripts(prev => [rec, ...prev])
+    return rec
+  }, [])
+
+  const updateMeetingTranscript = useCallback(async (id, patch) => {
+    const rec = await db.meetingTranscripts.update(id, patch)
+    setMeetingTranscripts(prev => prev.map(m => m.id === id ? rec : m))
+    return rec
+  }, [])
+
+  const meetingTranscriptsFor = useCallback((contactId) =>
+    meetingTranscripts
+      .filter(m => m.attendeeContactIds?.includes(contactId))
+      .sort((a, b) => (b.startAt || '').localeCompare(a.startAt || '')),
+  [meetingTranscripts])
+
   // ─── Lookups (synchronous — read from in-memory state) ────────────────────
   const getContact  = useCallback((id) => contacts.find(c => c.id === id),   [contacts])
   const getCompany  = useCallback((id) => companies.find(c => c.id === id),  [companies])
@@ -556,7 +578,7 @@ export function CRMProvider({ children }) {
     <CRMContext.Provider value={{
       contacts, companies, properties, reminders, activities, teamMembers,
       comps, investors, investorCompanies, dealInvestors, automations,
-      dealActivities,
+      dealActivities, meetingTranscripts,
       // Personal vs Shared derived views
       sharedContacts, personalContacts, sharedCompanies, personalCompanies,
       shareContacts, makeContactsPrivate, shareCompanies, makeCompaniesPrivate,
@@ -571,6 +593,7 @@ export function CRMProvider({ children }) {
       addDealInvestor, updateDealInvestor, deleteDealInvestor,
       addAutomation, updateAutomation, deleteAutomation,
       addDealActivity, updateDealActivity,
+      addMeetingTranscript, updateMeetingTranscript, meetingTranscriptsFor,
       customOptions, addCustomOption,
       undoStack, undoLastDelete, dismissUndo,
       getContact, getCompany, getProperty,

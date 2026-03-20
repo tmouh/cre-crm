@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Building2, Briefcase, Bell, LogOut, Settings,
   Trash2, Map, Kanban, Database, Users2, Zap, BarChart3, ChevronDown,
   Activity, FolderOpen, PanelLeftClose, PanelLeft,
-  Sun, Moon, Monitor, UserCircle, ListChecks,
+  Sun, Moon, Monitor, UserCircle, ListChecks, Video,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../../context/CRMContext'
@@ -21,6 +21,7 @@ const NAV_SECTIONS = [
       { to: '/inbox',      label: 'Inbox',      Icon: Activity },
       { to: '/reminders',  label: 'Tasks',      Icon: Bell, showBadge: true },
       { to: '/activities', label: 'Activities', Icon: ListChecks },
+      { to: '/meetings',   label: 'Meetings',   Icon: Video },
     ],
   },
   {

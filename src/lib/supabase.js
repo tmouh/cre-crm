@@ -343,6 +343,66 @@ export const db = {
     },
   },
 
+  // ─── Meeting transcripts (Teams meeting transcription & summarization) ─
+  meetingTranscripts: {
+    getAll: async (daysBack = 180) => {
+      const cutoff = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
+      const { data, error } = await supabase
+        .from('meeting_transcripts')
+        .select('*')
+        .gte('start_at', cutoff)
+        .order('start_at', { ascending: false })
+      if (error) throw error
+      return rows(data)
+    },
+    getById: async (id) => {
+      const { data, error } = await supabase
+        .from('meeting_transcripts')
+        .select('*')
+        .eq('id', id)
+        .single()
+      if (error) throw error
+      return toCamel(data)
+    },
+    getByMeetingId: async (msMeetingId) => {
+      const { data, error } = await supabase
+        .from('meeting_transcripts')
+        .select('*')
+        .eq('ms_meeting_id', msMeetingId)
+        .maybeSingle()
+      if (error) throw error
+      return data ? toCamel(data) : null
+    },
+    forContact: async (contactId) => {
+      const { data, error } = await supabase
+        .from('meeting_transcripts')
+        .select('*')
+        .contains('attendee_contact_ids', [contactId])
+        .order('start_at', { ascending: false })
+      if (error) throw error
+      return rows(data)
+    },
+    insert: async (obj) => {
+      const { data, error } = await supabase
+        .from('meeting_transcripts')
+        .insert(clean(toSnake(obj)))
+        .select()
+        .single()
+      if (error) throw error
+      return toCamel(data)
+    },
+    update: async (id, patch) => {
+      const { data, error } = await supabase
+        .from('meeting_transcripts')
+        .update(cleanForUpdate(toSnake(patch)))
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      return toCamel(data)
+    },
+  },
+
   // ─── Per-user private field overrides for shared contacts ──────────────
   contactPrivateData: {
     forUser: async (contactId, userId) => {

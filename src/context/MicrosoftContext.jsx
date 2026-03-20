@@ -20,6 +20,7 @@ import {
 import { db, supabase } from '../lib/supabase'
 import { useCRM } from './CRMContext'
 import { syncDealActivities } from '../services/dealActivitySync'
+import { syncMeetingTranscripts } from '../services/meetingTranscriptSync'
 
 const MicrosoftContext = createContext(null)
 
@@ -122,14 +123,14 @@ function outlookToCrmPatch(c) {
 
 export function MicrosoftProvider({ children }) {
   // CRMProvider wraps MicrosoftProvider in App.jsx, so useCRM() is safe here.
-  const { contacts, companies, properties, addDealActivity, updateDealActivity, registerOutlookPush, registerOutlookDelete, updateContact, deleteContact } = useCRM()
+  const { contacts, companies, properties, addDealActivity, updateDealActivity, addMeetingTranscript, updateMeetingTranscript, registerOutlookPush, registerOutlookDelete, updateContact, deleteContact } = useCRM()
 
   // Keep a ref so the sync callback always sees fresh CRM data without
   // needing contacts/companies/properties in its dependency array.
-  const crmDataRef = useRef({ contacts, companies, properties, addDealActivity, updateDealActivity, updateContact, deleteContact })
+  const crmDataRef = useRef({ contacts, companies, properties, addDealActivity, updateDealActivity, addMeetingTranscript, updateMeetingTranscript, updateContact, deleteContact })
   useEffect(() => {
-    crmDataRef.current = { contacts, companies, properties, addDealActivity, updateDealActivity, updateContact, deleteContact }
-  }, [contacts, companies, properties, addDealActivity, updateDealActivity, updateContact, deleteContact])
+    crmDataRef.current = { contacts, companies, properties, addDealActivity, updateDealActivity, addMeetingTranscript, updateMeetingTranscript, updateContact, deleteContact }
+  }, [contacts, companies, properties, addDealActivity, updateDealActivity, addMeetingTranscript, updateMeetingTranscript, updateContact, deleteContact])
 
   const [account, setAccount] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -250,6 +251,10 @@ export function MicrosoftProvider({ children }) {
       // Run deal activity scoring on recent sent messages (best-effort, non-blocking)
       if (capabilities?.mail) {
         syncDealActivities(crmDataRef.current).catch(() => {})
+      }
+      // Sync Teams meeting transcripts (best-effort, non-blocking)
+      if (capabilities?.meetings && capabilities?.transcripts) {
+        syncMeetingTranscripts(crmDataRef.current).catch(() => {})
       }
       // Poll for Outlook contact changes and push into CRM (best-effort, non-blocking)
       if (capabilities?.contacts) {
