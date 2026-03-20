@@ -83,24 +83,22 @@ export async function syncMeetingTranscripts(crmData) {
   // Skip if CRM data isn't loaded yet
   if (!contacts?.length) return
 
-  // ── Cutoff: never process meetings older than the last run ────────────
+  // ── Cutoff: on first run, look back 7 days instead of skipping ───────
   const stored = localStorage.getItem(LAST_SYNC_KEY)
   const now = new Date()
-
-  if (!stored) {
-    localStorage.setItem(LAST_SYNC_KEY, now.toISOString())
-    return
-  }
-
-  const cutoff = new Date(stored)
+  const cutoff = stored ? new Date(stored) : new Date(now.getTime() - 7 * 86_400_000)
   localStorage.setItem(LAST_SYNC_KEY, now.toISOString())
 
   try {
     const meetings = await getRecentMeetingsFromCalendar(7)
+    console.log(`[MeetingTranscriptSync] Found ${meetings.length} recent meetings`)
 
     for (const meeting of meetings) {
       // Need a meeting ID to fetch transcripts
-      if (!meeting.meetingId) continue
+      if (!meeting.meetingId) {
+        console.log(`[MeetingTranscriptSync] Skipping "${meeting.subject}" — no meeting ID`)
+        continue
+      }
 
       // Skip if already processed this session
       if (processedMeetingIds.has(meeting.meetingId)) continue
@@ -114,8 +112,13 @@ export async function syncMeetingTranscripts(crmData) {
       if (existing) continue
 
       // Fetch available transcripts
+      console.log(`[MeetingTranscriptSync] Checking transcripts for "${meeting.subject}" (${meeting.meetingId})`)
       const transcripts = await getMeetingTranscripts(meeting.meetingId)
-      if (!transcripts.length) continue // No transcript yet — will retry next cycle
+      if (!transcripts.length) {
+        console.log(`[MeetingTranscriptSync] No transcript available yet for "${meeting.subject}" — will retry next cycle`)
+        processedMeetingIds.delete(meeting.meetingId) // Allow retry next cycle
+        continue
+      }
 
       // Fetch the first transcript's content
       const rawVtt = await getTranscriptContent(meeting.meetingId, transcripts[0].id)

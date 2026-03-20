@@ -566,32 +566,60 @@ export async function getOnlineMeetings(count = 25) {
 }
 
 /**
- * Fetch recent calendar events that were online meetings (Teams).
- * Uses calendarView which reliably supports date filtering.
- * Returns events that have already ended with their online meeting IDs.
+ * Fetch recent online meetings with their real Graph IDs.
+ * Combines /me/onlineMeetings (for meeting IDs) with calendarView (for attendees).
+ * The transcript API requires the onlineMeeting `id`, NOT the joinMeetingId.
  */
 export async function getRecentMeetingsFromCalendar(daysBack = 7) {
   try {
     const now = new Date()
     const start = new Date(now.getTime() - daysBack * 86_400_000).toISOString()
     const end = now.toISOString()
-    const data = await graphGet(
-      `/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=50&$orderby=start/dateTime desc&$select=id,subject,start,end,attendees,onlineMeeting,isOnlineMeeting,onlineMeetingUrl`
-    )
-    return (data?.value || [])
-      .filter(ev => ev.isOnlineMeeting && new Date(ev.end?.dateTime + 'Z') < now)
-      .map(ev => ({
-        eventId: ev.id,
-        meetingId: ev.onlineMeeting?.joinMeetingIdSettings?.joinMeetingId || null,
-        joinUrl: ev.onlineMeetingUrl || ev.onlineMeeting?.joinUrl || null,
-        subject: ev.subject,
-        startDateTime: ev.start?.dateTime,
-        endDateTime: ev.end?.dateTime,
-        attendees: (ev.attendees || []).map(a => ({
-          email: a.emailAddress?.address?.toLowerCase(),
-          name: a.emailAddress?.name,
-        })),
-      }))
+
+    // Fetch both sources in parallel
+    const [onlineMeetings, calendarEvents] = await Promise.all([
+      graphGet(`/me/onlineMeetings?$top=50&$orderby=startDateTime desc&$select=id,subject,startDateTime,endDateTime,joinWebUrl,participants`)
+        .then(d => d?.value || []).catch(() => []),
+      graphGet(`/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=50&$select=id,subject,start,end,attendees,isOnlineMeeting,onlineMeetingUrl`)
+        .then(d => d?.value || []).catch(() => []),
+    ])
+
+    // Build a map from join URL → calendar event for attendee data
+    const calendarByUrl = {}
+    for (const ev of calendarEvents) {
+      if (ev.onlineMeetingUrl) calendarByUrl[ev.onlineMeetingUrl.toLowerCase()] = ev
+    }
+
+    return onlineMeetings
+      .filter(m => {
+        // Only include meetings that have ended and are within the daysBack window
+        if (!m.endDateTime) return false
+        const endDt = new Date(m.endDateTime)
+        return endDt < now && endDt >= new Date(start)
+      })
+      .map(m => {
+        // Cross-reference with calendar event for attendee list
+        const calEv = m.joinWebUrl ? calendarByUrl[m.joinWebUrl.toLowerCase()] : null
+        const attendees = calEv
+          ? (calEv.attendees || []).map(a => ({
+              email: a.emailAddress?.address?.toLowerCase(),
+              name: a.emailAddress?.name,
+            }))
+          : (m.participants?.attendees || []).map(a => ({
+              email: a.upn?.toLowerCase() || a.identity?.user?.id,
+              name: a.identity?.user?.displayName,
+            }))
+
+        return {
+          eventId: calEv?.id || null,
+          meetingId: m.id,
+          joinUrl: m.joinWebUrl,
+          subject: m.subject || calEv?.subject || '(no subject)',
+          startDateTime: m.startDateTime,
+          endDateTime: m.endDateTime,
+          attendees,
+        }
+      })
   } catch {
     return []
   }
