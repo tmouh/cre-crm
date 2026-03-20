@@ -117,6 +117,19 @@ export default function Sidebar({ collapsed, onToggle }) {
         )}
       </div>
 
+      {/* Sync button when collapsed — sits above Dashboard */}
+      {isConnected && collapsed && (
+        <div className="flex justify-center px-1.5 pt-1.5">
+          <button
+            onClick={() => sync()}
+            title={syncState === 'syncing' ? 'Syncing with Microsoft 365...' : 'Sync with Microsoft 365'}
+            className="p-1.5 rounded transition-colors text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-500 dark:hover:text-blue-400 dark:hover:bg-blue-900/30"
+          >
+            <RefreshCw size={14} className={syncState === 'syncing' ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-1.5 px-1.5 space-y-3">
         {NAV_SECTIONS.map(section => (
