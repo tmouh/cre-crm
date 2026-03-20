@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   Video, Clock, Users, Search, ArrowLeft, RefreshCw,
   CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronRight,
-  ExternalLink, Tag, ListTodo, Smile, Meh, Frown,
+  ExternalLink, Tag, ListTodo, Smile, Meh, Frown, Trash2,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
@@ -127,7 +127,7 @@ function MeetingCard({ meeting, contacts, onClick }) {
 
 // ─── Detail View ──────────────────────────────────────────────────────────
 
-function MeetingDetail({ meeting, contacts, onBack, onResummarize }) {
+function MeetingDetail({ meeting, contacts, onBack, onResummarize, onDelete }) {
   const [showTranscript, setShowTranscript] = useState(false)
   const [resummarizing, setResummarizing] = useState(false)
 
@@ -173,6 +173,16 @@ function MeetingDetail({ meeting, contacts, onBack, onResummarize }) {
               <ExternalLink size={12} /> Open in Teams
             </a>
           )}
+          <button
+            onClick={() => {
+              if (window.confirm(`Delete "${meeting.subject}"? This cannot be undone.`)) {
+                onDelete(meeting.id)
+              }
+            }}
+            className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+          >
+            <Trash2 size={12} /> Delete
+          </button>
         </div>
       </div>
 
@@ -332,7 +342,7 @@ function MeetingDetail({ meeting, contacts, onBack, onResummarize }) {
 export default function Meetings() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { meetingTranscripts, contacts, updateMeetingTranscript } = useCRM()
+  const { meetingTranscripts, contacts, updateMeetingTranscript, deleteMeetingTranscript } = useCRM()
   const [search, setSearch] = useState('')
 
   // Filter meetings
@@ -377,6 +387,10 @@ export default function Meetings() {
         contacts={contacts}
         onBack={() => navigate('/meetings')}
         onResummarize={handleResummarize}
+        onDelete={async (id) => {
+          await deleteMeetingTranscript(id)
+          navigate('/meetings')
+        }}
       />
     )
   }

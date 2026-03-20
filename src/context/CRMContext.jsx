@@ -543,6 +543,11 @@ export function CRMProvider({ children }) {
     return rec
   }, [])
 
+  const deleteMeetingTranscript = useCallback(async (id) => {
+    await db.meetingTranscripts.delete(id)
+    setMeetingTranscripts(prev => prev.filter(m => m.id !== id))
+  }, [])
+
   const meetingTranscriptsFor = useCallback((contactId) =>
     meetingTranscripts
       .filter(m => m.attendeeContactIds?.includes(contactId))
@@ -593,7 +598,7 @@ export function CRMProvider({ children }) {
       addDealInvestor, updateDealInvestor, deleteDealInvestor,
       addAutomation, updateAutomation, deleteAutomation,
       addDealActivity, updateDealActivity,
-      addMeetingTranscript, updateMeetingTranscript, meetingTranscriptsFor,
+      addMeetingTranscript, updateMeetingTranscript, deleteMeetingTranscript, meetingTranscriptsFor,
       customOptions, addCustomOption,
       undoStack, undoLastDelete, dismissUndo,
       getContact, getCompany, getProperty,

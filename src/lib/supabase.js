@@ -401,6 +401,13 @@ export const db = {
       if (error) throw error
       return toCamel(data)
     },
+    delete: async (id) => {
+      const { error } = await supabase
+        .from('meeting_transcripts')
+        .delete()
+        .eq('id', id)
+      if (error) throw error
+    },
   },
 
   // ─── Per-user private field overrides for shared contacts ──────────────
