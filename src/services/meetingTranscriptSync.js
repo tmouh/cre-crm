@@ -89,6 +89,9 @@ export async function syncMeetingTranscripts(crmData) {
   const cutoff = stored ? new Date(stored) : new Date(now.getTime() - 7 * 86_400_000)
   localStorage.setItem(LAST_SYNC_KEY, now.toISOString())
 
+  // Clear session cache so each sync run re-evaluates all meetings
+  processedMeetingIds.clear()
+
   try {
     const meetings = await getRecentMeetingsFromCalendar(7)
     console.log(`[MeetingTranscriptSync] Found ${meetings.length} recent meetings`)
@@ -100,12 +103,10 @@ export async function syncMeetingTranscripts(crmData) {
         continue
       }
 
-      // Skip if already processed this session
+      // Skip if already processed this sync cycle (de-dup within a single run)
       if (processedMeetingIds.has(meeting.meetingId)) {
-        console.log(`[MeetingTranscriptSync] Skipping "${meeting.subject}" — already processed this session`)
         continue
       }
-      processedMeetingIds.add(meeting.meetingId)
 
       // Skip meetings that ended before the cutoff
       if (meeting.endDateTime && new Date(meeting.endDateTime) < cutoff) {
@@ -113,12 +114,18 @@ export async function syncMeetingTranscripts(crmData) {
         continue
       }
 
-      // Skip if already in DB
+      // Check if already in DB — re-trigger summarization if previous attempt failed
       console.log(`[MeetingTranscriptSync] Checking DB for "${meeting.subject}"...`)
       try {
         const existing = await db.meetingTranscripts.getByMeetingId(meeting.meetingId)
         if (existing) {
-          console.log(`[MeetingTranscriptSync] "${meeting.subject}" already in DB, skipping`)
+          if (existing.summaryStatus === 'failed' && existing.transcriptRaw) {
+            console.log(`[MeetingTranscriptSync] "${meeting.subject}" failed previously, re-triggering summarization...`)
+            await crmData.updateMeetingTranscript(existing.id, { summaryStatus: 'pending', summaryError: null })
+            triggerSummarization(existing.id, existing.transcriptRaw)
+          } else {
+            console.log(`[MeetingTranscriptSync] "${meeting.subject}" already in DB, skipping`)
+          }
           continue
         }
       } catch (dbErr) {
@@ -133,7 +140,6 @@ export async function syncMeetingTranscripts(crmData) {
         console.log(`[MeetingTranscriptSync] "${meeting.subject}" has ${transcripts.length} transcript(s)`)
         if (!transcripts.length) {
           console.log(`[MeetingTranscriptSync] No transcript available yet for "${meeting.subject}" — will retry next cycle`)
-          processedMeetingIds.delete(meeting.meetingId) // Allow retry next cycle
           continue
         }
 
@@ -170,12 +176,12 @@ export async function syncMeetingTranscripts(crmData) {
 
         // Trigger AI summarization
         if (record?.id) {
+          processedMeetingIds.add(meeting.meetingId)
           console.log(`[MeetingTranscriptSync] ✓ Saved "${meeting.subject}", triggering summarization...`)
           triggerSummarization(record.id, cleanedText)
         }
       } catch (transcriptErr) {
         console.warn(`[MeetingTranscriptSync] Transcript fetch failed for "${meeting.subject}":`, transcriptErr?.message)
-        processedMeetingIds.delete(meeting.meetingId)
       }
     }
   } catch (err) {
