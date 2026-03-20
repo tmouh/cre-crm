@@ -1,8 +1,28 @@
 // Vercel Serverless Function — Meeting transcript summarization via Google Gemini API (free tier)
-// Requires GEMINI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY in Vercel env vars
+// Requires GEMINI_API_KEY, VITE_SUPABASE_URL, SUPABASE_SERVICE_KEY in Vercel env vars
 // Get a free API key at https://aistudio.google.com/apikey
 
-import { createClient } from '@supabase/supabase-js'
+// Uses direct Supabase REST API (no SDK import) to avoid serverless bundling issues.
+
+async function supabaseUpdate(url, serviceKey, table, id, patch) {
+  const res = await fetch(
+    `${url}/rest/v1/${table}?id=eq.${id}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify(patch),
+    }
+  )
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Supabase update failed (${res.status}): ${text.slice(0, 200)}`)
+  }
+}
 
 export default async function handler(req, res) {
   // CORS headers for local dev
@@ -30,8 +50,6 @@ export default async function handler(req, res) {
   if (!supabaseUrl || !supabaseKey) {
     return res.status(500).json({ error: 'SUPABASE_URL or SUPABASE_SERVICE_KEY not configured' })
   }
-
-  const supabase = createClient(supabaseUrl, supabaseKey)
 
   try {
     const geminiRes = await fetch(
@@ -81,33 +99,24 @@ ${transcriptRaw.slice(0, 80_000)}`,
     const { summary, keyTopics, actionItems, sentiment } = parsed
 
     // Update the record in Supabase
-    const { error: updateError } = await supabase
-      .from('meeting_transcripts')
-      .update({
-        summary: summary || null,
-        key_topics: keyTopics || [],
-        action_items: actionItems || [],
-        sentiment: sentiment || 'neutral',
-        summary_status: 'completed',
-        summary_error: null,
-      })
-      .eq('id', id)
-
-    if (updateError) throw updateError
+    await supabaseUpdate(supabaseUrl, supabaseKey, 'meeting_transcripts', id, {
+      summary: summary || null,
+      key_topics: keyTopics || [],
+      action_items: actionItems || [],
+      sentiment: sentiment || 'neutral',
+      summary_status: 'completed',
+      summary_error: null,
+    })
 
     return res.status(200).json({ summary, keyTopics, actionItems, sentiment })
   } catch (err) {
     console.error('Meeting summarization error:', err)
 
     // Mark as failed in DB
-    await supabase
-      .from('meeting_transcripts')
-      .update({
-        summary_status: 'failed',
-        summary_error: (err?.message || String(err)).slice(0, 500),
-      })
-      .eq('id', id)
-      .catch(() => {})
+    await supabaseUpdate(supabaseUrl, supabaseKey, 'meeting_transcripts', id, {
+      summary_status: 'failed',
+      summary_error: (err?.message || String(err)).slice(0, 500),
+    }).catch(() => {})
 
     return res.status(500).json({ error: `Summarization failed: ${err?.message || String(err)}` })
   }
