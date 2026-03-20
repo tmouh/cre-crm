@@ -63,17 +63,6 @@ function getDurationMinutes(start, end) {
 }
 
 /**
- * Fire-and-forget call to the summarization serverless function.
- */
-function triggerSummarization(id, transcriptRaw) {
-  fetch('/api/summarize-meeting', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, transcriptRaw: transcriptRaw.slice(0, 100_000) }),
-  }).catch(() => {})
-}
-
-/**
  * Main sync entry point. Called after each Microsoft sync completes.
  * @param {object} crmData - { contacts, addMeetingTranscript, updateMeetingTranscript }
  */
@@ -161,7 +150,6 @@ export async function syncMeetingTranscripts(crmData) {
           attendeeEmails: meeting.attendees.map(a => a.email).filter(Boolean),
           attendeeContactIds,
           transcriptRaw: cleanedText,
-          summaryStatus: 'pending',
         }).catch(err => {
           if (!err?.message?.includes('unique') && !err?.message?.includes('duplicate') && !err?.message?.includes('409') && !err?.message?.includes('conflict')) {
             console.warn('[MeetingTranscriptSync] insert failed:', err?.message)
@@ -169,10 +157,8 @@ export async function syncMeetingTranscripts(crmData) {
           return null
         })
 
-        // Trigger AI summarization
         if (record?.id) {
-          console.log(`[MeetingTranscriptSync] ✓ Saved "${meeting.subject}", triggering summarization...`)
-          triggerSummarization(record.id, cleanedText)
+          console.log(`[MeetingTranscriptSync] ✓ Saved "${meeting.subject}"`)
         }
       } catch (transcriptErr) {
         console.warn(`[MeetingTranscriptSync] Transcript fetch failed for "${meeting.subject}":`, transcriptErr?.message)

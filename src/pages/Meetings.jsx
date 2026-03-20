@@ -1,11 +1,10 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
-  Video, Clock, Users, Search, ArrowLeft, RefreshCw,
-  CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronRight,
-  ExternalLink, Tag, ListTodo, Smile, Meh, Frown, Trash2,
+  Video, Clock, Users, Search, ArrowLeft,
+  ChevronDown, ChevronRight,
+  ExternalLink, Trash2,
 } from 'lucide-react'
-import clsx from 'clsx'
 import { useCRM } from '../context/CRMContext'
 import { fullName, formatDate } from '../utils/helpers'
 import EmptyState from '../components/EmptyState'
@@ -49,32 +48,6 @@ function formatTime(iso) {
   return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
 
-const STATUS_CONFIG = {
-  completed: { label: 'Summarized', Icon: CheckCircle2, cls: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30' },
-  pending:   { label: 'Processing', Icon: Loader2,      cls: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30' },
-  failed:    { label: 'Failed',     Icon: AlertCircle,   cls: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30' },
-}
-
-const SENTIMENT_ICONS = { positive: Smile, neutral: Meh, negative: Frown }
-const SENTIMENT_COLORS = {
-  positive: 'text-emerald-600 dark:text-emerald-400',
-  neutral:  'text-zinc-500 dark:text-zinc-400',
-  negative: 'text-red-600 dark:text-red-400',
-}
-
-// ─── Status Badge ──────────────────────────────────────────────────────────
-
-function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending
-  const Icon = cfg.Icon
-  return (
-    <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium', cfg.cls)}>
-      <Icon size={12} className={status === 'pending' ? 'animate-spin' : ''} />
-      {cfg.label}
-    </span>
-  )
-}
-
 // ─── Meeting Card (list view) ──────────────────────────────────────────────
 
 function MeetingCard({ meeting, contacts, onClick }) {
@@ -113,13 +86,7 @@ function MeetingCard({ meeting, contacts, onClick }) {
               </span>
             )}
           </div>
-          {meeting.summary && (
-            <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2">
-              {meeting.summary}
-            </p>
-          )}
         </div>
-        <StatusBadge status={meeting.summaryStatus} />
       </div>
     </button>
   )
@@ -127,9 +94,8 @@ function MeetingCard({ meeting, contacts, onClick }) {
 
 // ─── Detail View ──────────────────────────────────────────────────────────
 
-function MeetingDetail({ meeting, contacts, onBack, onResummarize, onDelete }) {
+function MeetingDetail({ meeting, contacts, onBack, onDelete }) {
   const [showTranscript, setShowTranscript] = useState(false)
-  const [resummarizing, setResummarizing] = useState(false)
 
   const attendees = (meeting.attendeeEmails || []).map(email => {
     const contact = contacts.find(c =>
@@ -139,17 +105,6 @@ function MeetingDetail({ meeting, contacts, onBack, onResummarize, onDelete }) {
     )
     return { email, contact }
   })
-
-  const SentimentIcon = SENTIMENT_ICONS[meeting.sentiment] || Meh
-
-  async function handleResummarize() {
-    setResummarizing(true)
-    try {
-      await onResummarize(meeting.id, meeting.transcriptRaw)
-    } finally {
-      setResummarizing(false)
-    }
-  }
 
   return (
     <div className="h-full flex flex-col animate-fade-in">
@@ -162,7 +117,6 @@ function MeetingDetail({ meeting, contacts, onBack, onResummarize, onDelete }) {
           <ArrowLeft size={16} /> Back
         </button>
         <div className="flex items-center gap-2 ml-4">
-          <StatusBadge status={meeting.summaryStatus} />
           {meeting.joinWebUrl && (
             <a
               href={meeting.joinWebUrl}
@@ -230,91 +184,6 @@ function MeetingDetail({ meeting, contacts, onBack, onResummarize, onDelete }) {
           </div>
         </div>
 
-        {/* AI Summary */}
-        {meeting.summaryStatus === 'completed' && meeting.summary && (
-          <div className="space-y-4">
-            {/* Summary */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Summary</h3>
-              <p className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed">{meeting.summary}</p>
-              {meeting.sentiment && (
-                <div className={clsx('flex items-center gap-1 mt-3 text-xs', SENTIMENT_COLORS[meeting.sentiment])}>
-                  <SentimentIcon size={14} />
-                  <span className="capitalize">{meeting.sentiment} tone</span>
-                </div>
-              )}
-            </div>
-
-            {/* Key Topics */}
-            {meeting.keyTopics?.length > 0 && (
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 flex items-center gap-1.5">
-                  <Tag size={14} /> Key Topics
-                </h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {meeting.keyTopics.map((topic, i) => (
-                    <span
-                      key={i}
-                      className="px-2.5 py-1 rounded-full text-xs bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
-                    >
-                      {topic}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Action Items */}
-            {meeting.actionItems?.length > 0 && (
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 flex items-center gap-1.5">
-                  <ListTodo size={14} /> Action Items
-                </h3>
-                <ul className="space-y-2">
-                  {meeting.actionItems.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <CheckCircle2 size={14} className="text-zinc-400 mt-0.5 shrink-0" />
-                      <div>
-                        <span className="text-zinc-800 dark:text-zinc-200">{item.description}</span>
-                        {item.assignee && (
-                          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">— {item.assignee}</span>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Failed state */}
-        {meeting.summaryStatus === 'failed' && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-            <p className="text-sm text-red-700 dark:text-red-300 mb-2">
-              Summarization failed: {meeting.summaryError || 'Unknown error'}
-            </p>
-            <button
-              onClick={handleResummarize}
-              disabled={resummarizing}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-            >
-              <RefreshCw size={12} className={resummarizing ? 'animate-spin' : ''} />
-              {resummarizing ? 'Re-summarizing...' : 'Re-summarize'}
-            </button>
-          </div>
-        )}
-
-        {/* Pending state */}
-        {meeting.summaryStatus === 'pending' && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex items-center gap-2">
-            <Loader2 size={16} className="animate-spin text-amber-600" />
-            <p className="text-sm text-amber-700 dark:text-amber-300">
-              AI summary is being generated. This may take a moment.
-            </p>
-          </div>
-        )}
-
         {/* Full Transcript (collapsible) */}
         {meeting.transcriptRaw && (
           <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden">
@@ -342,7 +211,7 @@ function MeetingDetail({ meeting, contacts, onBack, onResummarize, onDelete }) {
 export default function Meetings() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { meetingTranscripts, contacts, updateMeetingTranscript, deleteMeetingTranscript } = useCRM()
+  const { meetingTranscripts, contacts, deleteMeetingTranscript } = useCRM()
   const [search, setSearch] = useState('')
 
   // Filter meetings
@@ -351,8 +220,6 @@ export default function Meetings() {
     const q = search.toLowerCase()
     return meetingTranscripts.filter(m =>
       m.subject?.toLowerCase().includes(q) ||
-      m.summary?.toLowerCase().includes(q) ||
-      m.keyTopics?.some(t => t.toLowerCase().includes(q)) ||
       m.attendeeEmails?.some(e => e.includes(q))
     )
   }, [meetingTranscripts, search])
@@ -371,22 +238,12 @@ export default function Meetings() {
   // Detail view
   const selectedMeeting = id ? meetingTranscripts.find(m => m.id === id) : null
 
-  async function handleResummarize(meetingId, transcriptRaw) {
-    await updateMeetingTranscript(meetingId, { summaryStatus: 'pending', summaryError: null })
-    fetch('/api/summarize-meeting', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: meetingId, transcriptRaw: (transcriptRaw || '').slice(0, 100_000) }),
-    }).catch(() => {})
-  }
-
   if (selectedMeeting) {
     return (
       <MeetingDetail
         meeting={selectedMeeting}
         contacts={contacts}
         onBack={() => navigate('/meetings')}
-        onResummarize={handleResummarize}
         onDelete={async (id) => {
           await deleteMeetingTranscript(id)
           navigate('/meetings')
