@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Phone, Mail, Users, FileText, Building2, Map, MessageSquare, Briefcase,
-  Plus, Trash2, Edit3, ChevronDown, ChevronRight, X, ListChecks,
+  Plus, Trash2, Edit3, ChevronDown, ChevronRight, X, ListChecks, Search,
   AlertCircle, Bell, Check, Zap, ArrowUpRight, ArrowDownLeft, Calendar,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -499,6 +499,7 @@ export default function Activities() {
   const { user } = useAuth()
 
   // ─── Filter state ──────────────────────────────────────────────────────────
+  const [search,              setSearch]              = useState('')
   const [filterType,          setFilterType]          = useState(null)
   const [filterContactSearch, setFilterContactSearch] = useState('')
   const [page,                setPage]                = useState(0)
@@ -566,8 +567,22 @@ export default function Activities() {
         return c && fullName(c).toLowerCase().includes(q)
       })
     }
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter(a => {
+        if (a.description?.toLowerCase().includes(q)) return true
+        if (a.type?.toLowerCase().includes(q)) return true
+        const c = a.contactId ? contactMap[a.contactId] : null
+        if (c && fullName(c).toLowerCase().includes(q)) return true
+        const co = a.companyId ? companyMap[a.companyId] : null
+        if (co?.name?.toLowerCase().includes(q)) return true
+        const d = a.propertyId ? dealMap[a.propertyId] : null
+        if (d?.name?.toLowerCase().includes(q)) return true
+        return false
+      })
+    }
     return list
-  }, [activities, filterType, filterContactSearch, contactMap])
+  }, [activities, filterType, filterContactSearch, search, contactMap, companyMap, dealMap])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated  = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
@@ -576,7 +591,7 @@ export default function Activities() {
   const paginatedWithSort = paginated.map(a => ({ ...a, _sortDate: a.date || a.createdAt }))
   const grouped = useMemo(() => groupItems(paginatedWithSort), [paginatedWithSort])
 
-  useEffect(() => { setPage(0) }, [filterType, filterContactSearch])
+  useEffect(() => { setPage(0) }, [filterType, filterContactSearch, search])
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
   function openForm() {
@@ -639,14 +654,22 @@ export default function Activities() {
   return (
     <div className="h-full flex flex-col animate-fade-in px-6 py-5">
 
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-            {activities.length} total{filtered.length !== activities.length ? ` · ${filtered.length} shown` : ''}
-          </p>
+      {/* Toolbar */}
+      <div className="os-toolbar">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <input
+            type="text"
+            placeholder="Search activities..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 text-sm rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
         </div>
-        <button onClick={openForm} className="v-btn-primary flex items-center gap-1.5 text-sm">
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+          {filtered.length} total
+        </span>
+        <button onClick={openForm} className="v-btn-primary flex items-center gap-1.5 text-sm ml-auto">
           <Plus size={14} /> Log Activity
         </button>
       </div>
