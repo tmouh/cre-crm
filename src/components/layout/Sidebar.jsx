@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Building2, Briefcase, Bell, LogOut, Settings,
   Trash2, Map, Kanban, Database, Users2, Zap, BarChart3, ChevronDown,
   Activity, FolderOpen, PanelLeftClose, PanelLeft,
-  Sun, Moon, Monitor, UserCircle, ListChecks, Video,
+  Sun, Moon, Monitor, UserCircle, ListChecks, Video, RefreshCw,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCRM } from '../../context/CRMContext'
@@ -70,7 +70,7 @@ export default function Sidebar({ collapsed, onToggle }) {
   const { reminders } = useCRM()
   const { user, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
-  const { isConnected, connect } = useMicrosoft()
+  const { isConnected, connect, sync, syncState } = useMicrosoft()
   const location = useLocation()
 
   const urgentCount = reminders.filter(
@@ -105,6 +105,19 @@ export default function Sidebar({ collapsed, onToggle }) {
           <span className="text-[11px] font-bold text-slate-800 dark:text-white tracking-tight font-mono uppercase">
             Vanadium
           </span>
+        )}
+        {isConnected && (
+          <button
+            onClick={() => sync()}
+            title={syncState === 'syncing' ? 'Syncing with Microsoft 365...' : 'Sync with Microsoft 365'}
+            className={clsx(
+              'flex-shrink-0 p-1 rounded transition-colors',
+              'text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-500 dark:hover:text-blue-400 dark:hover:bg-blue-900/30',
+              collapsed ? '' : 'ml-auto'
+            )}
+          >
+            <RefreshCw size={13} className={syncState === 'syncing' ? 'animate-spin' : ''} />
+          </button>
         )}
       </div>
 
